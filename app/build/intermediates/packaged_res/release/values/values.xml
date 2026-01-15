@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#000000</color>
+    <string name="accessibility_service_description">Zyra uses this service to read text on your screen (like vehicle numbers) when you ask.</string>
+    <string name="app_name">Zyra</string>
+    <style name="Theme.Zyra" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

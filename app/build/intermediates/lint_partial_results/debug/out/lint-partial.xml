@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.2.0" type="partial_results">
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="com.zyra.app.MainActivity"
+                    boolean="true"/>
+                <entry
+                    name="com.zyra.app.service.ZyraRecognitionService"
+                    boolean="true"/>
+                <entry
+                    name="android.content.BroadcastReceiver"
+                    boolean="true"/>
+                <entry
+                    name="com.zyra.app.service.BootReceiver"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnsafeImplicitIntentLaunch">
+            <map id="actionsSent">
+                    <map id="android.settings.action.MANAGE_OVERLAY_PERMISSION (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/ui/HomeScreen.kt"
+                            line="224"
+                            column="51"
+                            startOffset="9999"
+                            endLine="224"
+                            endColumn="174"
+                            endOffset="10122"/>
+                    </map>
+                    <map id="android.settings.ACCESSIBILITY_SETTINGS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="752"
+                            column="27"
+                            startOffset="33041"
+                            endLine="752"
+                            endColumn="73"
+                            endOffset="33087"/>
+                        <location id="1"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="768"
+                            column="26"
+                            startOffset="33701"
+                            endLine="768"
+                            endColumn="72"
+                            endOffset="33747"/>
+                    </map>
+                    <map id="android.intent.action.VIEW (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="889"
+                            column="35"
+                            startOffset="39432"
+                            endLine="889"
+                            endColumn="119"
+                            endOffset="39516"/>
+                        <location id="1"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="901"
+                            column="35"
+                            startOffset="40086"
+                            endLine="901"
+                            endColumn="107"
+                            endOffset="40158"/>
+                        <location id="2"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1429"
+                            column="33"
+                            startOffset="64001"
+                            endLine="1429"
+                            endColumn="80"
+                            endOffset="64048"/>
+                    </map>
+                    <map id="android.settings.WIFI_SETTINGS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1144"
+                            column="31"
+                            startOffset="51089"
+                            endLine="1144"
+                            endColumn="68"
+                            endOffset="51126"/>
+                    </map>
+                    <map id="android.media.action.STILL_IMAGE_CAMERA (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1246"
+                            column="22"
+                            startOffset="55911"
+                            endLine="1246"
+                            endColumn="90"
+                            endOffset="55979"/>
+                    </map>
+                    <map id="android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/MainActivity.kt"
+                            line="56"
+                            column="26"
+                            startOffset="2058"
+                            endLine="56"
+                            endColumn="86"
+                            endOffset="2118"/>
+                    </map>
+                    <map id="android.intent.action.SET_ALARM (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1761"
+                            column="26"
+                            startOffset="78098"
+                            endLine="1761"
+                            endColumn="78"
+                            endOffset="78150"/>
+                        <location id="1"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1772"
+                            column="27"
+                            startOffset="78747"
+                            endLine="1772"
+                            endColumn="79"
+                            endOffset="78799"/>
+                    </map>
+                    <map id="android.media.action.MEDIA_PLAY_FROM_SEARCH (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1439"
+                            column="26"
+                            startOffset="64378"
+                            endLine="1439"
+                            endColumn="98"
+                            endOffset="64450"/>
+                    </map>
+                    <map id="android.intent.action.CALL (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1602"
+                            column="22"
+                            startOffset="71567"
+                            endLine="1602"
+                            endColumn="48"
+                            endOffset="71593"/>
+                    </map>
+                    <map id="android.settings.BLUETOOTH_SETTINGS (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1150"
+                            column="31"
+                            startOffset="51345"
+                            endLine="1150"
+                            endColumn="73"
+                            endOffset="51387"/>
+                    </map>
+                    <map id="android.intent.action.SET_TIMER (used to start an activity)">
+                        <location id="0"
+                            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/zyra/app/service/VoiceAssistantService.kt"
+                            line="1789"
+                            column="22"
+                            startOffset="79400"
+                            endLine="1789"
+                            endColumn="74"
+                            endOffset="79452"/>
+                    </map>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.drawable.ic_zyra_logo_new"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/drawable/ic_zyra_logo_new.png"/>
+        <entry
+            name="model"
+            string="color[ic_launcher_background(U)],drawable[ic_zyra_logo(U),ic_zyra_logo_new(D),ic_launcher(U)],string[app_name(U),accessibility_service_description(U)],style[Theme_Zyra(U)],xml[data_extraction_rules(U),accessibility_service_config(U),backup_rules(U),voice_interaction_service(U)];3^0^1,8^5;;;"/>
+    </map>
+
+</incidents>

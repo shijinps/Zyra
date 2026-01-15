@@ -1,0 +1,62 @@
+com.zyra.app-ui-text-release-0 C:\Users\shiji\.gradle\caches\transforms-4\03f59b43e35fba9f7b9cd77c73e358b6\transformed\ui-text-release\res
+com.zyra.app-ui-test-manifest-1.6.0-1 C:\Users\shiji\.gradle\caches\transforms-4\06ea5039cdff6307173dc21c30606b48\transformed\ui-test-manifest-1.6.0\res
+com.zyra.app-foundation-layout-release-2 C:\Users\shiji\.gradle\caches\transforms-4\0a5aac137afbafff82aa145ff6ccb0c5\transformed\foundation-layout-release\res
+com.zyra.app-lifecycle-livedata-core-2.7.0-3 C:\Users\shiji\.gradle\caches\transforms-4\0a729980fe12a5304348c9099d9d1147\transformed\lifecycle-livedata-core-2.7.0\res
+com.zyra.app-sqlite-framework-2.3.0-4 C:\Users\shiji\.gradle\caches\transforms-4\0e203b1c0da5881e05e1cc1e32b6a6ac\transformed\sqlite-framework-2.3.0\res
+com.zyra.app-ui-tooling-release-5 C:\Users\shiji\.gradle\caches\transforms-4\1268a466920e7f89cb1019f751b470b6\transformed\ui-tooling-release\res
+com.zyra.app-emoji2-1.3.0-6 C:\Users\shiji\.gradle\caches\transforms-4\1e2c4932d77c4eea4cae27c865698d7c\transformed\emoji2-1.3.0\res
+com.zyra.app-activity-ktx-1.8.2-7 C:\Users\shiji\.gradle\caches\transforms-4\1eae4a285cb261a4dcbb6ca0d163f122\transformed\activity-ktx-1.8.2\res
+com.zyra.app-runtime-saveable-release-8 C:\Users\shiji\.gradle\caches\transforms-4\218591e1a8915292ea3e5feb2f1f834b\transformed\runtime-saveable-release\res
+com.zyra.app-ui-geometry-release-9 C:\Users\shiji\.gradle\caches\transforms-4\23bd2750dc9731260258a26af353a870\transformed\ui-geometry-release\res
+com.zyra.app-material3-1.1.1-10 C:\Users\shiji\.gradle\caches\transforms-4\2700ec2382de15dccd848e5ad7738084\transformed\material3-1.1.1\res
+com.zyra.app-work-runtime-2.9.0-11 C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\res
+com.zyra.app-material-release-12 C:\Users\shiji\.gradle\caches\transforms-4\4740d70ad509816b05d46385abbd0f5b\transformed\material-release\res
+com.zyra.app-work-runtime-ktx-2.9.0-13 C:\Users\shiji\.gradle\caches\transforms-4\486cf76e0a95d9a886bd388de12bbd6c\transformed\work-runtime-ktx-2.9.0\res
+com.zyra.app-startup-runtime-1.1.1-14 C:\Users\shiji\.gradle\caches\transforms-4\4a33234e2c5b0e6f7f994e5fc4721b61\transformed\startup-runtime-1.1.1\res
+com.zyra.app-lifecycle-runtime-ktx-2.7.0-15 C:\Users\shiji\.gradle\caches\transforms-4\4de1b8edaad0ed009e86e83df31c0233\transformed\lifecycle-runtime-ktx-2.7.0\res
+com.zyra.app-lifecycle-viewmodel-2.7.0-16 C:\Users\shiji\.gradle\caches\transforms-4\55e3f4287f55c6d7cf40f807e76200e7\transformed\lifecycle-viewmodel-2.7.0\res
+com.zyra.app-annotation-experimental-1.3.0-17 C:\Users\shiji\.gradle\caches\transforms-4\5724c735edd432290ba76aac121b9f18\transformed\annotation-experimental-1.3.0\res
+com.zyra.app-savedstate-ktx-1.2.1-18 C:\Users\shiji\.gradle\caches\transforms-4\59b6ce4ac61dd55bf7b15290a7e93d9e\transformed\savedstate-ktx-1.2.1\res
+com.zyra.app-navigation-common-2.7.7-19 C:\Users\shiji\.gradle\caches\transforms-4\5a74adf1e896692de98779491bc40056\transformed\navigation-common-2.7.7\res
+com.zyra.app-runtime-release-20 C:\Users\shiji\.gradle\caches\transforms-4\5ad9d24150f0a59f9d9553408877d11b\transformed\runtime-release\res
+com.zyra.app-customview-poolingcontainer-1.0.0-21 C:\Users\shiji\.gradle\caches\transforms-4\5cbf532f4b8f5a9e188c38922195b4a6\transformed\customview-poolingcontainer-1.0.0\res
+com.zyra.app-material-ripple-release-22 C:\Users\shiji\.gradle\caches\transforms-4\6159cbf69396a3c1242635611de500fb\transformed\material-ripple-release\res
+com.zyra.app-navigation-compose-2.7.7-23 C:\Users\shiji\.gradle\caches\transforms-4\6bc45fd425be2a55fa57999dd839c063\transformed\navigation-compose-2.7.7\res
+com.zyra.app-navigation-common-ktx-2.7.7-24 C:\Users\shiji\.gradle\caches\transforms-4\6c6ae9347cd8fd67cfb0ceff6579ab8d\transformed\navigation-common-ktx-2.7.7\res
+com.zyra.app-lifecycle-livedata-core-ktx-2.7.0-25 C:\Users\shiji\.gradle\caches\transforms-4\839dca76df0380c957a210c9362343e9\transformed\lifecycle-livedata-core-ktx-2.7.0\res
+com.zyra.app-lifecycle-process-2.7.0-26 C:\Users\shiji\.gradle\caches\transforms-4\8cb9415387a5f235e9edec7c451be0bd\transformed\lifecycle-process-2.7.0\res
+com.zyra.app-profileinstaller-1.3.0-27 C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\res
+com.zyra.app-lifecycle-viewmodel-compose-2.7.0-28 C:\Users\shiji\.gradle\caches\transforms-4\9ac45fda88a3ef469e012d3c2fa2f3e5\transformed\lifecycle-viewmodel-compose-2.7.0\res
+com.zyra.app-animation-release-29 C:\Users\shiji\.gradle\caches\transforms-4\9ef128f4de89b4a42678273e63d94163\transformed\animation-release\res
+com.zyra.app-foundation-release-30 C:\Users\shiji\.gradle\caches\transforms-4\a326d5577bae3ec54a36c670a6fea0d2\transformed\foundation-release\res
+com.zyra.app-ui-tooling-data-release-31 C:\Users\shiji\.gradle\caches\transforms-4\a6119096a4cf998314641c799cc5cd0a\transformed\ui-tooling-data-release\res
+com.zyra.app-activity-compose-1.8.2-32 C:\Users\shiji\.gradle\caches\transforms-4\a67e77f16f61c462186f5b2fce2abe43\transformed\activity-compose-1.8.2\res
+com.zyra.app-room-ktx-2.5.0-33 C:\Users\shiji\.gradle\caches\transforms-4\a8db8c3b04b8ee757038c94491bd4ed5\transformed\room-ktx-2.5.0\res
+com.zyra.app-ui-tooling-preview-release-34 C:\Users\shiji\.gradle\caches\transforms-4\abb32248b16811a10270c755663788ad\transformed\ui-tooling-preview-release\res
+com.zyra.app-lifecycle-runtime-2.7.0-35 C:\Users\shiji\.gradle\caches\transforms-4\ace23e94b139fb35175dfe8d0e48498b\transformed\lifecycle-runtime-2.7.0\res
+com.zyra.app-material-icons-extended-release-36 C:\Users\shiji\.gradle\caches\transforms-4\af509532232bef6d455d1b43dedcddd7\transformed\material-icons-extended-release\res
+com.zyra.app-lifecycle-viewmodel-ktx-2.7.0-37 C:\Users\shiji\.gradle\caches\transforms-4\afe564057488cd4e60abd1b52966d6df\transformed\lifecycle-viewmodel-ktx-2.7.0\res
+com.zyra.app-ui-graphics-release-38 C:\Users\shiji\.gradle\caches\transforms-4\b2e829dafce56eab750d8b9d04ae87f3\transformed\ui-graphics-release\res
+com.zyra.app-activity-1.8.2-39 C:\Users\shiji\.gradle\caches\transforms-4\b322e0862f916b5bd5aeafb45083a4b7\transformed\activity-1.8.2\res
+com.zyra.app-lifecycle-service-2.7.0-40 C:\Users\shiji\.gradle\caches\transforms-4\b6043ea14522499a5a4a0f9b91316ccf\transformed\lifecycle-service-2.7.0\res
+com.zyra.app-room-runtime-2.5.0-41 C:\Users\shiji\.gradle\caches\transforms-4\badb4b75d4c9f5726ab29314d60623c2\transformed\room-runtime-2.5.0\res
+com.zyra.app-core-runtime-2.2.0-42 C:\Users\shiji\.gradle\caches\transforms-4\bc51d190c032a2ba3fd4c4d9b84d1020\transformed\core-runtime-2.2.0\res
+com.zyra.app-animation-core-release-43 C:\Users\shiji\.gradle\caches\transforms-4\c0d634648e02208730fd0e324fcb69f7\transformed\animation-core-release\res
+com.zyra.app-lifecycle-livedata-2.7.0-44 C:\Users\shiji\.gradle\caches\transforms-4\c19c77c4afafd07ad188072ec4af5b50\transformed\lifecycle-livedata-2.7.0\res
+com.zyra.app-navigation-runtime-ktx-2.7.7-45 C:\Users\shiji\.gradle\caches\transforms-4\d4af5ee15d59e7de88116aab08cb1c6a\transformed\navigation-runtime-ktx-2.7.7\res
+com.zyra.app-lifecycle-viewmodel-savedstate-2.7.0-46 C:\Users\shiji\.gradle\caches\transforms-4\deca75e3bf16aaf20fecd79fcd5dcb76\transformed\lifecycle-viewmodel-savedstate-2.7.0\res
+com.zyra.app-core-ktx-1.12.0-47 C:\Users\shiji\.gradle\caches\transforms-4\e179968c779e0537a75d457cfd1aa92f\transformed\core-ktx-1.12.0\res
+com.zyra.app-material-icons-core-release-48 C:\Users\shiji\.gradle\caches\transforms-4\e1da168f3705f569c47d7ed07af0f67d\transformed\material-icons-core-release\res
+com.zyra.app-core-1.12.0-49 C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\res
+com.zyra.app-savedstate-1.2.1-50 C:\Users\shiji\.gradle\caches\transforms-4\ebc9e326f57e7e8f2b89ac73a80ff062\transformed\savedstate-1.2.1\res
+com.zyra.app-navigation-runtime-2.7.7-51 C:\Users\shiji\.gradle\caches\transforms-4\ee294e827c6f17bf8ac9d5abc91e9145\transformed\navigation-runtime-2.7.7\res
+com.zyra.app-ui-unit-release-52 C:\Users\shiji\.gradle\caches\transforms-4\f2d884f7986537b3b4417630e78b4448\transformed\ui-unit-release\res
+com.zyra.app-ui-util-release-53 C:\Users\shiji\.gradle\caches\transforms-4\f4a7c42fbc08f4d4e2bcc7aaa33a1b58\transformed\ui-util-release\res
+com.zyra.app-ui-release-54 C:\Users\shiji\.gradle\caches\transforms-4\fb39843c76ca6aef69e159c4167f0741\transformed\ui-release\res
+com.zyra.app-sqlite-2.3.0-55 C:\Users\shiji\.gradle\caches\transforms-4\fc8024ea11696a19b153eddd0b76fdc9\transformed\sqlite-2.3.0\res
+com.zyra.app-resValues-56 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\build\generated\res\resValues\debug
+com.zyra.app-packageDebugResources-57 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.zyra.app-packageDebugResources-58 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.zyra.app-merged_res-59 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\build\intermediates\merged_res\debug
+com.zyra.app-debug-60 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\debug\res
+com.zyra.app-main-61 C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\res

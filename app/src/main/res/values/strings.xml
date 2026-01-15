@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Zyra</string>
+    <string name="accessibility_service_description">Zyra uses this service to read text on your screen (like vehicle numbers) when you ask.</string>
+</resources>
