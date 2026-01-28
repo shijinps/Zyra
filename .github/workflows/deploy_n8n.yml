@@ -1,0 +1,47 @@
+name: Deploy n8n Workflows
+
+on:
+  push:
+    paths:
+      - 'n8n_workflows/**.json'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Deploy Workflows to n8n
+        env:
+          N8N_HOST: ${{ secrets.N8N_HOST }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+        run: |
+          # Loop through all JSON files in n8n_workflows directory
+          for file in n8n_workflows/*.json; do
+            echo "Deploying $file..."
+            
+            # Read file content
+            WORKFLOW_JSON=$(cat "$file")
+            
+            # Use curl to POST to n8n API (Import/Create)
+            # Note: This uses the /workflows endpoint. 
+            # Ideally, we check if it exists and PUT (update) or POST (create).
+            # For simplicity, we assume we might need to handle ID management.
+            # A common strategy is to force the ID in the JSON file.
+            
+            curl -X POST "https://$N8N_HOST/api/v1/workflows" \
+              -H "X-N8N-API-KEY: $N8N_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "$WORKFLOW_JSON"
+            
+            echo "Deployed $file"
+          done

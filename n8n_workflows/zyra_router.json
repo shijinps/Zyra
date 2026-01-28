@@ -1,0 +1,228 @@
+{
+  "name": "Zyra Brain Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zyra-brain",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-node",
+      "name": "ElevenLabs Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.tool }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        250,
+        0
+      ],
+      "id": "validate-input",
+      "name": "Has Tool?"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.tool }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "ping"
+            },
+            {
+              "value2": "nmap"
+            },
+            {
+              "value2": "dig"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        500,
+        0
+      ],
+      "id": "route-tool",
+      "name": "Route Tool"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://apizyra.shijin.in/tools/ping",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Zyra-Token",
+              "value": "zyra-secret-key-123"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "host",
+              "value": "={{ $json.body.host }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        800,
+        -100
+      ],
+      "id": "http-ping",
+      "name": "API: Ping"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://apizyra.shijin.in/tools/nmap",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Zyra-Token",
+              "value": "zyra-secret-key-123"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "host",
+              "value": "={{ $json.body.host }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        800,
+        100
+      ],
+      "id": "http-nmap",
+      "name": "API: Nmap"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"result\": \"{{ $json.output || $json.error }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "respond_ping",
+      "name": "Respond Ping"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"result\": \"{{ $json.output || $json.error }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        200
+      ],
+      "id": "respond_nmap",
+      "name": "Respond Nmap"
+    }
+  ],
+  "connections": {
+    "ElevenLabs Webhook": {
+      "main": [
+        [
+          {
+            "node": "Has Tool?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Tool?": {
+      "main": [
+        [
+          {
+            "node": "Route Tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Tool": {
+      "main": [
+        [
+          {
+            "node": "API: Ping",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "API: Nmap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API: Ping": {
+      "main": [
+        [
+          {
+            "node": "Respond Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API: Nmap": {
+      "main": [
+        [
+          {
+            "node": "Respond Nmap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
