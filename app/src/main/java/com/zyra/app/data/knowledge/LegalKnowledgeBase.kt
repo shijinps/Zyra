@@ -85,6 +85,52 @@ object LegalKnowledgeBase {
             "Punishment for cheating by personation.",
             "Imprisonment up to 3 years, or fine, or both.",
             listOf("419", "impersonation")
+        ),
+        LawSection(
+            "Section 419", "Indian Penal Code",
+            "Punishment for cheating by personation.",
+            "Imprisonment up to 3 years, or fine, or both.",
+            listOf("419", "impersonation")
+        ),
+
+        // Motor Vehicles Act (Traffic)
+        LawSection(
+            "Section 181", "Motor Vehicles Act",
+            "Driving without a valid licence.",
+            "Fine of ₹5,000 and/or imprisonment.",
+            listOf("driving without license", "no license", "181")
+        ),
+        LawSection(
+            "Section 185", "Motor Vehicles Act",
+            "Driving by a drunken person or under the influence of drugs.",
+            "Fine of ₹10,000 and/or imprisonment.",
+            listOf("drunk driving", "drink and drive", "185")
+        ),
+        LawSection(
+            "Section 194B", "Motor Vehicles Act",
+            "Use of safety belt and the seating of children.",
+            "Fine of ₹1,000.",
+            listOf("seat belt", "no seat belt", "194b")
+        ),
+        LawSection(
+            "Section 194D", "Motor Vehicles Act",
+            "Penalty for not wearing a helmet.",
+            "Fine of ₹1,000 and disqualification of licence for 3 months.",
+            listOf("helmet", "no helmet", "194d", "bike helmet")
+        ),
+        
+        // Consumer Protection
+        LawSection(
+            "Section 35", "Consumer Protection Act, 2019",
+            "Right to file a complaint with District Commission.",
+            "Enables consumers to seek redressal for unfair trade practices.",
+            listOf("consumer court", "file complaint", "consumer protection")
+        ),
+        LawSection(
+            "Right to Information", "RTI Act, 2005",
+            "Empowers citizens to request information from a public authority.",
+            "Mandates response within 30 days.",
+            listOf("rti", "right to information")
         )
     )
 

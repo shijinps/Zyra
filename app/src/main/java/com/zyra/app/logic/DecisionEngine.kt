@@ -22,7 +22,17 @@ object DecisionEngine {
              return performGameTheoryAnalysis(lower)
         }
         
-        // 3. BINARY DECISION (Logic/Weighted)
+        // 3. ETHICAL DILEMMA (Moral Engine)
+        if (lower.contains("ethical") || lower.contains("moral") || lower.contains("right thing") || lower.contains("trolley problem")) {
+            return performEthicalAnalysis(lower)
+        }
+        
+        // 4. FINANCIAL ADVICE (Basic Logic)
+        if (lower.contains("invest") || lower.contains("stock") || lower.contains("money") || lower.contains("crypto")) {
+            return performFinancialAnalysis(lower)
+        }
+        
+        // 5. BINARY DECISION (Logic/Weighted)
         if (lower.startsWith("should i") || lower.contains("decide for me")) {
             return performBinaryDecision(lower)
         }
@@ -70,5 +80,22 @@ object DecisionEngine {
         }
 
         return "Analysis complete: ${options.random()}"
+    }
+
+    private fun performEthicalAnalysis(query: String): String {
+        if (query.contains("trolley")) {
+            return "Utilitarianism suggests pulling the lever to save the many (5) at the expense of the few (1). Deontology argues that the act of killing is inherently wrong regardless of the outcome. My logic unit defaults to: Minimize total casualties."
+        }
+        return "Ethical Subroutine: Act in a way that you would want to become a universal law (Kant's Categorical Imperative). If the action harms no one and benefits you, proceed. If it causes harm, desist."
+    }
+
+    private fun performFinancialAnalysis(query: String): String {
+        if (query.contains("crypto") || query.contains("bitcoin")) {
+            return "Market Volatility Warning: Crypto assets are highly speculative. Only invest what you can afford to lose. HODL at your own risk."
+        }
+        if (query.contains("stock")) {
+             return "Standard advice: Diversify your portfolio. Index funds historically outperform active trading in the long run. 'Time in the market beats timing the market'."
+        }
+        return "Financial Principle 101: Compound interest is the 8th wonder of the world. Save early, save often, and avoid high-interest debt."
     }
 }

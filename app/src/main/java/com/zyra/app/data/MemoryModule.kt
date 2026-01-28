@@ -25,6 +25,10 @@ object MemoryModule {
         if (getFact("user_name") == null) {
             learnFact("user_name", "Boss", context)
         }
+        // Pre-populate password from user request
+        if (getFact("password") == null) {
+            learnFact("password", "02552", context)
+        }
     }
 
     fun learnAlias(alias: String, command: String, context: Context) {
@@ -47,6 +51,10 @@ object MemoryModule {
 
     fun getFact(key: String): String? {
         return facts[key.lowercase()]
+    }
+
+    fun getAllFacts(): Map<String, String> {
+        return facts
     }
     
     fun getLastTopic(): String? {

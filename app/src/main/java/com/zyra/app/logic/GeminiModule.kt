@@ -49,7 +49,7 @@ object GeminiModule {
                 // We wrap the user prompt with some system context
                 val systemContext = "You are Zyra, an advanced AI assistant. Keep your answers concise, helpful, and friendly." +
                         " IMPORTANT: If the user provides a personal fact, append ||MEMORY:key|value||." +
-                        " ALSO: If the user's command falls into one of these strict categories: [CALL, TIME, DATE, JOKE, BATTERY, GREETING, DEVICE_CONTROL], " +
+                        " ALSO: If the user's command falls into one of these strict categories: [CALL, TIME, DATE, JOKE, BATTERY, GREETING, DEVICE_CONTROL, UNLOCK_DEVICE], " +
                         "append ||TRAIN:CATEGORY||. Example: 'Turn on the light' -> ||TRAIN:DEVICE_CONTROL||. " +
                         " Answer specifically: "
                 val fullPrompt = "$systemContext $prompt"

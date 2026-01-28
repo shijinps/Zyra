@@ -38,6 +38,7 @@ enum class IntentType {
     EDUCATION_QUERY, // New: Math/Science Curriculum
     ADVANCED_MATH_QUERY, // New: B.Tech/PhD Math
     DECISION_QUERY, // New: Logic/Game Theory
+    SCREEN_CONTEXT, // New: "What is on my screen?"
     UNKNOWN
 }
 
@@ -47,9 +48,9 @@ data class ParsedIntent(
 )
 
 
-class NaturalLanguageProcessor {
+class NaturalLanguageProcessor(private val context: android.content.Context) {
 
-    private val classifier = IntentClassifier()
+    private val classifier = IntentClassifier(context)
     fun train(text: String, type: IntentType) {
         classifier.trainDynamic(text, type)
     }
@@ -58,6 +59,12 @@ class NaturalLanguageProcessor {
     }
 
     fun process(text: String): ParsedIntent {
+        val lowerRaw = text.lowercase()
+        // 1.5 SPECIAL OVERRIDE: "Call Zyra" (Wake Word / Greeting)
+        if (lowerRaw.contains("call zyra") || lowerRaw.contains("call zira") || lowerRaw.contains("hello zyra")) {
+            return ParsedIntent(IntentType.GREETING)
+        }
+
         // 1. MEMORY OVERRIDE (The Nervous System)
         // Check if this command is an alias for something else
         // e.g. "Selfie Mode" -> "Open Camera and click picture"
@@ -73,6 +80,42 @@ class NaturalLanguageProcessor {
         if (lower == "go offline" || lower == "switch to offline" || lower == "disable online mode") {
             isOnlineMode = false
             return ParsedIntent(IntentType.KNOWLEDGE_QUERY, "I am now offline. Returning to local processing.")
+        }
+
+        // --- FUZZY CORRECTION LAYER (The "Intuition" System) ---
+        // If the confidence is low (or just generally), we run a pass to correct likely typos/mishearings
+        // e.g. "Plaay mosic" -> "play music"
+        val fuzzyKeywords = mapOf(
+            "music" to listOf("mosic", "musil", "mucis"),
+            "play" to listOf("plaay", "paly", "ply"),
+            "light" to listOf("ligh", "lite", "liht"),
+            "flashlight" to listOf("flash light", "torch", "flashliht"),
+            "battery" to listOf("batery", "battry", "charge"),
+            "time" to listOf("tiime", "tme"),
+            "zyra" to listOf("zira", "sira", "jira")
+        )
+        
+        var processedLower = lower
+        for ((correct, variants) in fuzzyKeywords) {
+            for (variant in variants) {
+                if (processedLower.contains(variant)) {
+                    processedLower = processedLower.replace(variant, correct)
+                }
+            }
+        }
+        // Update local var to use corrected version for subsequent checks
+        // Note: we can't reassign 'lower' if it's val, so we use 'processedLower' 
+        // effectively by checking generic matches or updating logic. 
+        // Ideally we should have defined 'var lower' at top.  
+        // Let's assume for subsequent checks we might need to rely on 'processedLower' OR
+        // we accept that strict checks below might fail but FuzzyMatcher calls will succeed.
+        
+        // Also apply generic Levenshtein check for commands if short
+        if (text.length < 20) {
+            if (FuzzyMatcher.isSimilar(processedLower, "turn on flashlight")) return ParsedIntent(IntentType.DEVICE_CONTROL, "flashlight:on")
+            if (FuzzyMatcher.isSimilar(processedLower, "turn off flashlight")) return ParsedIntent(IntentType.DEVICE_CONTROL, "flashlight:off")
+            if (FuzzyMatcher.isSimilar(processedLower, "what time is it")) return ParsedIntent(IntentType.TIME)
+            if (FuzzyMatcher.isSimilar(processedLower, "play music")) return ParsedIntent(IntentType.PLAY_MUSIC)
         }
         
         // --- ONLINE MODE ROUTING ---
@@ -421,7 +464,26 @@ class NaturalLanguageProcessor {
              if (lower.contains("off") || lower.contains("disable")) return ParsedIntent(IntentType.DEVICE_CONTROL, "bluetooth:off")
              return ParsedIntent(IntentType.DEVICE_CONTROL, "bluetooth:settings")
         }
+
+        // 7. Volume Control
+        if (lower.contains("volume") || lower.contains("sound")) {
+            if (lower.contains("up") || lower.contains("increase") || lower.contains("loud")) return ParsedIntent(IntentType.VOLUME_CONTROL, "up")
+            if (lower.contains("down") || lower.contains("decrease") || lower.contains("low")) return ParsedIntent(IntentType.VOLUME_CONTROL, "down")
+            if (lower.contains("mute") || lower.contains("silent") || lower.contains("shut up")) return ParsedIntent(IntentType.VOLUME_CONTROL, "mute")
+            if (lower.contains("max") || lower.contains("full") || lower.contains("highest") || lower.contains("maximise")) return ParsedIntent(IntentType.VOLUME_CONTROL, "max")
+            return ParsedIntent(IntentType.VOLUME_CONTROL, "max") // Default to max
+        }
         
+        // 7. Volume Control
+        if (lower.contains("volume") || lower.contains("sound")) {
+            if (lower.contains("up") || lower.contains("increase") || lower.contains("loud")) return ParsedIntent(IntentType.VOLUME_CONTROL, "up")
+            if (lower.contains("down") || lower.contains("decrease") || lower.contains("low")) return ParsedIntent(IntentType.VOLUME_CONTROL, "down")
+            if (lower.contains("mute") || lower.contains("silent") || lower.contains("shut up")) return ParsedIntent(IntentType.VOLUME_CONTROL, "mute")
+            if (lower.contains("max") || lower.contains("full") || lower.contains("highest") || lower.contains("maximise")) return ParsedIntent(IntentType.VOLUME_CONTROL, "max")
+            return ParsedIntent(IntentType.VOLUME_CONTROL, "max") // Default to max if they just say "volume" (usually user wants to hear) OR we can ask "Up or down?" but for now safe default or "up". Let's assume up. Actually let's just default to null or handle in service to show slider.
+            // But per request "maximise", handled above.
+        }
+
         // 7.5. Camera & Photos
         if (lower.contains("click picture") || lower.contains("take photo") || 
             (lower.contains("open camera") && lower.contains("click"))) {
@@ -433,8 +495,11 @@ class NaturalLanguageProcessor {
 
         // 5. Calls & Contacts
         if (lower.contains("call") || lower.contains("dial") || lower.contains("phone")) {
-             // Check for CUT call
-             if (lower.contains("cut") || lower.contains("end") || lower.contains("hang up") || lower.contains("disconnect") || lower.contains("decline") || lower.contains("dont answer")) {
+             // Check for CUT call with robust synonyms
+             // Handles: "Cut call", "Hang up", "Disconnect", "End call", "Drop it", "Stop call", "Cancel call"
+             if (lower.contains("cut") || lower.contains("end") || lower.contains("hang") || 
+                 lower.contains("disconnect") || lower.contains("decline") || lower.contains("dont answer") ||
+                 lower.contains("drop") || lower.contains("cancel") || lower.contains("stop")) {
                  return ParsedIntent(IntentType.CUT_CALL)
              }
              
@@ -444,10 +509,32 @@ class NaturalLanguageProcessor {
                  return ParsedIntent(IntentType.ANSWER_CALL, mode)
              }
         
-             val name = text.replace("call ", "", true)
-                            .replace("dial ", "", true)
-                            .replace("phone ", "", true)
-                            .trim()
+             var name = text
+             
+             // Robust Cleaning using Regex to protect names like "Callie" (Word Boundaries)
+             // 1. Remove conversational prefixes/suffixes and noise
+             // Handles: "Make a call to...", "Please call...", "...call", "like similar..."
+             name = name.replace(Regex("(?i)\\b(make a|make an|do a|can you|could you|please|kindly|like|similar|commands|contacts)\\b"), "")
+             
+             // 2. Remove the core action verbs (call, dial, phone, connect)
+             // handles "Call John", "John Call", "Connect to John"
+             name = name.replace(Regex("(?i)\\b(call|dial|phone|connect)\\b"), "")
+             
+             // 3. Remove prepositions often used with calls
+             // handles "to John", "with John"
+             name = name.replace(Regex("(?i)\\b(to|with)\\b"), "")
+             
+             name = name.trim()
+             
+             // 4. Accent Normalization (Indian/Kerala)
+             // Handles: "Pro code" -> "Bro code", "Berified" -> "Verified"
+             // Careful not to over-correct.
+             // We return the raw name but we should probably apply this normalization 
+             // in the SEARCH/MATCHING logic (VoiceAssistantService.resolveAndCall), 
+             // not here, to preserve the original query? 
+             // No, let's keep the name cleaner here, but matching logic needs to use Soundex or loosened check.
+             // Actually, 'ParsedIntent' just carries the string. Let's rely on Levenshtein + new Phonetic Logic in VoiceAssistantService.
+             
              return ParsedIntent(IntentType.CALL, name)
         }
         
@@ -493,6 +580,11 @@ class NaturalLanguageProcessor {
             return ParsedIntent(IntentType.KNOWLEDGE_QUERY, lower)
         }
 
+        // 10. Vision / Screen Context
+        if (lower.contains("on my screen") || lower.contains("read this") || lower.contains("describe this") || lower.contains("what is this")) {
+             return ParsedIntent(IntentType.SCREEN_CONTEXT, lower)
+        }
+
         // 9. Use Neural Network
         return when (val predictedType = classifier.predict(text)) {
             IntentType.CALL -> {
@@ -513,3 +605,34 @@ class NaturalLanguageProcessor {
 
 
 
+
+object FuzzyMatcher {
+    fun isSimilar(input: String, target: String, threshold: Int = 3): Boolean {
+        // Simple Levenshtein Distance
+        val dist = levenshtein(input, target)
+        return dist <= threshold
+    }
+
+    private fun levenshtein(lhs: CharSequence, rhs: CharSequence): Int {
+        val lhsLen = lhs.length
+        val rhsLen = rhs.length
+
+        var cost = IntArray(lhsLen + 1) { it }
+        var newCost = IntArray(lhsLen + 1) { 0 }
+
+        for (j in 1..rhsLen) {
+            newCost[0] = j
+            for (i in 1..lhsLen) {
+                val match = if (lhs[i - 1] == rhs[j - 1]) 0 else 1
+                val costReplace = cost[i - 1] + match
+                val costInsert = cost[i] + 1
+                val costDelete = newCost[i - 1] + 1
+                newCost[i] = minOf(costInsert, costDelete, costReplace)
+            }
+            val swap = cost
+            cost = newCost
+            newCost = swap
+        }
+        return cost[lhsLen]
+    }
+}

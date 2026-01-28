@@ -146,8 +146,61 @@ object SchoolCurriculum {
             "The heart is a muscular organ that pumps blood through the blood vessels of the circulatory system. It has four chambers: two atria and two ventricles.",
             null,
             listOf("human heart", "heart chambers")
-        )
+        ),
+         Topic(
+            "Biology", "Human Heart",
+            "The heart is a muscular organ that pumps blood through the blood vessels of the circulatory system. It has four chambers: two atria and two ventricles.",
+            null,
+            listOf("human heart", "heart chambers")
+        ),
 
+        // HISTORY
+        // -------
+        Topic(
+            "History", "Quit India Movement",
+            "A movement launched at the Bombay session of the All-India Congress Committee by Mahatma Gandhi on 8 August 1942, demanding an end to British Rule of India.",
+            "Year: 1942",
+            listOf("quit india movement", "1942", "gandhi movement")
+        ),
+        Topic(
+            "History", "Battle of Plassey",
+            "A decisive victory of the British East India Company over the Nawab of Bengal and his French allies on 23 June 1757.",
+            "Year: 1757",
+            listOf("battle of plassey", "1757")
+        ),
+        Topic(
+            "History", "Jallianwala Bagh Massacre",
+            "A massacre that took place on 13 April 1919, when Acting Brigadier-General Reginald Dyer ordered troops to fire into a crowd of unarmed Indian civilians.",
+            "Year: 1919",
+            listOf("jallianwala bagh", "amritsar massacre")
+        ),
+        
+        // GEOGRAPHY
+        // ---------
+        Topic(
+            "Geography", "Solar System",
+            "The gravitationally bound system of the Sun and the objects that orbit it. There are 8 planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.",
+            null,
+            listOf("solar system", "planets", "how many planets")
+        ),
+        Topic(
+            "Geography", "Water Cycle",
+            "The continuous movement of water on, above, and below the surface of the Earth. Stages: Evaporation, Condensation, Precipitation.",
+            null,
+            listOf("water cycle", "rain cycle")
+        ),
+        Topic(
+            "Geography", "Continents",
+            "There are 7 continents: Asia, Africa, North America, South America, Antarctica, Europe, and Australia.",
+            null,
+            listOf("continents", "how many continents")
+        ),
+        Topic(
+            "Geography", "Layers of Atmosphere",
+            "Troposphere, Stratosphere, Mesosphere, Thermosphere, Exosphere.",
+            null,
+            listOf("atmosphere layers", "atmosphere")
+        )
     )
 
     fun getCurriculumResponse(query: String): String? {

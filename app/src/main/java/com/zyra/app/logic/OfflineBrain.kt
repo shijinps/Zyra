@@ -23,7 +23,19 @@ class OfflineBrain {
         }
         
         if (lowerExtra.isNotEmpty()) {
-             // Identity
+             // 1. SMALL TALK LAYER
+            val greetings = listOf("hi", "hello", "hey", "greetings", "good morning", "good afternoon")
+            if (greetings.any { lowerExtra.startsWith(it) } && lowerExtra.length < 20) {
+                val responses = listOf(
+                    "Hello, Sir. Connectivity is limited, but my core functions are online.",
+                    "Greetings. I am ready to serve in offline mode.",
+                    "Hi there. How can I assist you right now?",
+                    "Systems online. Awaiting your local commands."
+                )
+                return responses.random()
+            }
+
+            // Identity
             // Identity & Persona (Jarvis/Stark Protocol)
             if (lowerExtra.contains("who are you") || lowerExtra.contains("your name")) {
                 return "I am Zyra, an advanced AI created by Shijin."
@@ -72,6 +84,24 @@ class OfflineBrain {
                 return PersonaManager.getBoredomResponse()
             }
             
+            // 2.5 SPECIALIZED KNOWLEDGE MODULES (The "Cortex")
+            
+            // A. General Knowledge (Facts, Capitals, Science)
+            val gkResponse = com.zyra.app.data.knowledge.GeneralKnowledgeBase.getGKResponse(lowerExtra)
+            if (gkResponse != null) return gkResponse
+            
+            // B. Law & Penal Code
+            val lawResponse = com.zyra.app.data.knowledge.LegalKnowledgeBase.getLawResponse(lowerExtra)
+            if (lawResponse != null) return lawResponse
+
+            // C. School Curriculum (Math, Physics, Bio)
+            val schoolResponse = com.zyra.app.data.knowledge.SchoolCurriculum.getCurriculumResponse(lowerExtra)
+            if (schoolResponse != null) return schoolResponse
+            
+            // D. Decision Engine (Logic/Strategy)
+            val logicResponse = com.zyra.app.logic.DecisionEngine.analyzeDecision(lowerExtra)
+            if (logicResponse != null) return logicResponse
+
             // 3. CAPABILITIES / HELP
             if (lowerExtra.contains("what can you do") || lowerExtra.contains("help") || lowerExtra.contains("capabilities")) {
                 return KnowledgeBase.capabilityManual

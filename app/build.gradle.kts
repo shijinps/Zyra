@@ -39,7 +39,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.7"
     }
     packaging {
         resources {
@@ -60,6 +60,9 @@ dependencies {
     
     // Google Gemini (Generative AI)
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+
+    // ElevenLabs Conversational AI
+    implementation("io.elevenlabs:elevenlabs-android:0.7.2")
 
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.6.0")

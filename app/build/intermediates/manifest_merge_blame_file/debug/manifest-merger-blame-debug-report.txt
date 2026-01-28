@@ -9,532 +9,549 @@
 9        android:targetSdkVersion="34" />
 10
 11    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-11-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:5:5-71
-11-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:5:22-68
+11-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:5:5-71
+11-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:5:22-68
 12    <uses-permission android:name="android.permission.READ_CONTACTS" />
-12-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:6:5-72
-12-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:6:22-69
+12-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:6:5-72
+12-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:6:22-69
 13    <uses-permission android:name="android.permission.CALL_PHONE" />
-13-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:7:5-69
-13-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:7:22-66
+13-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:7:5-69
+13-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:7:22-66
 14    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-14-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:8:5-77
-14-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:8:22-74
+14-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:8:5-77
+14-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:8:22-74
 15    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
-15-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:9:5-77
-15-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:9:22-74
+15-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:9:5-77
+15-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:9:22-74
 16    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-16-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:10:5-80
-16-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:10:22-77
+16-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:10:5-80
+16-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:10:22-77
 17    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-17-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:11:5-77
-17-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:11:22-74
+17-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:11:5-77
+17-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:11:22-74
 18    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-18-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:12:5-88
-18-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:12:22-85
+18-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:12:5-88
+18-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:12:22-85
 19    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-19-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:13:5-78
-19-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:13:22-75
-20
-21    <!-- Device Controls -->
-22    <uses-permission android:name="android.permission.CAMERA" />
-22-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:16:5-65
-22-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:16:22-62
-23    <uses-permission android:name="android.permission.FLASHLIGHT" />
-23-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:17:5-69
-23-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:17:22-66
-24    <uses-permission android:name="android.permission.BLUETOOTH" />
-24-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:18:5-68
-24-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:18:22-65
-25    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-25-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:19:5-74
-25-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:19:22-71
-26    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-26-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:20:5-76
-26-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:20:22-73
-27    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
-27-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:21:5-76
-27-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:21:22-73
-28    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-28-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:23:5-76
-28-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:23:22-73
-29    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-29-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:24:5-81
-29-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:24:22-78
-30    <uses-permission android:name="android.permission.WAKE_LOCK" />
-30-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:25:5-68
-30-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:25:22-65
-31    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-31-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:26:5-95
-31-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:26:22-92
-32
-33    <!-- Android 11+ Package Visibility -->
-34    <queries>
-34-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:29:5-37:15
-35        <intent>
-35-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:30:9-33:18
-36            <action android:name="android.intent.action.MAIN" />
-36-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:31:13-65
-36-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:31:21-62
-37
-38            <category android:name="android.intent.category.LAUNCHER" />
-38-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:32:13-73
-38-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:32:23-70
-39        </intent>
-40        <intent>
-40-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:34:9-36:18
-41            <action android:name="android.intent.action.TTS_SERVICE" />
-41-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:13-72
-41-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:21-69
-42        </intent>
-43    </queries>
-44
-45    <uses-permission android:name="android.permission.INTERNET" />
-45-->[com.google.ai.client.generativeai:generativeai:0.7.0] C:\Users\shiji\.gradle\caches\transforms-4\6ec2c0b9992964071a799c6d25b5a560\transformed\generativeai-0.7.0\AndroidManifest.xml:22:5-67
-45-->[com.google.ai.client.generativeai:generativeai:0.7.0] C:\Users\shiji\.gradle\caches\transforms-4\6ec2c0b9992964071a799c6d25b5a560\transformed\generativeai-0.7.0\AndroidManifest.xml:22:22-64
-46    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-46-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:24:5-79
-46-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:24:22-76
-47
-48    <permission
-48-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:22:5-24:47
-49        android:name="com.zyra.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-49-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:23:9-81
-50        android:protectionLevel="signature" />
-50-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:24:9-44
-51
-52    <uses-permission android:name="com.zyra.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-52-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:26:5-97
-52-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:26:22-94
-53
-54    <application
-54-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:41:5-123:19
-55        android:name="com.zyra.app.ZyraApp"
-55-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:42:9-32
-56        android:allowBackup="true"
-56-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:43:9-35
-57        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-57-->[androidx.core:core:1.12.0] C:\Users\shiji\.gradle\caches\transforms-4\e30f893c776a5aa8b17d839b68d7ffd7\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
-58        android:dataExtractionRules="@xml/data_extraction_rules"
-58-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:44:9-65
-59        android:debuggable="true"
-60        android:extractNativeLibs="false"
-61        android:fullBackupContent="@xml/backup_rules"
-61-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:45:9-54
-62        android:icon="@drawable/ic_launcher"
-62-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:46:9-45
-63        android:label="@string/app_name"
-63-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:47:9-41
-64        android:roundIcon="@drawable/ic_launcher"
-64-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:48:9-50
-65        android:supportsRtl="true"
-65-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:49:9-35
-66        android:theme="@style/Theme.Zyra" >
-66-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:50:9-42
-67        <activity
-67-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:53:9-64:20
-68            android:name="com.zyra.app.MainActivity"
-68-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:54:13-41
-69            android:exported="true"
-69-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:55:13-36
-70            android:label="@string/app_name"
-70-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:56:13-45
-71            android:showWhenLocked="true"
-71-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:57:13-42
-72            android:theme="@style/Theme.Zyra"
-72-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:59:13-46
-73            android:turnScreenOn="true" >
-73-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:58:13-40
-74            <intent-filter>
-74-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:60:13-63:29
-75                <action android:name="android.intent.action.MAIN" />
-75-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:31:13-65
-75-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:31:21-62
-76
-77                <category android:name="android.intent.category.LAUNCHER" />
-77-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:32:13-73
-77-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:32:23-70
-78            </intent-filter>
-79        </activity>
-80
-81        <service
-81-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:66:9-70:40
-82            android:name="com.zyra.app.service.VoiceAssistantService"
-82-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:67:13-58
-83            android:exported="false"
-83-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:70:13-37
-84            android:foregroundServiceType="microphone"
-84-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:68:13-55
-85            android:stopWithTask="false" />
-85-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:69:13-41
-86
-87        <receiver
-87-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:72:9-80:20
-88            android:name="com.zyra.app.service.BootReceiver"
-88-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:73:13-49
-89            android:enabled="true"
-89-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:75:13-35
-90            android:exported="true" >
-90-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:74:13-36
-91            <intent-filter>
-91-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:76:13-79:29
-92                <action android:name="android.intent.action.BOOT_COMPLETED" />
-92-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:77:17-79
-92-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:77:25-76
-93
-94                <category android:name="android.intent.category.DEFAULT" />
-94-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:78:17-76
-94-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:78:27-73
-95            </intent-filter>
-96        </receiver>
-97
-98        <service
-98-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:83:9-93:19
-99            android:name="com.zyra.app.service.ZyraAccessibilityService"
-99-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:84:13-61
-100            android:exported="true"
-100-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:86:13-36
-101            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
-101-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:85:13-79
-102            <intent-filter>
-102-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:87:13-89:29
-103                <action android:name="android.accessibilityservice.AccessibilityService" />
-103-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:88:17-92
-103-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:88:25-89
+19-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:13:5-78
+19-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:13:22-75
+20    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+20-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:14:5-75
+20-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:14:22-72
+21
+22    <!-- Device Controls -->
+23    <uses-permission android:name="android.permission.CAMERA" />
+23-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:17:5-65
+23-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:17:22-62
+24    <uses-permission android:name="android.permission.FLASHLIGHT" />
+24-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:18:5-69
+24-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:18:22-66
+25    <uses-permission android:name="android.permission.BLUETOOTH" />
+25-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:19:5-68
+25-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:19:22-65
+26    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+26-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:20:5-74
+26-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:20:22-71
+27    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+27-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:21:5-76
+27-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:21:22-73
+28    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+28-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:22:5-76
+28-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:22:22-73
+29    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+29-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:24:5-76
+29-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:24:22-73
+30    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+30-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:25:5-81
+30-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:25:22-78
+31    <uses-permission android:name="android.permission.WAKE_LOCK" />
+31-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:26:5-68
+31-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:26:22-65
+32    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+32-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:27:5-95
+32-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:27:22-92
+33
+34    <uses-feature
+34-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:29:5-88
+35        android:name="android.hardware.telephony"
+35-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:29:19-60
+36        android:required="false" />
+36-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:29:61-85
+37    <uses-feature
+37-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:30:5-85
+38        android:name="android.hardware.camera"
+38-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:30:19-57
+39        android:required="false" />
+39-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:30:58-82
+40
+41    <!-- Android 11+ Package Visibility -->
+42    <queries>
+42-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:33:5-41:15
+43        <intent>
+43-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:34:9-37:18
+44            <action android:name="android.intent.action.MAIN" />
+44-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:13-65
+44-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:21-62
+45
+46            <category android:name="android.intent.category.LAUNCHER" />
+46-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:36:13-73
+46-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:36:23-70
+47        </intent>
+48        <intent>
+48-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:38:9-40:18
+49            <action android:name="android.intent.action.TTS_SERVICE" />
+49-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:39:13-72
+49-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:39:21-69
+50        </intent>
+51    </queries>
+52
+53    <uses-permission android:name="android.permission.INTERNET" />
+53-->[com.google.ai.client.generativeai:generativeai:0.7.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\cbcb1ebc41d22ca4b79cf62711904b18\transformed\generativeai-0.7.0\AndroidManifest.xml:22:5-67
+53-->[com.google.ai.client.generativeai:generativeai:0.7.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\cbcb1ebc41d22ca4b79cf62711904b18\transformed\generativeai-0.7.0\AndroidManifest.xml:22:22-64
+54    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+54-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:24:5-79
+54-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:24:22-76
+55
+56    <permission
+56-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:22:5-24:47
+57        android:name="com.zyra.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+57-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:23:9-81
+58        android:protectionLevel="signature" />
+58-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:24:9-44
+59
+60    <uses-permission android:name="com.zyra.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+60-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:26:5-97
+60-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:26:22-94
+61
+62    <application
+62-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:45:5-127:19
+63        android:name="com.zyra.app.ZyraApp"
+63-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:46:9-32
+64        android:allowBackup="true"
+64-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:47:9-35
+65        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+65-->[androidx.core:core:1.12.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\abbabb9eceb4c894853f18478acc28ed\transformed\core-1.12.0\AndroidManifest.xml:28:18-86
+66        android:dataExtractionRules="@xml/data_extraction_rules"
+66-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:48:9-65
+67        android:debuggable="true"
+68        android:extractNativeLibs="false"
+69        android:fullBackupContent="@xml/backup_rules"
+69-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:49:9-54
+70        android:icon="@drawable/ic_launcher"
+70-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:50:9-45
+71        android:label="@string/app_name"
+71-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:51:9-41
+72        android:roundIcon="@drawable/ic_launcher"
+72-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:52:9-50
+73        android:supportsRtl="true"
+73-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:53:9-35
+74        android:testOnly="true"
+75        android:theme="@style/Theme.Zyra" >
+75-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:54:9-42
+76        <activity
+76-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:57:9-68:20
+77            android:name="com.zyra.app.MainActivity"
+77-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:58:13-41
+78            android:exported="true"
+78-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:59:13-36
+79            android:label="@string/app_name"
+79-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:60:13-45
+80            android:showWhenLocked="true"
+80-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:61:13-42
+81            android:theme="@style/Theme.Zyra"
+81-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:63:13-46
+82            android:turnScreenOn="true" >
+82-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:62:13-40
+83            <intent-filter>
+83-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:64:13-67:29
+84                <action android:name="android.intent.action.MAIN" />
+84-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:13-65
+84-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:35:21-62
+85
+86                <category android:name="android.intent.category.LAUNCHER" />
+86-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:36:13-73
+86-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:36:23-70
+87            </intent-filter>
+88        </activity>
+89
+90        <service
+90-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:70:9-74:40
+91            android:name="com.zyra.app.service.VoiceAssistantService"
+91-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:71:13-58
+92            android:exported="false"
+92-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:74:13-37
+93            android:foregroundServiceType="microphone"
+93-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:72:13-55
+94            android:stopWithTask="false" />
+94-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:73:13-41
+95
+96        <receiver
+96-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:76:9-84:20
+97            android:name="com.zyra.app.service.BootReceiver"
+97-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:77:13-49
+98            android:enabled="true"
+98-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:79:13-35
+99            android:exported="true" >
+99-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:78:13-36
+100            <intent-filter>
+100-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:80:13-83:29
+101                <action android:name="android.intent.action.BOOT_COMPLETED" />
+101-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:81:17-79
+101-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:81:25-76
+102
+103                <category android:name="android.intent.category.DEFAULT" />
+103-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:82:17-76
+103-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:82:27-73
 104            </intent-filter>
-105
-106            <meta-data
-106-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:90:13-92:72
-107                android:name="android.accessibilityservice"
-107-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:91:17-60
-108                android:resource="@xml/accessibility_service_config" />
-108-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:92:17-69
-109        </service>
-110        <service
-110-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:95:9-106:19
-111            android:name="com.zyra.app.service.ZyraInteractionService"
-111-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:96:13-59
-112            android:exported="true"
-112-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:99:13-36
-113            android:label="Zyra"
-113-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:97:13-33
-114            android:permission="android.permission.BIND_VOICE_INTERACTION" >
-114-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:98:13-75
+105        </receiver>
+106
+107        <service
+107-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:87:9-97:19
+108            android:name="com.zyra.app.service.ZyraAccessibilityService"
+108-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:88:13-61
+109            android:exported="true"
+109-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:90:13-36
+110            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+110-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:89:13-79
+111            <intent-filter>
+111-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:91:13-93:29
+112                <action android:name="android.accessibilityservice.AccessibilityService" />
+112-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:92:17-92
+112-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:92:25-89
+113            </intent-filter>
+114
 115            <meta-data
-115-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:100:13-102:69
-116                android:name="android.voice_interaction"
-116-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:101:17-57
-117                android:resource="@xml/voice_interaction_service" />
-117-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:102:17-66
-118
-119            <intent-filter>
-119-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:103:13-105:29
-120                <action android:name="android.service.voice.VoiceInteractionService" />
-120-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:104:17-88
-120-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:104:25-85
-121            </intent-filter>
-122        </service>
-123        <service
-123-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:108:9-116:19
-124            android:name="com.zyra.app.service.ZyraRecognitionService"
-124-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:109:13-59
-125            android:exported="true"
-125-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:111:13-36
-126            android:label="Zyra" >
-126-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:110:13-33
-127            <intent-filter>
-127-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:112:13-115:29
-128                <action android:name="android.speech.RecognitionService" />
-128-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:113:17-76
-128-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:113:25-73
-129
-130                <category android:name="android.intent.category.DEFAULT" />
-130-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:78:17-76
-130-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:78:27-73
-131            </intent-filter>
-132        </service>
-133        <service
-133-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:118:9-121:39
-134            android:name="com.zyra.app.service.ZyraSessionService"
-134-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:119:13-55
-135            android:exported="true"
-135-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:121:13-36
-136            android:permission="android.permission.BIND_VOICE_INTERACTION" />
-136-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:120:13-75
-137
-138        <provider
-138-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:29:9-37:20
-139            android:name="androidx.startup.InitializationProvider"
-139-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:30:13-67
-140            android:authorities="com.zyra.app.androidx-startup"
-140-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:31:13-68
-141            android:exported="false" >
-141-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:32:13-37
-142            <meta-data
-142-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:34:13-36:52
-143                android:name="androidx.work.WorkManagerInitializer"
-143-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:35:17-68
-144                android:value="androidx.startup" />
-144-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:36:17-49
-145            <meta-data
-145-->[androidx.emoji2:emoji2:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\1e2c4932d77c4eea4cae27c865698d7c\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
-146                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-146-->[androidx.emoji2:emoji2:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\1e2c4932d77c4eea4cae27c865698d7c\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
-147                android:value="androidx.startup" />
-147-->[androidx.emoji2:emoji2:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\1e2c4932d77c4eea4cae27c865698d7c\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
-148            <meta-data
-148-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\shiji\.gradle\caches\transforms-4\8cb9415387a5f235e9edec7c451be0bd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
-149                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-149-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\shiji\.gradle\caches\transforms-4\8cb9415387a5f235e9edec7c451be0bd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
-150                android:value="androidx.startup" />
-150-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\shiji\.gradle\caches\transforms-4\8cb9415387a5f235e9edec7c451be0bd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+115-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:94:13-96:72
+116                android:name="android.accessibilityservice"
+116-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:95:17-60
+117                android:resource="@xml/accessibility_service_config" />
+117-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:96:17-69
+118        </service>
+119        <service
+119-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:99:9-110:19
+120            android:name="com.zyra.app.service.ZyraInteractionService"
+120-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:100:13-59
+121            android:exported="true"
+121-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:103:13-36
+122            android:label="Zyra"
+122-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:101:13-33
+123            android:permission="android.permission.BIND_VOICE_INTERACTION" >
+123-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:102:13-75
+124            <meta-data
+124-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:104:13-106:69
+125                android:name="android.voice_interaction"
+125-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:105:17-57
+126                android:resource="@xml/voice_interaction_service" />
+126-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:106:17-66
+127
+128            <intent-filter>
+128-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:107:13-109:29
+129                <action android:name="android.service.voice.VoiceInteractionService" />
+129-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:108:17-88
+129-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:108:25-85
+130            </intent-filter>
+131        </service>
+132        <service
+132-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:112:9-120:19
+133            android:name="com.zyra.app.service.ZyraRecognitionService"
+133-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:113:13-59
+134            android:exported="true"
+134-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:115:13-36
+135            android:label="Zyra" >
+135-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:114:13-33
+136            <intent-filter>
+136-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:116:13-119:29
+137                <action android:name="android.speech.RecognitionService" />
+137-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:117:17-76
+137-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:117:25-73
+138
+139                <category android:name="android.intent.category.DEFAULT" />
+139-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:82:17-76
+139-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:82:27-73
+140            </intent-filter>
+141        </service>
+142        <service
+142-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:122:9-125:39
+143            android:name="com.zyra.app.service.ZyraSessionService"
+143-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:123:13-55
+144            android:exported="true"
+144-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:125:13-36
+145            android:permission="android.permission.BIND_VOICE_INTERACTION" />
+145-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:124:13-75
+146
+147        <provider
+147-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:29:9-37:20
+148            android:name="androidx.startup.InitializationProvider"
+148-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:30:13-67
+149            android:authorities="com.zyra.app.androidx-startup"
+149-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:31:13-68
+150            android:exported="false" >
+150-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:32:13-37
 151            <meta-data
-151-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
-152                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-152-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+151-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:34:13-36:52
+152                android:name="androidx.work.WorkManagerInitializer"
+152-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:35:17-68
 153                android:value="androidx.startup" />
-153-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
-154        </provider>
-155
-156        <service
-156-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:39:9-45:35
-157            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
-157-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:40:13-88
-158            android:directBootAware="false"
-158-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:41:13-44
-159            android:enabled="@bool/enable_system_alarm_service_default"
-159-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:42:13-72
-160            android:exported="false" />
-160-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:43:13-37
-161        <service
-161-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:46:9-52:35
-162            android:name="androidx.work.impl.background.systemjob.SystemJobService"
-162-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:47:13-84
-163            android:directBootAware="false"
-163-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:48:13-44
-164            android:enabled="@bool/enable_system_job_service_default"
-164-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:49:13-70
-165            android:exported="true"
-165-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:50:13-36
-166            android:permission="android.permission.BIND_JOB_SERVICE" />
-166-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:51:13-69
-167        <service
-167-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:53:9-59:35
-168            android:name="androidx.work.impl.foreground.SystemForegroundService"
-168-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:54:13-81
-169            android:directBootAware="false"
-169-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:55:13-44
-170            android:enabled="@bool/enable_system_foreground_service_default"
-170-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:56:13-77
-171            android:exported="false" />
-171-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:57:13-37
-172
-173        <receiver
-173-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:61:9-66:35
-174            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
-174-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:62:13-88
-175            android:directBootAware="false"
-175-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:63:13-44
-176            android:enabled="true"
-176-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:64:13-35
-177            android:exported="false" />
-177-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:65:13-37
-178        <receiver
-178-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:67:9-77:20
-179            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
-179-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:68:13-106
-180            android:directBootAware="false"
-180-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:69:13-44
-181            android:enabled="false"
-181-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:70:13-36
-182            android:exported="false" >
-182-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:71:13-37
-183            <intent-filter>
-183-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:73:13-76:29
-184                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
-184-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:17-87
-184-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:25-84
-185                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
-185-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:17-90
-185-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:25-87
-186            </intent-filter>
-187        </receiver>
-188        <receiver
-188-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:78:9-88:20
-189            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
-189-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:79:13-104
-190            android:directBootAware="false"
-190-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:80:13-44
-191            android:enabled="false"
-191-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:81:13-36
-192            android:exported="false" >
-192-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:82:13-37
-193            <intent-filter>
-193-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:84:13-87:29
-194                <action android:name="android.intent.action.BATTERY_OKAY" />
-194-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:17-77
-194-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:25-74
-195                <action android:name="android.intent.action.BATTERY_LOW" />
-195-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:17-76
-195-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:25-73
-196            </intent-filter>
-197        </receiver>
-198        <receiver
-198-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:89:9-99:20
-199            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
-199-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:90:13-104
-200            android:directBootAware="false"
-200-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:91:13-44
-201            android:enabled="false"
-201-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:92:13-36
-202            android:exported="false" >
-202-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:93:13-37
-203            <intent-filter>
-203-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:95:13-98:29
-204                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
-204-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:17-83
-204-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:25-80
-205                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
-205-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:17-82
-205-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:25-79
-206            </intent-filter>
-207        </receiver>
-208        <receiver
-208-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:100:9-109:20
-209            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
-209-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:101:13-103
-210            android:directBootAware="false"
-210-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:102:13-44
-211            android:enabled="false"
-211-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:103:13-36
-212            android:exported="false" >
-212-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:104:13-37
-213            <intent-filter>
-213-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:106:13-108:29
-214                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
-214-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:17-79
-214-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:25-76
+153-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:36:17-49
+154            <meta-data
+154-->[androidx.emoji2:emoji2:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\9728cefa6c595e5311940fc9d2028f01\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+155                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+155-->[androidx.emoji2:emoji2:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\9728cefa6c595e5311940fc9d2028f01\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+156                android:value="androidx.startup" />
+156-->[androidx.emoji2:emoji2:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\9728cefa6c595e5311940fc9d2028f01\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+157            <meta-data
+157-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\cb440de2a05bcb5eb189b022801adcdd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+158                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+158-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\cb440de2a05bcb5eb189b022801adcdd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+159                android:value="androidx.startup" />
+159-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\cb440de2a05bcb5eb189b022801adcdd\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+160            <meta-data
+160-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+161                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+161-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+162                android:value="androidx.startup" />
+162-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+163        </provider>
+164
+165        <service
+165-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:39:9-45:35
+166            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+166-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:40:13-88
+167            android:directBootAware="false"
+167-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:41:13-44
+168            android:enabled="@bool/enable_system_alarm_service_default"
+168-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:42:13-72
+169            android:exported="false" />
+169-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:43:13-37
+170        <service
+170-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:46:9-52:35
+171            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+171-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:47:13-84
+172            android:directBootAware="false"
+172-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:48:13-44
+173            android:enabled="@bool/enable_system_job_service_default"
+173-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:49:13-70
+174            android:exported="true"
+174-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:50:13-36
+175            android:permission="android.permission.BIND_JOB_SERVICE" />
+175-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:51:13-69
+176        <service
+176-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:53:9-59:35
+177            android:name="androidx.work.impl.foreground.SystemForegroundService"
+177-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:54:13-81
+178            android:directBootAware="false"
+178-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:55:13-44
+179            android:enabled="@bool/enable_system_foreground_service_default"
+179-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:56:13-77
+180            android:exported="false" />
+180-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:57:13-37
+181
+182        <receiver
+182-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:61:9-66:35
+183            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+183-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:62:13-88
+184            android:directBootAware="false"
+184-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:63:13-44
+185            android:enabled="true"
+185-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:64:13-35
+186            android:exported="false" />
+186-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:65:13-37
+187        <receiver
+187-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:67:9-77:20
+188            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+188-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:68:13-106
+189            android:directBootAware="false"
+189-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:69:13-44
+190            android:enabled="false"
+190-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:70:13-36
+191            android:exported="false" >
+191-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:71:13-37
+192            <intent-filter>
+192-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:73:13-76:29
+193                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+193-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:17-87
+193-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:74:25-84
+194                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+194-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:17-90
+194-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:75:25-87
+195            </intent-filter>
+196        </receiver>
+197        <receiver
+197-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:78:9-88:20
+198            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+198-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:79:13-104
+199            android:directBootAware="false"
+199-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:80:13-44
+200            android:enabled="false"
+200-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:81:13-36
+201            android:exported="false" >
+201-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:82:13-37
+202            <intent-filter>
+202-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:84:13-87:29
+203                <action android:name="android.intent.action.BATTERY_OKAY" />
+203-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:17-77
+203-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:85:25-74
+204                <action android:name="android.intent.action.BATTERY_LOW" />
+204-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:17-76
+204-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:86:25-73
+205            </intent-filter>
+206        </receiver>
+207        <receiver
+207-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:89:9-99:20
+208            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+208-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:90:13-104
+209            android:directBootAware="false"
+209-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:91:13-44
+210            android:enabled="false"
+210-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:92:13-36
+211            android:exported="false" >
+211-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:93:13-37
+212            <intent-filter>
+212-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:95:13-98:29
+213                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+213-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:17-83
+213-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:96:25-80
+214                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+214-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:17-82
+214-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:97:25-79
 215            </intent-filter>
 216        </receiver>
 217        <receiver
-217-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:110:9-121:20
-218            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
-218-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:111:13-88
+217-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:100:9-109:20
+218            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+218-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:101:13-103
 219            android:directBootAware="false"
-219-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:112:13-44
+219-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:102:13-44
 220            android:enabled="false"
-220-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:113:13-36
+220-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:103:13-36
 221            android:exported="false" >
-221-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:114:13-37
+221-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:104:13-37
 222            <intent-filter>
-222-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:116:13-120:29
-223                <action android:name="android.intent.action.BOOT_COMPLETED" />
-223-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:77:17-79
-223-->C:\Users\shiji\OneDrive\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:77:25-76
-224                <action android:name="android.intent.action.TIME_SET" />
-224-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:17-73
-224-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:25-70
-225                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-225-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:17-81
-225-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:25-78
-226            </intent-filter>
-227        </receiver>
-228        <receiver
-228-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:122:9-131:20
-229            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
-229-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:123:13-99
-230            android:directBootAware="false"
-230-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:124:13-44
-231            android:enabled="@bool/enable_system_alarm_service_default"
-231-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:125:13-72
-232            android:exported="false" >
-232-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:126:13-37
-233            <intent-filter>
-233-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:128:13-130:29
-234                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
-234-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:17-98
-234-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:25-95
+222-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:106:13-108:29
+223                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+223-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:17-79
+223-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:107:25-76
+224            </intent-filter>
+225        </receiver>
+226        <receiver
+226-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:110:9-121:20
+227            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+227-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:111:13-88
+228            android:directBootAware="false"
+228-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:112:13-44
+229            android:enabled="false"
+229-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:113:13-36
+230            android:exported="false" >
+230-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:114:13-37
+231            <intent-filter>
+231-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:116:13-120:29
+232                <action android:name="android.intent.action.BOOT_COMPLETED" />
+232-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:81:17-79
+232-->C:\Users\SHIJIN P S\Documents\Zyra  Actively not helping\app\src\main\AndroidManifest.xml:81:25-76
+233                <action android:name="android.intent.action.TIME_SET" />
+233-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:17-73
+233-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:118:25-70
+234                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+234-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:17-81
+234-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:119:25-78
 235            </intent-filter>
 236        </receiver>
 237        <receiver
-237-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:132:9-142:20
-238            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
-238-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:133:13-78
+237-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:122:9-131:20
+238            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+238-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:123:13-99
 239            android:directBootAware="false"
-239-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:134:13-44
-240            android:enabled="true"
-240-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:135:13-35
-241            android:exported="true"
-241-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:136:13-36
-242            android:permission="android.permission.DUMP" >
-242-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:137:13-57
-243            <intent-filter>
-243-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:139:13-141:29
-244                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
-244-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:17-88
-244-->[androidx.work:work-runtime:2.9.0] C:\Users\shiji\.gradle\caches\transforms-4\3ac6b5450bb15c275df21ee1dec54aa4\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:25-85
-245            </intent-filter>
-246        </receiver>
-247
-248        <activity
-248-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\1268a466920e7f89cb1019f751b470b6\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
-249            android:name="androidx.compose.ui.tooling.PreviewActivity"
-249-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\1268a466920e7f89cb1019f751b470b6\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
-250            android:exported="true" />
-250-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\1268a466920e7f89cb1019f751b470b6\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
-251        <activity
-251-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\06ea5039cdff6307173dc21c30606b48\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:23:9-25:39
-252            android:name="androidx.activity.ComponentActivity"
-252-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\06ea5039cdff6307173dc21c30606b48\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:24:13-63
-253            android:exported="true" />
-253-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\shiji\.gradle\caches\transforms-4\06ea5039cdff6307173dc21c30606b48\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:25:13-36
-254
-255        <service
-255-->[androidx.room:room-runtime:2.6.1] C:\Users\shiji\.gradle\caches\transforms-4\f170913019b060c7881e8303d0e51307\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
-256            android:name="androidx.room.MultiInstanceInvalidationService"
-256-->[androidx.room:room-runtime:2.6.1] C:\Users\shiji\.gradle\caches\transforms-4\f170913019b060c7881e8303d0e51307\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
-257            android:directBootAware="true"
-257-->[androidx.room:room-runtime:2.6.1] C:\Users\shiji\.gradle\caches\transforms-4\f170913019b060c7881e8303d0e51307\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
-258            android:exported="false" />
-258-->[androidx.room:room-runtime:2.6.1] C:\Users\shiji\.gradle\caches\transforms-4\f170913019b060c7881e8303d0e51307\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
-259
-260        <receiver
-260-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
-261            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-261-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
-262            android:directBootAware="false"
-262-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
-263            android:enabled="true"
-263-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
-264            android:exported="true"
-264-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
-265            android:permission="android.permission.DUMP" >
-265-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
-266            <intent-filter>
-266-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
-267                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-267-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
-267-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
-268            </intent-filter>
-269            <intent-filter>
-269-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
-270                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-270-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
-270-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
-271            </intent-filter>
-272            <intent-filter>
-272-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
-273                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-273-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
-273-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
-274            </intent-filter>
+239-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:124:13-44
+240            android:enabled="@bool/enable_system_alarm_service_default"
+240-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:125:13-72
+241            android:exported="false" >
+241-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:126:13-37
+242            <intent-filter>
+242-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:128:13-130:29
+243                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+243-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:17-98
+243-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:129:25-95
+244            </intent-filter>
+245        </receiver>
+246        <receiver
+246-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:132:9-142:20
+247            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+247-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:133:13-78
+248            android:directBootAware="false"
+248-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:134:13-44
+249            android:enabled="true"
+249-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:135:13-35
+250            android:exported="true"
+250-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:136:13-36
+251            android:permission="android.permission.DUMP" >
+251-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:137:13-57
+252            <intent-filter>
+252-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:139:13-141:29
+253                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+253-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:17-88
+253-->[androidx.work:work-runtime:2.9.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\6c8c54d5eefda6d961376e3f11a962de\transformed\work-runtime-2.9.0\AndroidManifest.xml:140:25-85
+254            </intent-filter>
+255        </receiver>
+256
+257        <activity
+257-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\2c685a2b83bfb4a558011802c9ca4eab\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:23:9-25:39
+258            android:name="androidx.activity.ComponentActivity"
+258-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\2c685a2b83bfb4a558011802c9ca4eab\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:24:13-63
+259            android:exported="true" />
+259-->[androidx.compose.ui:ui-test-manifest:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\2c685a2b83bfb4a558011802c9ca4eab\transformed\ui-test-manifest-1.6.0\AndroidManifest.xml:25:13-36
+260        <activity
+260-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\d36ccc5b2a103ac5595904a8a0b12bdc\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+261            android:name="androidx.compose.ui.tooling.PreviewActivity"
+261-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\d36ccc5b2a103ac5595904a8a0b12bdc\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+262            android:exported="true" />
+262-->[androidx.compose.ui:ui-tooling-android:1.6.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\d36ccc5b2a103ac5595904a8a0b12bdc\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+263
+264        <service
+264-->[androidx.room:room-runtime:2.6.1] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\b01cca29c937ee414e193c39e91a6de0\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+265            android:name="androidx.room.MultiInstanceInvalidationService"
+265-->[androidx.room:room-runtime:2.6.1] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\b01cca29c937ee414e193c39e91a6de0\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+266            android:directBootAware="true"
+266-->[androidx.room:room-runtime:2.6.1] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\b01cca29c937ee414e193c39e91a6de0\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+267            android:exported="false" />
+267-->[androidx.room:room-runtime:2.6.1] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\b01cca29c937ee414e193c39e91a6de0\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+268
+269        <receiver
+269-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+270            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+270-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+271            android:directBootAware="false"
+271-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+272            android:enabled="true"
+272-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+273            android:exported="true"
+273-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+274            android:permission="android.permission.DUMP" >
+274-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
 275            <intent-filter>
-275-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
-276                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-276-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
-276-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\shiji\.gradle\caches\transforms-4\920d152cc3e578ef04b64520b13b84ac\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+275-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+276                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+276-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+276-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
 277            </intent-filter>
-278        </receiver>
-279    </application>
-280
-281</manifest>
+278            <intent-filter>
+278-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+279                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+279-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+279-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+280            </intent-filter>
+281            <intent-filter>
+281-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+282                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+282-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+282-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+283            </intent-filter>
+284            <intent-filter>
+284-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+285                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+285-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+285-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\SHIJIN P S\.gradle\caches\transforms-4\dbd69ef863c7deb6d61b8a635b0539d7\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+286            </intent-filter>
+287        </receiver>
+288    </application>
+289
+290</manifest>

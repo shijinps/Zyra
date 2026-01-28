@@ -8,6 +8,8 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import java.util.Locale
 import java.util.regex.Pattern
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ZyraAccessibilityService : AccessibilityService(), TextToSpeech.OnInitListener {
 
@@ -21,6 +23,10 @@ class ZyraAccessibilityService : AccessibilityService(), TextToSpeech.OnInitList
             instance?.scanAndRead(callbackService) ?: run {
                 Log.e("ZyraAccess", "Service not running or disabled")
             }
+        }
+        
+        fun requestScreenAnalysis(prompt: String) {
+            instance?.analyzeScreen(prompt)
         }
         
         fun performAction(actionPayload: String) {
@@ -283,6 +289,52 @@ class ZyraAccessibilityService : AccessibilityService(), TextToSpeech.OnInitList
             }
         }
         return null
+    }
+
+    private fun analyzeScreen(prompt: String) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            takeScreenshot(android.view.Display.DEFAULT_DISPLAY,
+                this.mainExecutor,
+                object : AccessibilityService.TakeScreenshotCallback {
+                    override fun onSuccess(result: AccessibilityService.ScreenshotResult) {
+                        try {
+                            val hardwareBuffer = result.hardwareBuffer
+                            val colorSpace = result.colorSpace
+                            val bitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, colorSpace)
+                            
+                            if (bitmap != null) {
+                                // Copy to software bitmap if needed, but wrap might be enough for Gemini
+                                // Actually, wrapHardwareBuffer returns an immutable bitmap.
+                                // We need to ensure we close the hardware buffer? 
+                                // The documentation says "The caller is responsible for closing the hardware buffer".
+                                // But Bitmap.wrapHardwareBuffer takes ownership? No.
+                                // Let's copy it to be safe and close the buffer.
+                                val softwareBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+                                hardwareBuffer.close()
+                                
+                                speak("I see it. Analyzing...")
+                                
+                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                    val response = com.zyra.app.logic.GeminiModule.generateResponseWithImage(prompt, softwareBitmap)
+                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                        speak(response)
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("ZyraAccess", "Screenshot failed", e)
+                            speak("I tried to look at the screen, but something went wrong.")
+                        }
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        Log.e("ZyraAccess", "Screenshot failed with error $errorCode")
+                        speak("I cannot see the screen right now.")
+                    }
+                })
+        } else {
+            speak("Screen analysis is only available on Android 11 and above.")
+        }
     }
 
     private fun speak(text: String) {

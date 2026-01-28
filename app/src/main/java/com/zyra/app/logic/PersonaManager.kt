@@ -172,6 +172,41 @@ object PersonaManager {
         return templates.random()
     }
     
+    fun getCallAnswerResponse(): String {
+        return listOf(
+            "Answering call. Connecting you now, $title.",
+            "Patching them through, $title.",
+            "Line open. You are live, $title.",
+            "Call accepted."
+        ).random()
+    }
+
+    fun getCallCutResponse(): String {
+        return listOf(
+            "Call terminated. Silence restored.",
+            "Disconnected, $title.",
+            "Cutting the line. Done.",
+            "Ended. Back to business, $title."
+        ).random()
+    }
+    
+    fun getVolumeMaxResponse(): String {
+         return listOf(
+             "Maximizing output. Hope you like it loud, $title.",
+             "Volume at maximum capacity.",
+             "Turning it up to 11, $title.",
+             "Audio output set to 100%."
+         ).random()
+    }
+    
+    fun getAlreadyUnlockedResponse(): String {
+        return listOf(
+             "The device is already at your command, $title.",
+             "We are already unlocked, $title.",
+             "No security barriers detected. You have access."
+        ).random()
+    }
+
     fun getAdaptiveSuggestion(preference: String): String {
         return listOf(
             "Since you like $preference, shall we prioritize that, $title?",

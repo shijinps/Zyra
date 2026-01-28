@@ -1,6 +1,0 @@
-<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:sessionService="com.zyra.app.service.ZyraSessionService"
-    android:settingsActivity="com.zyra.app.MainActivity"
-    android:supportsAssist="true"
-    android:recognitionService="com.zyra.app.service.ZyraRecognitionService"
-    android:supportsLocalInteraction="true" />

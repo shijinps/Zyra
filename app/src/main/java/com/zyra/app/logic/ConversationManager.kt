@@ -30,6 +30,8 @@ sealed class InteractionState {
     object IdentifyUser : InteractionState()
     
     object VerifyAuthCode : InteractionState()
+    
+    object IncomingCall : InteractionState()
 }
 
 data class AppCandidate(
@@ -57,6 +59,10 @@ class ConversationManager {
     
     fun startWebSearchConfirmation(query: String) {
         currentState = InteractionState.ConfirmWebSearch(query)
+    }
+    
+    fun startIncomingCall() {
+        currentState = InteractionState.IncomingCall
     }
     
     fun startPlayStoreSearchConfirmation(appName: String) {

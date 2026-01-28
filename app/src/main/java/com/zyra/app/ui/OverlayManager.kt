@@ -32,6 +32,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.zyra.app.logic.ZyraState
+import com.zyra.app.service.VoiceAssistantService
 
 class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -122,6 +123,8 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
 
 @Composable
 fun OverlayContent(state: ZyraState) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -129,15 +132,27 @@ fun OverlayContent(state: ZyraState) {
         contentAlignment = Alignment.BottomCenter
     ) {
         // Re-use the existing SiriWaveAnimation
-        // Ideally SiriWaveAnimation should be public or in a shared UI file.
-        // Assuming we can import it.
         
+        // VISUAL FEEDBACK FOR CALLING
+        if (state == ZyraState.CALLING) {
+             androidx.compose.material3.Button(
+                 onClick = { 
+                     // Broadcast Intent to Service to CUT CALL
+                     val intent = android.content.Intent(context, VoiceAssistantService::class.java).apply {
+                         action = "com.zyra.app.ACTION_CUT_CALL"
+                     }
+                     context.startService(intent)
+                 },
+                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color.Red),
+                 modifier = Modifier.padding(bottom = 100.dp)
+             ) {
+                 Text("End Call", color = Color.White)
+             }
+        }
+
         SiriWaveAnimation(
             state = state,
             modifier = Modifier.size(300.dp) // Large orb
         )
-        
-        // Optional text feedback
-        // Text(text = state.name, color = Color.White)
     }
 }

@@ -1,31 +1,27 @@
 [
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\xml_voice_interaction_service.xml.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\xml\\voice_interaction_service.xml"
+        "merged": "com.zyra.app-merged_res-60:/drawable_ic_launcher.xml.flat",
+        "source": "com.zyra.app-main-62:/drawable/ic_launcher.xml"
     },
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\drawable_ic_zyra_logo.png.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\drawable\\ic_zyra_logo.png"
+        "merged": "com.zyra.app-merged_res-60:/drawable_ic_zyra_logo.png.flat",
+        "source": "com.zyra.app-main-62:/drawable/ic_zyra_logo.png"
     },
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\xml_accessibility_service_config.xml.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\xml\\accessibility_service_config.xml"
+        "merged": "com.zyra.app-merged_res-60:/xml_accessibility_service_config.xml.flat",
+        "source": "com.zyra.app-main-62:/xml/accessibility_service_config.xml"
     },
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\drawable_ic_zyra_logo_new.png.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\drawable\\ic_zyra_logo_new.png"
+        "merged": "com.zyra.app-merged_res-60:/drawable_ic_zyra_logo_new.png.flat",
+        "source": "com.zyra.app-main-62:/drawable/ic_zyra_logo_new.png"
     },
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\xml_backup_rules.xml.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\xml\\backup_rules.xml"
+        "merged": "com.zyra.app-merged_res-60:/xml_data_extraction_rules.xml.flat",
+        "source": "com.zyra.app-main-62:/xml/data_extraction_rules.xml"
     },
     {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\xml_data_extraction_rules.xml.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\xml\\data_extraction_rules.xml"
-    },
-    {
-        "merged": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-merged_res-60:\\drawable_ic_launcher.xml.flat",
-        "source": "C:\\Users\\shiji\\.gradle\\daemon\\8.6\\com.zyra.app-main-62:\\drawable\\ic_launcher.xml"
+        "merged": "com.zyra.app-merged_res-60:/xml_backup_rules.xml.flat",
+        "source": "com.zyra.app-main-62:/xml/backup_rules.xml"
     },
     {
         "merged": "com.zyra.app-merged_res-60:/xml_voice_interaction_service.xml.flat",

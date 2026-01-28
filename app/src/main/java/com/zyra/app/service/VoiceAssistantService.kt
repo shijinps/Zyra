@@ -57,6 +57,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
 
+    // ElevenLabs Integration
+    private val elevenLabsManager = com.zyra.app.logic.ElevenLabsConversationManager
+    private val ELEVENLABS_AGENT_ID = "YOUR_AGENT_ID_HERE" // TODO: Move to config
+
+
     companion object {
         const val BROADCAST_STATE = "com.zyra.app.STATE_UPDATE"
         const val EXTRA_STATE = "state"
@@ -73,7 +78,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onCreate() {
         super.onCreate()
         commandManager = CommandManager(this)
-        nlp = NaturalLanguageProcessor()
+        nlp = NaturalLanguageProcessor(this)
         brain = OfflineBrain()
         contactRepository = ContactRepository(this)
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
@@ -95,6 +100,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
         startForegroundService()
         initSpeechRecognizer()
+        startListening() // Explicit start on launch
 
         // Initialize Memory
         com.zyra.app.data.MemoryModule.init(this)
@@ -103,12 +109,79 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Zyra::ExtremeCpuLock")
         wakeLock?.acquire() // Indefinite acquisition, released in onDestroy
+        
+        // Register PhoneStateListener to auto-detect call end
+        // Register PhoneStateListener to auto-detect call end
+        try {
+            if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
+                telephonyManager.listen(object : android.telephony.PhoneStateListener() {
+                    @Deprecated("Deprecated in Java", ReplaceWith("telephonyCallback"))
+                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                        super.onCallStateChanged(state, phoneNumber)
+                        if (state == android.telephony.TelephonyManager.CALL_STATE_IDLE) {
+                            if (isCallInProgress) {
+                                Log.d("ZyraService", "Call ended remotely. Resetting state.")
+                                isCallInProgress = false
+                                broadcastState(ZyraState.IDLE)
+                                if (!isListening) startListening()
+                            }
+                        } else if (state == android.telephony.TelephonyManager.CALL_STATE_RINGING) {
+                            // SIRI MODEL: Announce Caller and Listen for "Answer" or "Decline"
+                            val caller = if (!phoneNumber.isNullOrEmpty()) {
+                                // Resolve contact name if possible (simple lookup)
+                                // For now, just say "Incoming call"
+                                "Incoming call" 
+                            } else "Incoming call"
+                            
+                            // Speak over ringtone (requires Utils to lower ringtone, but we'll try just speaking)
+                            // We need to request focus to be heard over ringtone
+                            conversationManager.startIncomingCall()
+                            speak("$caller. Say Answer or Decline.")
+                        }
+                    }
+                }, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
+            } else {
+                 Log.w("ZyraService", "READ_PHONE_STATE permission missing. Auto-cleanup of call state disabled.")
+            }
+        } catch (e: Exception) {
+            Log.e("ZyraService", "Failed to register PhoneStateListener", e)
+        }
+
+        // Initialize ElevenLabs Manager
+        elevenLabsManager.init(this)
+        elevenLabsManager.setListener(object : com.zyra.app.logic.ElevenLabsConversationManager.ConversationEventListener {
+            override fun onConversationStarted() {
+                Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
+                isListening = false
+                speechRecognizer.stopListening()
+                broadcastState(ZyraState.LISTENING) // Update UI to show active listening
+            }
+
+            override fun onConversationStopped() {
+                Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
+                isActiveSession = false
+                startListening() // Resume local wake word listening
+                broadcastState(ZyraState.IDLE)
+            }
+
+            override fun onError(message: String) {
+                Log.e("ZyraService", "ElevenLabs Error: $message")
+                speak("I'm having trouble connecting to my brain.")
+                onConversationStopped()
+            }
+        })
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Ensure service stays alive - Refresh Foreground Notification
         startForegroundService()
         
+        if (intent?.action == "com.zyra.app.ACTION_CUT_CALL") {
+            cutCall()
+            return START_STICKY
+        }
+
         if (!isListening) {
              startListening()
         }
@@ -164,9 +237,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
 
-        // Android 14 requirements: "microphone" type is in manifest, but good to be explicit if using Q+ APIs
+        // Android 14 requirements: "microphone" type requires RECORD_AUDIO permission at runtime.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            val hasMicPermission = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            if (hasMicPermission) {
+                startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            } else {
+                Log.e("ZyraService", "Missing RECORD_AUDIO permission. Cannot start Microphone FGS. Stopping service.")
+                // We cannot start FGS without permission. Stopping prevents crash.
+                // The Activity should request permission and restart service.
+                stopSelf() 
+            }
         } else {
             startForeground(1, notification)
         }
@@ -176,7 +257,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
             speechRecognizer.setRecognitionListener(this)
-            startListening()
+            // Do NOT start listening here automatically. Caller must invoke startListening().
         }
     }
 
@@ -187,7 +268,10 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  // AUDIO FOCUS MANAGEMENT
                  // Only request exclusive focus if we are in an ACTIVE session (User is talking to us).
                  // If we are just passively listening for "Zyra", DO NOT steal focus from music.
-                 val shouldRequestFocus = isActiveSession || !audioManager.isMusicActive
+                 val shouldRequestFocus = isActiveSession
+                 
+                 // If music is playing, we NEVER want to steal focus for passive listening.
+                 // We rely on the microphone mixing.
                  
                  if (shouldRequestFocus) {
                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -203,6 +287,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                          @Suppress("DEPRECATION")
                          audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
                      }
+                 } else {
+                     // Ensure we have abandoned focus if we are entering passive mode
+                     try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
                  }
             } catch (_: Exception) { Log.e("ZyraService", "Focus error") }
             
@@ -262,8 +349,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         
         broadcastState(ZyraState.PROCESSING)
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-        matches?.let { processCommands(it) } ?: run {
-             restartListening() // Restart if null
+        
+        if (!matches.isNullOrEmpty()) {
+            consecutiveErrorCount = 0 // Success! Reset error count.
+            processCommands(matches)
+        } else {
+             restartListening() 
         }
     }
 
@@ -279,19 +370,22 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         if (matches.isNullOrEmpty()) return
 
         val text = matches[0].lowercase()
-        // Quick check for wake word
+        // Quick check for wake word - STRICT LIST
          val wakeWordVariations = listOf(
-            "zyra", "zara", "sarah", "sara", "zira", "sira", "cyra", "xyla", "viera", "sierra",
-            "chehra", "ishara", "saira", "isra", "shreya", "sherra", "jaira", "jira"
+            "zyra", "zara", "zira", "cyra", "xyla", "viera"
+            // REMOVED: "sara", "sarah", "saira", "sherra", etc.
         )
         
         val isWakeWord = wakeWordVariations.any { text.contains(it) }
+        // STRICTER: Only activate if we are somewhat confident it's not a lyrics fragment
+        // If music is playing, we might want to wait for FINAL results, but partial is faster.
+        // Let's rely on the strict list.
         if (isWakeWord && !isActiveSession) {
              Log.d("ZyraService", "Wake Word detected via Partial Results: $text")
-             isActiveSession = true
-             broadcastState(ZyraState.LISTENING) // Show overlay immediately
+             isActiveSession = true // Activate session!
+             broadcastState(ZyraState.LISTENING) // Show overlay
              
-             // Force ducking now if we missed the start or if it wasn't aggressive enough
+             // Request Focus only NOW that we caught the wake word
              try {
                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                      val focusRequest = android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
@@ -356,6 +450,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private var activeSessionExpiryHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var consecutiveErrorCount = 0 // Track loops for backoff
     private var isActiveSession = false
     private var lastInteractionTime = 0L
     private val sessionTimeoutMs = 30000L // Increased to 30 seconds for better flow
@@ -389,16 +484,20 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun processCommands(matches: List<String>) {
+        consecutiveErrorCount = 0 // Reset on success
         Log.d("ZyraService", "Heard: $matches")
         
         val bestMatch = matches.firstOrNull()?.lowercase() ?: run { startListening(); return }
         
         // --- Wake Word Logic ---
+        // --- Wake Word Logic ---
         @Suppress("SpellCheckingInspection")
         val wakeWordVariations = listOf(
-            "zyra", "zara", "sarah", "sara", "zira", "sira", "cyra", "xyla", "viera", "sierra",
-            "chehra", "ishara", "saira", "isra", "shreya", "sherra", "jaira", "jira" // Added from logs
+            "zyra", "zara", "zira", "cyra", "xyla", "viera" 
+            // REMOVED: "sara", "sarah" (too close to 'saira'), "sierra", "chehra", "ishara"
+            // We want STRICTER waking to avoid music triggers.
         )
+        // Strict match: must contain one of the above explicitly
         val hasWakeWord = wakeWordVariations.any { bestMatch.contains(it) }
         
         if (!isActiveSession && !hasWakeWord) {
@@ -417,6 +516,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 overlayManager.updateState(ZyraState.LISTENING) // Show listening state immediately
             }
 
+            // TRIGGER ELEVENLABS SESSION
+            // Instead of local processing, we start the full-duplex session
+            Log.d("ZyraService", "Wake Word Detected -> Starting ElevenLabs Session")
+            elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+            
+            return // Stop local processing, let ElevenLabs handle the rest
+            
+            /* LEGACY LOCAL LOGIC COMMENTED OUT FOR ELEVENLABS TRANSITION
             // If ONLY wake word was said ("Hey Zyra"), acknowledge and wait
             // We strip all variations to find the "command" part
             var cleanText = bestMatch
@@ -429,6 +536,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 return
             }
             // If command followed ("Hey Zyra play music"), continue to process `cleanText` (or full text)
+            */
         } else {
              // In Active Session, refresh timeout
              resetSessionTimeout()
@@ -474,11 +582,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 handleMediaCommand(intent.extra)
             }
             IntentType.CUT_CALL -> {
-                speak(brain.getResponse(intent, this))
+                // speak(brain.getResponse(intent, this)) // Handled in cutCall
                 cutCall()
             }
             IntentType.ANSWER_CALL -> {
-                speak("Answering call.")
+                // speak("Answering call.") // Handled in handleAnswerCall
                 handleAnswerCall(intent.extra)
             }
             IntentType.VEHICLE_INFO -> {
@@ -542,8 +650,22 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  speak(brain.getResponse(intent, this))
             }
             IntentType.VOLUME_CONTROL -> {
-                speak(brain.getResponse(intent, this))
+                if (intent.extra == "max") {
+                    speak(com.zyra.app.logic.PersonaManager.getVolumeMaxResponse())
+                } else {
+                    speak(com.zyra.app.logic.PersonaManager.getConfirmation("adjusting volume"))
+                }
                 handleVolumeControl(intent.extra)
+            }
+            IntentType.SCREEN_CONTEXT -> {
+                 if (com.zyra.app.service.ZyraAccessibilityService.instance != null) {
+                     val prompt = intent.extra ?: "Describe this screen"
+                     speak("One moment, looking at your screen...")
+                     com.zyra.app.service.ZyraAccessibilityService.requestScreenAnalysis(prompt)
+                 } else {
+                     speak("I need Accessibility permissions to see your screen. Please enable me in settings.")
+                     // Optional: Open settings intent
+                 }
             }
             else -> {
                 // --- GEMINI ONLINE INTERCEPT ---
@@ -592,6 +714,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                                     val firstPart = response.substring(0, tagStart)
                                     val secondPart = response.substring(tagEnd + 2)
                                     response = (firstPart + secondPart).trim()
+                                    
+                                    // EXECUTE IMMEDIATELY
+                                    withContext(Dispatchers.Main) {
+                                        speak(response) // Speak first
+                                        when (type) {
+                                            IntentType.UNLOCK_DEVICE -> handleUnlockDevice()
+                                            IntentType.DEVICE_CONTROL -> handleDeviceControl(prompt) // Infer command
+                                            IntentType.CALL -> speak("I can't make calls from online mode yet.")
+                                            else -> {}
+                                        }
+                                    }
+                                    return@launch // Stop further processing since we handled it
                                 }
                             } catch (e: Exception) { Log.e("ZyraService", "Error parsing training tag", e) }
                         }
@@ -774,16 +908,25 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     )
 
 
+    private var isTrustedSession = false
+
     private fun handleUnlockDevice() {
         val keyguardManager = getSystemService(KEYGUARD_SERVICE) as android.app.KeyguardManager
         
         if (!keyguardManager.isKeyguardLocked) {
-            speak("The phone is already unlocked.")
+             speak(com.zyra.app.logic.PersonaManager.getAlreadyUnlockedResponse())
+             return
+        }
+        
+        // Fast Track if already trusted recently
+        if (isTrustedSession) {
+            speak(com.zyra.app.logic.PersonaManager.getConfirmation("accessing secure protocols"))
+            performPhysicalUnlock()
             return
         }
         
         // Start Security Flow
-        speak("Who is this?")
+        speak("Identify yourself.")
         conversationManager.startUserIdentification()
         resetSessionTimeout()
     }
@@ -818,19 +961,35 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             return
         }
 
+        // 0. WAKE UP SCREEN
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        if (!powerManager.isInteractive) {
+            val wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
+                "Zyra:UnlockWakeLock"
+            )
+            wakeLock.acquire(3000) // Hold for 3s to ensure swipe checks register
+        }
+
         ZyraAccessibilityService.performAction("gesture:$x,$yStart,$x,$yEnd,300")
         
         // 2. Enter PIN if available
         val prefs = getSharedPreferences("com.zyra.app.prefs", MODE_PRIVATE)
-        val pin = prefs.getString("device_pin", null)
+        var pin = prefs.getString("device_pin", null)
+        
+        // Fallback to Memory Module
+        if (pin == null) {
+            val memory = com.zyra.app.data.MemoryModule.getAllFacts()
+            pin = memory["password"] ?: memory["phone password"] ?: memory["pin"] ?: memory["code"] ?: memory["passcode"]
+        }
         
         if (pin != null) {
             // Wait for swipe animation to finish (e.g. 500ms)
             android.os.Handler(mainLooper).postDelayed({
-                enterPin(pin)
+                enterPin(pin!!)
             }, 600)
         } else {
-            speak("Please enter your PIN.")
+            speak("I don't know your PIN. Please tell me 'My password is...' so I can learn it.")
         }
     }
     
@@ -881,7 +1040,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             intent.setPackage("com.whatsapp") // Target WhatsApp directly
             
             startActivity(intent)
-            speak("Sending message...")
+            speak(com.zyra.app.logic.PersonaManager.getConfirmation("sending packet"))
             
             // 3. Automate "Send" Click
             android.os.Handler(mainLooper).postDelayed({
@@ -960,6 +1119,22 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                      conversationManager.clear()
                  }
             }
+
+            is com.zyra.app.logic.InteractionState.ConfirmCall -> {
+                 // "Did you mean Kiran?" -> "Yes"
+                 if (lowerText.contains("yes") || lowerText.contains("correct") || lowerText.contains("sure") || lowerText.contains("yap") || lowerText.contains("right") || lowerText.contains("call") || lowerText.contains("connect")) {
+                     speak("Calling ${state.name}.")
+                     makeCall(state.number)
+                     conversationManager.clear()
+                 } else if (lowerText.contains("no") || lowerText.contains("cancel") || lowerText.contains("wrong") || lowerText.contains("don't")) {
+                     speak("Okay, cancelled.")
+                     conversationManager.clear()
+                 } else {
+                     // Unclear input - Do not cancel, just re-ask
+                     speak("I didn't understand. Please say Yes to call ${state.name}, or No to cancel.")
+                     resetSessionTimeout() // Keep listening
+                 }
+            }
             is com.zyra.app.logic.InteractionState.IdentifyUser -> {
                 // "Who is this?" -> Expect "Shijin" or "Zyco"
                 if (lowerText.contains("shijin") || lowerText.contains("zyco") || lowerText.contains("psycho") || lowerText.contains("saiko")) {
@@ -977,12 +1152,33 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     speak("Access Granted. Welcome to Z's World.")
                     conversationManager.clear()
                     
+                    isTrustedSession = true // Enable fast-track for future unlocks
+                    
                     // Proceed to Unlock
                     performPhysicalUnlock()
                 } else {
                     speak("Access Declined.")
                     conversationManager.clear()
                 }
+            }
+            is com.zyra.app.logic.InteractionState.IncomingCall -> {
+                 if (lowerText.contains("answer") || lowerText.contains("yes") || lowerText.contains("pick")) {
+                     speak("Answering.")
+                     handleAnswerCall(null)
+                     conversationManager.clear()
+                 } else if (lowerText.contains("decline") || lowerText.contains("no") || lowerText.contains("cut")) {
+                     speak("Declining.")
+                     // End call (Telecom)
+                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                         if (checkSelfPermission(Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
+                             val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+                             try { telecomManager.endCall() } catch(_: Exception) {}
+                         }
+                     }
+                     conversationManager.clear()
+                 } else {
+                     speak("Say Answer or Decline.")
+                 }
             }
             else -> { conversationManager.clear() }
 
@@ -1122,11 +1318,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     
+    private var isCallInProgress = false
+
     private fun resetSessionTimeout() {
         activeSessionExpiryHandler.removeCallbacksAndMessages(null)
         activeSessionExpiryHandler.postDelayed({
             isActiveSession = false
-            broadcastState(ZyraState.IDLE)
+            if (isCallInProgress) {
+                // If call is active, DO NOT go IDLE. Keep overlay.
+                broadcastState(ZyraState.CALLING)
+            } else {
+                broadcastState(ZyraState.IDLE)
+            }
         }, sessionTimeoutMs)
     }
     
@@ -1230,7 +1433,26 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
                  val names = contacts.map { it.name }
                  // Use findAllMatches to get ALL potential candidates
-                 val matchedNames = Levenshtein.findAllMatches(spokenName, names)
+                 var matchedNames = Levenshtein.findAllMatches(spokenName, names)
+                 
+                 // --- PHONETIC FALLBACK (Indian English / Kerala Accent) ---
+                 if (matchedNames.isEmpty()) {
+                     Log.d("ZyraService", "No direct matches for '$spokenName'. Trying phonetic fallback...")
+                     val normalizedSpoken = normalizePhonetics(spokenName)
+                     
+                     // Filter contacts where normalized version is similar
+                     val phoneticMatches = contacts.filter { contact ->
+                         val normalizedContact = normalizePhonetics(contact.name)
+                         // Check for substring or high similarity on normalized strings
+                         normalizedContact.contains(normalizedSpoken) || 
+                         com.zyra.app.logic.algorithms.Levenshtein.calculateSimilarity(normalizedSpoken, normalizedContact) > 85
+                     }.map { it.name }
+                     
+                     if (phoneticMatches.isNotEmpty()) {
+                         Log.d("ZyraService", "Phonetic matches found: $phoneticMatches")
+                         matchedNames = phoneticMatches
+                     }
+                 }
                  
                  withContext(Dispatchers.Main) {
                      if (matchedNames.isEmpty()) {
@@ -1321,7 +1543,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
                 try {
                     telecomManager.acceptRingingCall()
-                    speak("Call accepted.")
+                    speak(com.zyra.app.logic.PersonaManager.getCallAnswerResponse())
                     
                     if (mode == "speaker") {
                          // Wait for call to connect
@@ -1329,7 +1551,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                              val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
                              audioManager.mode = AudioManager.MODE_IN_CALL
                              audioManager.isSpeakerphoneOn = true
-                             speak("Speaker enabled.")
+                             speak(com.zyra.app.logic.PersonaManager.getConfirmation("activating loud speaker"))
                          }, 1000)
                     }
                     
@@ -1354,24 +1576,36 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun cutCall() {
+        android.os.Handler(mainLooper).post {
+             android.widget.Toast.makeText(this, "Ending Call...", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        
+        // Reset state tracker
+        isCallInProgress = false
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
              if (checkSelfPermission(android.Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                  val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
                  try {
                      telecomManager.endCall()
-                     speak("Call terminated.")
+                     speak(com.zyra.app.logic.PersonaManager.getCallCutResponse())
                  } catch (e: Exception) {
-                     Log.e("ZyraService", "Error ending call", e)
+                     Log.e("ZyraService", "Error ending call via TelecomManager", e)
                      fallbackCutCall()
                  }
              } else {
+                  speak("I need the 'Answer Phone Calls' permission to do that. Please check my settings.")
                   fallbackCutCall()
              }
         } else {
              fallbackCutCall()
         }
+        // Force update UI
+        broadcastState(ZyraState.IDLE)
     }
     
+
+
     private fun handleCloseApp() {
         speak("Minimizing application.")
         ZyraAccessibilityService.performAction("global:home")
@@ -1644,7 +1878,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             return
         }
 
-        // Show CALLING state immediately
+        // Show CALLING state immediately and track it
+        isCallInProgress = true
         broadcastState(ZyraState.CALLING)
 
         val intent = Intent(Intent.ACTION_CALL).apply {
@@ -1654,11 +1889,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             startActivity(intent)
             
-            // Keep the overlay visible for a few seconds to show "Calling" status
+            // Keep the overlay visible during the call (Infinite Persistence)
+            // DO NOT HIDE. The "End Call" button needs to be available.
+            // We rely on "cutCall()" or manual end to clear the state.
+            broadcastState(ZyraState.CALLING) 
+            
+            // Optionally: Auto-hide after a VERY long time (e.g. 1 hour) just in case
             android.os.Handler(mainLooper).postDelayed({
-                isListening = false
-                broadcastState(ZyraState.IDLE) // This will hide the overlay
-            }, 4000) 
+                 // Only hide if still calling (safety check)
+                 if (isActiveSession) { // Logic check: isActiveSession might be false, but state is CALLING
+                     // No-op: Let the user end it.
+                 }
+            }, 3600000) 
             
         } catch (e: SecurityException) {
             Log.e("ZyraService", "Permission denied for calling", e)
@@ -1699,18 +1941,45 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              Log.w("ZyraService", "Critical Error ($error). Hard Restarting Recognizer...")
              try {
                  speechRecognizer.destroy()
+                 // Just init here. The delayed handler below will call startListening()
+                 // giving the system time to release resources.
                  initSpeechRecognizer()
              } catch (e: Exception) { Log.e("ZyraService", "Hard restart failed", e) }
         }
 
-        // Backoff strategy
-        val delay = when (error) {
+        // Backoff strategy (Progressive)
+        var delay = when (error) {
             SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 500L
-            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> 10000L 
-            SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 300L
-            SpeechRecognizer.ERROR_CLIENT -> 1000L
-            else -> 300L
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> 30000L 
+            SpeechRecognizer.ERROR_NO_MATCH -> {
+                consecutiveErrorCount++
+                 // Exponential backoff: 2s -> 5s -> 15s -> 60s
+                 // If music is playing, we want this to slow down quickly to stop the "loop"
+                if (consecutiveErrorCount > 5) 60000L 
+                else if (consecutiveErrorCount > 3) 15000L 
+                else if (consecutiveErrorCount > 1) 5000L 
+                else 2000L
+            }
+            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 500L
+            SpeechRecognizer.ERROR_CLIENT -> {
+                 consecutiveErrorCount++
+                 if (consecutiveErrorCount > 3) 5000L else 1000L
+            }
+            SpeechRecognizer.ERROR_NETWORK -> {
+                 consecutiveErrorCount++
+                 // Progressive Backoff for Network: 2s -> 5s -> 10s -> 30s
+                 if (consecutiveErrorCount > 5) 30000L 
+                 else if (consecutiveErrorCount > 3) 10000L 
+                 else if (consecutiveErrorCount > 1) 5000L 
+                 else 2000L
+            }
+            else -> {
+                consecutiveErrorCount++
+                1000L
+            }
         }
+        
+        Log.d("ZyraService", "Speech Error: $error. Count: $consecutiveErrorCount. Delay: $delay")
         
         // Ensure we abandon focus if we grabbed it during "Ducking" or Active Session
         try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
@@ -1723,8 +1992,16 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun fallbackCutCall() {
+         Log.d("ZyraService", "Attempting Fallback Cut Call...")
+         
+         // 1. Try Accessibility Service (Global Action Back can sometimes end calls or minimize them)
+         // Not a guaranteed 'End Call', but better than nothing if Telecom fails.
+         if (com.zyra.app.service.ZyraAccessibilityService.instance != null) {
+             com.zyra.app.service.ZyraAccessibilityService.performAction("global:back")
+         }
+
+         // 2. Headset Hook (Legacy Method - flaky on newer Androids)
          val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-         // Try Headset Hook
          val event = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK)
          audioManager.dispatchMediaKeyEvent(event)
          
@@ -1782,7 +2059,30 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         restartIntent.action = "com.zyra.app.RESTART"
         sendBroadcast(restartIntent)
     }
-    // Duplicates removed.
+
+    // --- HELPER: Phonetic Normalization for Indian/Kerala Accents ---
+    private fun normalizePhonetics(input: String): String {
+        var text = input.lowercase().trim()
+        
+        // 1. Consonant Swaps (Common in Indian accents)
+        text = text.replace("p", "b")  // Pro -> Bro
+        text = text.replace("f", "ph") // Fan -> Phan
+        text = text.replace("v", "w")  // Vine -> Wine
+        text = text.replace("z", "s")  // Zyra -> Syra
+        text = text.replace("sh", "s") // Shee -> See
+        text = text.replace("th", "t") // They -> Tey
+        
+        // 2. Vowel Reduction (Simplify to skeleton)
+        // Keep it simple for now, maybe map all vowels to 'a' or remove them? 
+        // Removing vowels is too aggressive ("Sai" -> "S", "See" -> "S").
+        // Let's just standardise double vowels.
+        text = text.replace("ee", "i")
+        text = text.replace("oo", "u")
+        
+        return text
+    }
+
+
 
 
 
