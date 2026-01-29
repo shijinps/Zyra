@@ -59,7 +59,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     // ElevenLabs Integration
     private val elevenLabsManager = com.zyra.app.logic.ElevenLabsConversationManager
-    private val ELEVENLABS_AGENT_ID = "YOUR_AGENT_ID_HERE" // TODO: Move to config
+    private val ELEVENLABS_AGENT_ID = "agent_5401kg271w7hemrvsb9dkje7rkwv" // Correct Agent ID provided by user
 
 
     companion object {
