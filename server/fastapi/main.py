@@ -194,6 +194,19 @@ def execute_tool(request: ToolRequest, token: str = Security(verify_token)):
         return run_nmap(Target(host=params.get("host")), token)
     elif tool == "dig":
         return run_dig(Target(host=params.get("host")), token)
-    else:
-        raise HTTPException(status_code=404, detail=f"Tool '{tool}' not found")
+
+class Notification(BaseModel):
+    title: str
+    message: str
+    priority: Optional[str] = "normal"
+
+@app.post("/notify")
+def send_notification(notification: Notification, token: str = Security(verify_token)):
+    """
+    Receives alerts from n8n (e.g., "Proactive Incident Found").
+    In a real app, this would push to FCM (Firebase).
+    For now, it logs the alert so you can see it in Coolify.
+    """
+    print(f"🚨 ZYRA ALERT: {notification.title} - {notification.message} [{notification.priority}]")
+    return {"status": "Alert Logged", "data": notification.dict()}
 
