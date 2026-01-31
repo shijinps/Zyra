@@ -1,5 +1,6 @@
 {
   "name": "Zyra Proactive Incident Alert",
+  "settings": {},
   "nodes": [
     {
       "parameters": {
@@ -21,7 +22,7 @@
         "operation": "executeQuery",
         "query": "SELECT * FROM kochi_incidents \nWHERE ST_DWithin(geom, ST_MakePoint($1, $2)::geography, 3000)\nAND created_at > NOW() - INTERVAL '2 days' LIMIT 1;",
         "additionalFields": {
-            "queryParams": "={{$json.body.longitude}},{{$json.body.latitude}}"
+          "queryParams": "={{$json.body.longitude}},{{$json.body.latitude}}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -66,9 +67,9 @@
         "method": "POST",
         "jsonParameters": true,
         "body": {
-            "title": "Incident Alert",
-            "message": "Caution: Near {{$json.description}} reported recently.",
-            "priority": "high"
+          "title": "Incident Alert",
+          "message": "Caution: Near {{$json.description}} reported recently.",
+          "priority": "high"
         }
       },
       "type": "n8n-nodes-base.httpRequest",

@@ -1,5 +1,6 @@
 {
     "name": "Zyra MCP Tool Bridge",
+    "settings": {},
     "nodes": [
         {
             "parameters": {
