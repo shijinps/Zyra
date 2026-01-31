@@ -3,7 +3,7 @@ name: Deploy n8n Workflows
 on:
   push:
     paths:
-      - 'n8n_workflows/**.json'
+      - 'server/n8n/**.json'
     branches:
       - main
   workflow_dispatch:
@@ -24,24 +24,42 @@ jobs:
         env:
           N8N_HOST: ${{ secrets.N8N_HOST }}
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          N8N_PROTOCOL: https
         run: |
-          # Loop through all JSON files in n8n_workflows directory
-          for file in n8n_workflows/*.json; do
-            echo "Deploying $file..."
+          # Install jq if needed (usually pre-installed on ubuntu-latest)
+          sudo apt-get install -y jq
+
+          cd server/n8n
+
+          for file in *.json; do
+            echo "Processing $file..."
             
-            # Read file content
-            WORKFLOW_JSON=$(cat "$file")
+            # 1. Extract Name from JSON
+            WORKFLOW_NAME=$(jq -r '.name' "$file")
+            echo "Workflow Name: $WORKFLOW_NAME"
             
-            # Use curl to POST to n8n API (Import/Create)
-            # Note: This uses the /workflows endpoint. 
-            # Ideally, we check if it exists and PUT (update) or POST (create).
-            # For simplicity, we assume we might need to handle ID management.
-            # A common strategy is to force the ID in the JSON file.
+            # 2. Check if Workflow exists in n8n
+            EXISTING_ID=$(curl -s "$N8N_PROTOCOL://$N8N_HOST/api/v1/workflows" \
+              -H "X-N8N-API-KEY: $N8N_API_KEY" | \
+              jq -r --arg name "$WORKFLOW_NAME" '.data[] | select(.name == $name) | .id')
             
-            curl -X POST "https://$N8N_HOST/api/v1/workflows" \
-              -H "X-N8N-API-KEY: $N8N_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "$WORKFLOW_JSON"
-            
-            echo "Deployed $file"
+            if [ -n "$EXISTING_ID" ]; then
+              echo "Found existing workflow ID: $EXISTING_ID. Updating..."
+              
+              # Update (PUT)
+              # curl requires the ID in the URL and the body
+              curl -s -X PUT "$N8N_PROTOCOL://$N8N_HOST/api/v1/workflows/$EXISTING_ID" \
+                -H "X-N8N-API-KEY: $N8N_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d @"$file"
+            else
+              echo "Workflow not found. Creating..."
+              
+              # Create (POST)
+              curl -s -X POST "$N8N_PROTOCOL://$N8N_HOST/api/v1/workflows" \
+                -H "X-N8N-API-KEY: $N8N_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d @"$file"
+            fi
+            echo "--------------------------------"
           done

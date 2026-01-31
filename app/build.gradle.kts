@@ -64,6 +64,13 @@ dependencies {
     // ElevenLabs Conversational AI
     implementation("io.elevenlabs:elevenlabs-android:0.7.2")
 
+    // Location & Maps
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // Network (Retrofit)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     

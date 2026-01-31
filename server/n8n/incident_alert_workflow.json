@@ -1,0 +1,119 @@
+{
+  "name": "Zyra Proactive Incident Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zyra-pulse",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "id": "webhook-trigger",
+      "name": "Android Pulse Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM kochi_incidents \nWHERE ST_DWithin(geom, ST_MakePoint($1, $2)::geography, 3000)\nAND created_at > NOW() - INTERVAL '2 days' LIMIT 1;",
+        "additionalFields": {
+            "queryParams": "={{$json.body.longitude}},{{$json.body.latitude}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ],
+      "id": "postgis-check",
+      "name": "Check Nearby Incidents",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CRED_ID",
+          "name": "Local Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.id}}",
+              "operation": "notEqual",
+              "value2": "undefined"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        300
+      ],
+      "id": "if-found",
+      "name": "Incident Found?"
+    },
+    {
+      "parameters": {
+        "url": "https://api.shijin.in/notify",
+        "method": "POST",
+        "jsonParameters": true,
+        "body": {
+            "title": "Incident Alert",
+            "message": "Caution: Near {{$json.description}} reported recently.",
+            "priority": "high"
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        700,
+        200
+      ],
+      "id": "notify-android",
+      "name": "Send Context Alert"
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "postgis-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "postgis-check": {
+      "main": [
+        [
+          {
+            "node": "if-found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-found": {
+      "main": [
+        [
+          {
+            "node": "notify-android",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

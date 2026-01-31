@@ -1,0 +1,101 @@
+{
+    "name": "Zyra MCP Tool Bridge",
+    "nodes": [
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-4-turbo-preview",
+                    "mode": "id"
+                },
+                "messages": {
+                    "messageValues": [
+                        {
+                            "role": "system",
+                            "content": "You are Zyra's Technical Brain. Use the MCP tools to check servers and run diagnostics."
+                        },
+                        {
+                            "role": "user",
+                            "content": "={{$json.message}}"
+                        }
+                    ]
+                },
+                "tools": {
+                    "tool": [
+                        {
+                            "name": "check_server",
+                            "description": "Checks if a server is online via ping",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "host": {
+                                        "type": "string",
+                                        "description": "Hostname or IP to check"
+                                    }
+                                },
+                                "required": [
+                                    "host"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+                460,
+                460
+            ],
+            "id": "ai-agent",
+            "name": "Zyra Logic Agent"
+        },
+        {
+            "parameters": {
+                "url": "http://fastapi:8000/tool/execute",
+                "method": "POST",
+                "jsonParameters": true,
+                "body": {
+                    "tool_name": "={{$tool.name}}",
+                    "parameters": "={{$tool.arguments}}"
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                800,
+                500
+            ],
+            "id": "call-fastapi",
+            "name": "Execute VPS Tool"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra-chat",
+                "responseMode": "lastNode"
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                460
+            ],
+            "id": "chat-webhook",
+            "name": "Chat Trigger"
+        }
+    ],
+    "connections": {
+        "chat-webhook": {
+            "main": [
+                [
+                    {
+                        "node": "ai-agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

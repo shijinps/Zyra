@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 /**
  * Manages the ElevenLabs Conversational AI session.
@@ -41,9 +43,11 @@ object ElevenLabsConversationManager {
 
     private var eventListener: ConversationEventListener? = null
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     fun init(context: Context) {
         if (isInitialized) return
-        // Placeholder for actual SDK init if needed globally
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         isInitialized = true
         Log.d(TAG, "ElevenLabs SDK Initialized")
     }
@@ -93,19 +97,47 @@ object ElevenLabsConversationManager {
      * The "Bridge" for Client Tools.
      * Use this to execute local commands requested by the AI.
      */
-    fun handleClientTool(toolName: String, params: Map<String, Any>) {
+    /**
+     * The "Bridge" for Client Tools.
+     * Use this to execute local commands requested by the AI.
+     */
+    suspend fun handleClientTool(toolName: String, params: Map<String, Any>): String {
         Log.d(TAG, "Client Tool Request: $toolName with $params")
-        when (toolName) {
+        return when (toolName) {
+            "get_gps", "get_location" -> {
+                fetchLocation()
+            }
+            "check_server_status", "check_server" -> {
+                val host = params["server"] as? String ?: "8.8.8.8"
+                pingServer(host)
+            }
             "vibrate" -> {
-                Log.d(TAG, "Tool: Vibrate executed")
+                 // Vibrate logic here (needs Context or Vibrator service injected)
+                 "Vibrated"
             }
-            "ping_local" -> {
-                val target = params["target"] as? String ?: "localhost"
-                Log.d(TAG, "Tool: Ping $target executed")
+            else -> "Tool not found"
+        }
+    }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private suspend fun fetchLocation(): String = kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                cont.resumeWith(Result.success("${location.latitude},${location.longitude}"))
+            } else {
+                cont.resumeWith(Result.success("Location unknown"))
             }
-            "get_battery" -> {
-                 Log.d(TAG, "Tool: Get Battery executed")
-            }
+        }.addOnFailureListener {
+            cont.resumeWith(Result.success("Location error: ${it.message}"))
+        }
+    }
+
+    private fun pingServer(host: String): String {
+        return try {
+            val isReachable = java.net.InetAddress.getByName(host).isReachable(2000)
+            if (isReachable) "Server $host is Online" else "Server $host is Offline"
+        } catch (e: Exception) {
+            "Error checking $host: ${e.message}"
         }
     }
 }
