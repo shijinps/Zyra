@@ -2,8 +2,8 @@ package com.zyra.app.logic
 
 import android.content.Context
 import android.util.Log
-import com.elevenlabs.android.ElevenLabs
-import com.elevenlabs.android.ElevenLabsConfig
+import io.elevenlabs.ConversationClient
+import io.elevenlabs.ConversationConfig
 // import com.elevenlabs.android.Conversation 
 // import com.elevenlabs.android.ConversationConfig
 // import com.elevenlabs.android.ConversationCallback
