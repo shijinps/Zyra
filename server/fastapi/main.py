@@ -8,6 +8,9 @@ from typing import Optional
 
 # ... (Existing code)
 
+
+app = FastAPI(title="Zyra Technical Brain")
+
 @app.on_event("startup")
 def startup_db_client():
     """
@@ -62,7 +65,6 @@ def startup_db_client():
 
 # ... (Rest of file)
 
-app = FastAPI(title="Zyra Technical Brain")
 
 # Security
 API_KEY_NAME = "X-Zyra-Token"
