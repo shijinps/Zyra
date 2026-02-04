@@ -181,6 +181,22 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             cutCall()
             return START_STICKY
         }
+        
+        if (intent?.action == "com.zyra.app.ACTION_WAKE") {
+            Log.d("ZyraService", "Manual Wake Triggered")
+            isActiveSession = true
+            resetSessionTimeout()
+            
+            // Show Overlay
+             if (Settings.canDrawOverlays(this)) {
+                 overlayManager.show()
+                 overlayManager.updateState(ZyraState.LISTENING)
+             }
+             
+             // Start ElevenLabs
+             elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+             return START_STICKY
+        }
 
         if (!isListening) {
              startListening()
@@ -190,14 +206,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun broadcastState(state: ZyraState) {
         // 1. Update Overlay
         if (state == ZyraState.IDLE) {
-            overlayManager.hide()
+             // Keep overlay hidden to prevent blocking touch
+             overlayManager.hide()
         } else if (state == ZyraState.LISTENING && !isActiveSession) {
-             // Passive listening (Waiting for Wake Word) -> Keep Hidden
+             // Passive listening (Waiting for Wake Word) -> Keep Hidden to prevent blocking touch
              overlayManager.hide()
         } else if (state == ZyraState.PROCESSING && !isActiveSession) {
-             // Processing a potential wake word.
-             // DO NOT SHOW overlay yet. E.g. User said "Um..." or "Chehra"
-             // Wait until processCommands confirms it is "Zyra".
+             // Processing... Keep visible if desired, or hide.
+             // User requested "remove animation model". Let's hide it until active.
              overlayManager.hide()
         } else {
              // Active Interaction (Speaking, Processing (Active), or Active Listening)
@@ -238,15 +254,37 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             .build()
 
         // Android 14 requirements: "microphone" type requires RECORD_AUDIO permission at runtime.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val hasMicPermission = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            if (hasMicPermission) {
-                startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-            } else {
-                Log.e("ZyraService", "Missing RECORD_AUDIO permission. Cannot start Microphone FGS. Stopping service.")
-                // We cannot start FGS without permission. Stopping prevents crash.
-                // The Activity should request permission and restart service.
-                stopSelf() 
+        // It also requires start from "while-in-use" state unless exempt.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                // PRIMARY: Try to start with MICROPHONE capability (best for Assistant)
+                val hasMicPermission = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                if (hasMicPermission) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+                    } else {
+                        startForeground(1, notification, 128) // Microphone integer value for Q if needed, or just standard
+                    }
+                } else {
+                    throw SecurityException("Mic permission missing")
+                }
+            } catch (e: Exception) {
+                Log.w("ZyraService", "Failed to start as Microphone FGS: ${e.message}. Attempting fallback.")
+                try {
+                     // FALLBACK: Use Location + Media Playback (TTS) to keep service alive.
+                     // This prevents "ForegroundServiceDidNotStartInTimeException" crash.
+                     var fallbackType = 0
+                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                         fallbackType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or 
+                                      android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                         startForeground(1, notification, fallbackType)
+                     } else {
+                         startForeground(1, notification)
+                     }
+                } catch (e2: Exception) {
+                    Log.e("ZyraService", "Critical: Failed to start FGS fallback.", e2)
+                    stopSelf()
+                }
             }
         } else {
             startForeground(1, notification)

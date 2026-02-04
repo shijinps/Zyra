@@ -7,6 +7,8 @@ import android.os.Build
 import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,13 +67,11 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
 
+        @Suppress("DEPRECATION")
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
-            500, // Height in pixels, adjust as needed or use dp conversion
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -128,7 +128,7 @@ fun OverlayContent(state: ZyraState) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = 20.dp), // Lift up slightly
+            .padding(bottom = 50.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         // Re-use the existing SiriWaveAnimation
@@ -150,9 +150,30 @@ fun OverlayContent(state: ZyraState) {
              }
         }
 
-        SiriWaveAnimation(
-            state = state,
-            modifier = Modifier.size(300.dp) // Large orb
-        )
+        // Clickable Container for Manual Wake
+        // Logic: Always show specific "Wake Button" if IDLE, or the Wave if active
+        
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                // Debug Background: Semi-transparent white to see where to tap
+                .background(Color.White.copy(alpha = 0.05f), androidx.compose.foundation.shape.CircleShape)
+                .clickable {
+                    // Feedback
+                    android.widget.Toast.makeText(context, "Waking Zyra...", android.widget.Toast.LENGTH_SHORT).show()
+                    
+                    // Manual Wake Trigger
+                    val intent = android.content.Intent(context, VoiceAssistantService::class.java).apply {
+                        action = "com.zyra.app.ACTION_WAKE"
+                    }
+                    context.startService(intent)
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            SiriWaveAnimation(
+                state = state,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }

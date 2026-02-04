@@ -163,12 +163,17 @@ fun ZyraAppNavHost(
             }
         }
         composable("home") {
+            val context = androidx.compose.ui.platform.LocalContext.current
             HomeScreen(
                 onStartService = onStartService,
-                onStopService = onStopService,
                 contactRepository = contactRepository,
                 commandManager = commandManager,
-
+                onManualWake = {
+                    val intent = Intent(context, VoiceAssistantService::class.java).apply {
+                        action = "com.zyra.app.ACTION_WAKE"
+                    }
+                    context.startService(intent)
+                },
                 onNavigateToFeedback = { navController.navigate("feedback") },
                 onNavigateToBrain = { navController.navigate("brain_list") }
             )

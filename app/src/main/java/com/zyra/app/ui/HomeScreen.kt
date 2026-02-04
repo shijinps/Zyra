@@ -18,21 +18,21 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.BorderStroke
 
@@ -55,15 +55,15 @@ import kotlinx.coroutines.withContext
 val Obsidian = Color(0xFF050505)
 val MidnightBlue = Color(0xFF0A0F1E)
 val NeonGreen = Color(0xFF00E676)
-val GlassWhite = Color.White.copy(alpha = 0.08f)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onStartService: () -> Unit,
-    onStopService: () -> Unit,
     contactRepository: ContactRepository,
     commandManager: CommandManager,
+    onManualWake: () -> Unit,
     onNavigateToFeedback: () -> Unit,
     onNavigateToBrain: () -> Unit
 ) {
@@ -232,19 +232,29 @@ fun HomeScreen(
                             modifier = Modifier.weight(1f)
                         )
                         StatusCard(
-                            label = "Service",
-                            isActive = isServiceRunning,
+                            label = "WAKE ZYRA",
+                            isActive = true,
                             modifier = Modifier.weight(1f),
-                             onClick = onStartService
+                            onClick = onManualWake, // DIRECT TRIGGER
+                            icon = Icons.Default.PowerSettingsNew // Use Power Icon for Wake
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         StatusCard(
+                            label = "Service",
+                            isActive = isServiceRunning,
+                            modifier = Modifier.weight(1f),
+                             onClick = onStartService,
+                             icon = Icons.Default.Settings // Use Settings Icon
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        StatusCard(
                             label = "Brain / Tasks",
                             isActive = true,
                             modifier = Modifier.weight(1f),
-                            onClick = onNavigateToBrain
+                            onClick = onNavigateToBrain,
+                            icon = Icons.Default.Psychology // Brain Icon
                         )
                     }
                 }
@@ -294,7 +304,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun StatusCard(label: String, isActive: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun StatusCard(label: String, isActive: Boolean, modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.PowerSettingsNew, onClick: () -> Unit = {}) {
     Card(
         modifier = modifier
             .height(90.dp)
@@ -309,7 +319,7 @@ fun StatusCard(label: String, isActive: Boolean, modifier: Modifier = Modifier, 
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector = Icons.Default.PowerSettingsNew,
+                imageVector = icon,
                 contentDescription = null,
                 tint = if (isActive) NeonGreen else Color.Red,
                 modifier = Modifier.size(28.dp)
@@ -332,142 +342,7 @@ fun GlassCard(content: @Composable () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EmojiBotAnimation(isListening: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "emojibot")
-    
-    // Bounce Animation (Body)
-    val bodyBounce by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -10f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bodyBounce"
-    )
 
-    // Hands Animation (Y Position)
-    // Idle: Hands down/hidden. Listening: Hands UP!
-    val handInputState = if (isListening) 1f else 0f
-    val handProgress by animateFloatAsState(
-        targetValue = handInputState,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "handProgress"
-    )
-
-    Canvas(modifier = Modifier.size(200.dp)) {
-        val center = Offset(size.width / 2, size.height / 2 + bodyBounce)
-        val r = size.minDimension / 3 // Radius of the face
-        
-        // --- 1. Background Glow (Siri-like Blue/Purple from image) ---
-        val glowRadius = r * (1.2f + (if (isListening) 0.2f else 0f))
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFF5E35B1).copy(alpha = 0.6f), // Deep Purple
-                    Color(0xFF00E5FF).copy(alpha = 0.3f), // Cyan
-                    Color.Transparent
-                )
-            ),
-            radius = glowRadius,
-            center = center
-        )
-
-        // --- 2. Hands (Draw first so they are behind/beside body) ---
-        // Interpolate position: 0f (Down) -> 1f (Up)
-        val handRadius = r * 0.25f
-        val handXOffset = r * 0.95f
-        val handRestY = center.y + r * 0.5f
-        val handRaisedY = center.y - r * 0.2f
-        
-        val currentHandY = handRestY + (handRaisedY - handRestY) * handProgress
-        val currentHandXExpansion = 10f * handProgress // Move out slightly when up
-
-        // Left Hand
-        drawCircle(
-            color = Color(0xFFFFD600), // Yellow
-            radius = handRadius,
-            center = Offset(center.x - handXOffset - currentHandXExpansion, currentHandY)
-        )
-        // Right Hand
-        drawCircle(
-            color = Color(0xFFFFD600), // Yellow
-            radius = handRadius,
-            center = Offset(center.x + handXOffset + currentHandXExpansion, currentHandY)
-        )
-
-        // --- 3. Body (Yellow Face) ---
-        drawCircle(
-            color = Color(0xFFFFD600), // Golden Yellow
-            radius = r,
-            center = center
-        )
-
-        // --- 4. Eyes (White Sclera + Blue Iris + Black Pupil) ---
-        val eyeWidth = r * 0.32f
-        val eyeHeight = r * 0.38f
-        val eyeXOffset = r * 0.35f
-        val eyeYOffset = r * 0.15f // Eyes slightly above center
-        
-        // Left Eye Container
-        val leftEyeCenter = Offset(center.x - eyeXOffset, center.y - eyeYOffset)
-        drawOval(Color.White, topLeft = Offset(leftEyeCenter.x - eyeWidth/2, leftEyeCenter.y - eyeHeight/2), size = Size(eyeWidth, eyeHeight))
-        // Right Eye Container
-        val rightEyeCenter = Offset(center.x + eyeXOffset, center.y - eyeYOffset)
-        drawOval(Color.White, topLeft = Offset(rightEyeCenter.x - eyeWidth/2, rightEyeCenter.y - eyeHeight/2), size = Size(eyeWidth, eyeHeight))
-
-        // Irises (Blue)
-        val irisSize = eyeWidth * 0.65f
-        drawCircle(Color(0xFF2979FF), radius = irisSize/2, center = leftEyeCenter)
-        drawCircle(Color(0xFF2979FF), radius = irisSize/2, center = rightEyeCenter)
-
-        // Pupils (Black)
-        val pupilSize = irisSize * 0.5f
-        drawCircle(Color.Black, radius = pupilSize/2, center = leftEyeCenter)
-        drawCircle(Color.Black, radius = pupilSize/2, center = rightEyeCenter)
-        
-        // Eye Shine (White dot)
-        val shineOffset = irisSize * 0.2f
-        drawCircle(Color.White, radius = pupilSize * 0.25f, center = Offset(leftEyeCenter.x + shineOffset, leftEyeCenter.y - shineOffset))
-        drawCircle(Color.White, radius = pupilSize * 0.25f, center = Offset(rightEyeCenter.x + shineOffset, rightEyeCenter.y - shineOffset))
-
-
-        // --- 5. Eyebrows (Brown strokes) ---
-        val browWidth = eyeWidth * 1.2f
-        val browY = center.y - eyeYOffset - eyeHeight * 0.7f
-        
-        val path = Path()
-        // Left Brow
-        path.moveTo(center.x - eyeXOffset - browWidth/2, browY)
-        path.quadraticBezierTo(center.x - eyeXOffset, browY - 10f, center.x - eyeXOffset + browWidth/2, browY)
-        // Right Brow
-        path.moveTo(center.x + eyeXOffset - browWidth/2, browY)
-        path.quadraticBezierTo(center.x + eyeXOffset, browY - 10f, center.x + eyeXOffset + browWidth/2, browY)
-        
-        drawPath(
-            path = path,
-            color = Color(0xFF5D4037),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 8f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        )
-
-        // --- 6. Mouth (Simple Smile) ---
-        val smileWidth = r * 0.6f
-        val smileHeight = r * 0.3f
-        val smileY = center.y + r * 0.3f
-        
-        val smilePath = Path()
-        smilePath.moveTo(center.x - smileWidth/2, smileY)
-        smilePath.quadraticBezierTo(center.x, smileY + smileHeight, center.x + smileWidth/2, smileY)
-        
-        drawPath(
-            path = smilePath,
-            color = Color(0xFF5D4037),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 8f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -16,10 +16,16 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <!-- Device Controls -->
     <uses-permission android:name="android.permission.CAMERA" />
+<!-- ... skipping middle lines if needed, but here sticking to the chunk ... -->
+<!-- Actually, let's just do the service tag update and permission add in two chunks or one if close? -->
+<!-- Line 19 is FOREGROUND_SERVICE_LOCATION. I can insert there. -->
+<!-- Line 77 is service definition. -->
+<!-- I will split this into two MultiReplace chunks for safety/cleanliness. -->
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -74,7 +80,7 @@
 
         <service
             android:name=".service.VoiceAssistantService"
-            android:foregroundServiceType="microphone"
+            android:foregroundServiceType="microphone|location|mediaPlayback"
             android:stopWithTask="false"
             android:exported="false" />
             

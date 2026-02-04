@@ -56,6 +56,8 @@ object ElevenLabsConversationManager {
         this.eventListener = listener
     }
 
+    private var currentSession: Any? = null
+
     fun startConversation(context: Context, agentId: String) {
         if (!isInitialized) init(context)
         
@@ -64,20 +66,37 @@ object ElevenLabsConversationManager {
             try {
                 Log.d(TAG, "Starting conversation with Agent: $agentId")
                 
-                // TODO: Replace with actual SDK call
-                // val config = ConversationConfig(
-                //    agentId = agentId,
-                //    clientTools = mapOf("vibrate" to ..., "ping" to ...) 
-                // )
-                // ElevenLabs.Conversation.startSession(config, object : ConversationCallback { ... })
-               
-                // MOCKING SUCCESS for Development
-                // Real SDK integration requires the JAR/AAR which I cannot see fully.
-                // Assuming the user will verify the import.
+                // Client Tool Implementation
+                val checkServerTool = object : io.elevenlabs.ClientTool {
+                    override suspend fun execute(parameters: Map<String, Any>): io.elevenlabs.ClientToolResult {
+                        Log.d(TAG, "Tool called: check_server with $parameters")
+                        val result = handleClientTool("check_server", parameters)
+                        return io.elevenlabs.ClientToolResult.success(result)
+                    }
+                }
                 
-                _connectionState.value = ConnectionState.CONNECTED
-                eventListener?.onConversationStarted()
+                val config = ConversationConfig(
+                    agentId = agentId,
+                    onConnect = { conversationId ->
+                        Log.d(TAG, "Session Started: $conversationId")
+                        _connectionState.value = ConnectionState.CONNECTED
+                        eventListener?.onConversationStarted()
+                    },
+                    onDisconnect = { reason ->
+                        Log.d(TAG, "Session Ended: $reason")
+                        _connectionState.value = ConnectionState.DISCONNECTED
+                        eventListener?.onConversationStopped()
+                        currentSession = null
+                    },
+                    clientTools = mapOf("check_server" to checkServerTool)
+                )
                 
+                // Correct Signature: Config, then Context
+                currentSession = ConversationClient.startSession(config, context)
+                
+                Log.d(TAG, "Conversation Session Created")
+
+
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start conversation", e)
                 _connectionState.value = ConnectionState.ERROR
@@ -88,7 +107,12 @@ object ElevenLabsConversationManager {
 
     fun stopConversation() {
         Log.d(TAG, "Stopping conversation")
-        // ElevenLabs.Conversation.endSession()
+        try {
+             currentSession?.javaClass?.getMethod("endSession")?.invoke(currentSession)
+        } catch (e: Exception) {
+             Log.e(TAG, "Could not end session", e)
+        }
+        currentSession = null
         _connectionState.value = ConnectionState.DISCONNECTED
         eventListener?.onConversationStopped()
     }
