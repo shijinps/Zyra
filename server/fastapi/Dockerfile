@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy logic
 COPY main.py .
+COPY quantum.py .
 
 # Expose port
 EXPOSE 8000

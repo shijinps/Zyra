@@ -12,8 +12,14 @@ interface ZyraApiService {
         @Header("X-Zyra-Token") token: String,
         @Body data: PulseData
     ): Call<Any>
-    
-    // Future: generic execute endpoint
-    // @POST("/tool/execute")
-    // fun executeTool(...)
+
+    @retrofit2.http.GET("/quantum/mood")
+    fun getQuantumMood(
+        @Header("X-Zyra-Token") token: String
+    ): Call<QuantumMoodResponse>
+
+    @POST("/quantum/decision")
+    fun getQuantumDecision(
+        @Header("X-Zyra-Token") token: String
+    ): Call<Any>
 }

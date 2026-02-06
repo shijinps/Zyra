@@ -212,3 +212,23 @@ def send_notification(notification: Notification, token: str = Security(verify_t
     print(f"🚨 ZYRA ALERT: {notification.title} - {notification.message} [{notification.priority}]")
     return {"status": "Alert Logged", "data": notification.dict()}
 
+
+# --- Quantum Integration ---
+from .quantum import CiscoQRNG, IBMQuantumBrain
+
+@app.get("/quantum/mood")
+async def get_quantum_mood(token: str = Security(verify_token)):
+    """
+    Returns a daily 'Mood' for Zyra based on True Quantum Randomness.
+    """
+    mood = await CiscoQRNG.get_mood()
+    return {"mood": mood, "source": "Cisco Outshift QRNG"}
+
+@app.post("/quantum/decision")
+def get_quantum_decision(token: str = Security(verify_token)):
+    """
+    Uses IBM Quantum to make a binary decision (Superposition collapse).
+    """
+    result = IBMQuantumBrain.run_superposition_check()
+    return result
+
