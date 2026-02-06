@@ -159,16 +159,25 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             }
 
             override fun onConversationStopped() {
-                Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
-                isActiveSession = false
-                startListening() // Resume local wake word listening
-                broadcastState(ZyraState.IDLE)
+                android.os.Handler(mainLooper).post {
+                    Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
+                    isActiveSession = false
+                    startListening() // Resume local wake word listening
+                    broadcastState(ZyraState.IDLE)
+                }
             }
 
             override fun onError(message: String) {
-                Log.e("ZyraService", "ElevenLabs Error: $message")
-                speak("I'm having trouble connecting to my brain.")
-                onConversationStopped()
+                android.os.Handler(mainLooper).post {
+                    Log.e("ZyraService", "ElevenLabs Error: $message")
+                    speak("I'm having trouble connecting to my brain.")
+                    // Call onConversationStopped explicitly on main thread logic if needed, 
+                    // or just copy the logic to avoid double-posting
+                    Log.d("ZyraService", "Resume local listener after error.")
+                    isActiveSession = false
+                    startListening()
+                    broadcastState(ZyraState.IDLE)
+                }
             }
         })
     }
@@ -1970,17 +1979,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              // Optional: a subtle error sound or "beep" could go here
         }
 
-        // Hard Restart for Client/Permissions Errors (Fix for Error 5/7/11 loops)
-        // Error 11 = ERROR_SERVER_DISCONNECTED (or related internal error) requires fresh instance
+        // Hard Restart for Client/Permissions/Language Errors
+        // Error 11 = SERVER_DISCONNECTED, 12 = LANGUAGE_NOT_SUPPORTED, 13 = LANGUAGE_UNAVAILABLE
         if (error == SpeechRecognizer.ERROR_CLIENT || 
             error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS || 
-            error == 5 || 
-            error == 11) {
+            error == 5 || error == 11 || error == 12 || error == 13) {
              Log.w("ZyraService", "Critical Error ($error). Hard Restarting Recognizer...")
              try {
                  speechRecognizer.destroy()
-                 // Just init here. The delayed handler below will call startListening()
-                 // giving the system time to release resources.
                  initSpeechRecognizer()
              } catch (e: Exception) { Log.e("ZyraService", "Hard restart failed", e) }
         }
@@ -1989,6 +1995,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         var delay = when (error) {
             SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 500L
             SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> 30000L 
+            13 -> 5000L // Language Unavailable requires longer wait or download time
             SpeechRecognizer.ERROR_NO_MATCH -> {
                 consecutiveErrorCount++
                  // Exponential backoff: 2s -> 5s -> 15s -> 60s
@@ -2013,7 +2020,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             }
             else -> {
                 consecutiveErrorCount++
-                1000L
+                if (consecutiveErrorCount > 5) 30000L 
+                else if (consecutiveErrorCount > 3) 10000L 
+                else 2000L
             }
         }
         

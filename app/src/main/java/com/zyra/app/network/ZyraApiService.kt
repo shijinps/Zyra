@@ -1,6 +1,7 @@
 package com.zyra.app.network
 
 import com.zyra.app.data.model.PulseData
+import com.zyra.app.data.model.QuantumMoodResponse
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.Header

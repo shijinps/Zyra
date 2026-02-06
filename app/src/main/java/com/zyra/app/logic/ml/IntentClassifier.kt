@@ -2,6 +2,7 @@ package com.zyra.app.logic.ml
 
 import com.zyra.app.logic.IntentType
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 // Handles the bridging between Text and Neural Network probabilities
 class IntentClassifier(private val context: android.content.Context) {
@@ -40,11 +41,13 @@ class IntentClassifier(private val context: android.content.Context) {
         nn = NeuralNetwork(vocabulary.size, 64, intents.size, learningRate = 0.5)
         
         // "Extreme" On-Device Training
-        // We train the network immediately on startup on a small "Core Knowledge" dataset
-        trainNetwork()
+        // Move to background thread to avoid ANR/OOM on Main Thread
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+            trainNetwork()
+        }
     }
 
-    private fun trainNetwork() {
+    private suspend fun trainNetwork() {
         // Training Data: (Phrase, IntentIndex)
         val trainingData = mutableListOf(
             // CALL
@@ -72,8 +75,8 @@ class IntentClassifier(private val context: android.content.Context) {
             }
         }
 
-        // Train for 2000 epochs (Fast on modern mobile CPUs)
-        repeat(2000) {
+        // Train for 500 epochs (Sufficient for small dataset, prevents OOM/Lag)
+        repeat(500) {
             trainingData.forEach { (phrase, intentIdx) ->
                 val params = textToVector(phrase)
                 val targets = DoubleArray(intents.size) { 0.0 }

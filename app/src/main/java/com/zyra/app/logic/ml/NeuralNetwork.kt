@@ -25,6 +25,12 @@ class NeuralNetwork(
     private var biasHidden: DoubleArray
     private var biasOutput: DoubleArray
 
+    // Pre-allocated buffers to avoid GC pressure during training/inference
+    private val hiddenOutputs = DoubleArray(hiddenSize)
+    private val finalOutputs = DoubleArray(outputSize)
+    private val outputErrors = DoubleArray(outputSize)
+    private val hiddenErrors = DoubleArray(hiddenSize)
+
     init {
         // Initialize with random weights (He/Xavier initialization approximation)
         weightsInputHidden = Array(inputSize) { DoubleArray(hiddenSize) { Random.nextDouble(-1.0, 1.0) } }
@@ -38,38 +44,36 @@ class NeuralNetwork(
      */
     fun predict(inputs: DoubleArray): DoubleArray {
         // 1. Hidden Layer
-        val hiddenInputs = DoubleArray(hiddenSize)
         for (j in 0 until hiddenSize) {
             var sum = 0.0
             for (i in 0 until inputSize) {
                 sum += inputs[i] * weightsInputHidden[i][j]
             }
             sum += biasHidden[j]
-            hiddenInputs[j] = sigmoid(sum)
+            hiddenOutputs[j] = sigmoid(sum)
         }
 
         // 2. Output Layer
-        val outputs = DoubleArray(outputSize)
         for (k in 0 until outputSize) {
             var sum = 0.0
             for (j in 0 until hiddenSize) {
-                sum += hiddenInputs[j] * weightsHiddenOutput[j][k]
+                sum += hiddenOutputs[j] * weightsHiddenOutput[j][k]
             }
             sum += biasOutput[k]
-            outputs[k] = sigmoid(sum)
+            finalOutputs[k] = sigmoid(sum)
         }
 
-        return outputs
+        // Return a copy to be safe, or just the buffer if caller consumes immediately.
+        // Returning copy is safer for external use.
+        return finalOutputs.clone()
     }
 
     /**
      * Train the network (Backpropagation)
      */
     fun train(inputs: DoubleArray, targets: DoubleArray) {
-        // --- Forward Pass (Need intermediate values for backprop) ---
-        
+        // --- Forward Pass (Reuse existing logic/buffers) ---
         // Hidden Layer
-        val hiddenOutputs = DoubleArray(hiddenSize)
         for (j in 0 until hiddenSize) {
             var sum = 0.0
             for (i in 0 until inputSize) {
@@ -80,7 +84,6 @@ class NeuralNetwork(
         }
 
         // Output Layer
-        val finalOutputs = DoubleArray(outputSize)
         for (k in 0 until outputSize) {
             var sum = 0.0
             for (j in 0 until hiddenSize) {
@@ -93,7 +96,6 @@ class NeuralNetwork(
         // --- Backward Pass (Error Calculation & Weight Update) ---
 
         // 1. Output Errors
-        val outputErrors = DoubleArray(outputSize)
         for (k in 0 until outputSize) {
             val error = targets[k] - finalOutputs[k]
             // Derivative of Sigmoid: output * (1 - output)
@@ -101,7 +103,6 @@ class NeuralNetwork(
         }
 
         // 2. Hidden Errors
-        val hiddenErrors = DoubleArray(hiddenSize)
         for (j in 0 until hiddenSize) {
             var error = 0.0
             for (k in 0 until outputSize) {
