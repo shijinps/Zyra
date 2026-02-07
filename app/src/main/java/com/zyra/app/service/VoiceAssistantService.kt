@@ -272,7 +272,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
                     } else {
-                        startForeground(1, notification, 128) // Microphone integer value for Q if needed, or just standard
+                        startForeground(1, notification) 
                     }
                 } else {
                     throw SecurityException("Mic permission missing")
@@ -2017,81 +2017,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     // Duplicates removed
 
     
-    override fun onError(error: Int) {
-        // "Extreme" Persistence: NEVER stop listening, even on critical errors.
-        Log.e("ZyraService", "Speech Error: $error. Restarting...")
-        
-        isListening = false
-        
-        // CRITICAL FIX: If we are in an active conversation ("Yes Sir?"), DO NOT hide the overlay on error.
-        if (!isActiveSession) {
-             // Passive mode: Hide overlay if we were just listening for "Zyra"
-             broadcastState(ZyraState.IDLE)
-        } else {
-             // Active mode: Keep overlay VISIBLE.
-             // We can pulse it or update state to indicate "Listening Again"
-             broadcastState(ZyraState.LISTENING)
-             // Optional: a subtle error sound or "beep" could go here
-        }
 
-        // Hard Restart for Client/Permissions/Language Errors
-        // Error 11 = SERVER_DISCONNECTED, 12 = LANGUAGE_NOT_SUPPORTED, 13 = LANGUAGE_UNAVAILABLE
-        if (error == SpeechRecognizer.ERROR_CLIENT || 
-            error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS || 
-            error == 5 || error == 11 || error == 12 || error == 13) {
-             Log.w("ZyraService", "Critical Error ($error). Hard Restarting Recognizer...")
-             try {
-                 speechRecognizer.destroy()
-                 initSpeechRecognizer()
-             } catch (e: Exception) { Log.e("ZyraService", "Hard restart failed", e) }
-        }
-
-        // Backoff strategy (Progressive)
-        var delay = when (error) {
-            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 500L
-            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> 30000L 
-            13 -> 5000L // Language Unavailable requires longer wait or download time
-            SpeechRecognizer.ERROR_NO_MATCH -> {
-                consecutiveErrorCount++
-                 // Exponential backoff: 2s -> 5s -> 15s -> 60s
-                 // If music is playing, we want this to slow down quickly to stop the "loop"
-                if (consecutiveErrorCount > 5) 60000L 
-                else if (consecutiveErrorCount > 3) 15000L 
-                else if (consecutiveErrorCount > 1) 5000L 
-                else 2000L
-            }
-            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 500L
-            SpeechRecognizer.ERROR_CLIENT -> {
-                 consecutiveErrorCount++
-                 if (consecutiveErrorCount > 3) 5000L else 1000L
-            }
-            SpeechRecognizer.ERROR_NETWORK -> {
-                 consecutiveErrorCount++
-                 // Progressive Backoff for Network: 2s -> 5s -> 10s -> 30s
-                 if (consecutiveErrorCount > 5) 30000L 
-                 else if (consecutiveErrorCount > 3) 10000L 
-                 else if (consecutiveErrorCount > 1) 5000L 
-                 else 2000L
-            }
-            else -> {
-                consecutiveErrorCount++
-                if (consecutiveErrorCount > 5) 30000L 
-                else if (consecutiveErrorCount > 3) 10000L 
-                else 2000L
-            }
-        }
-        
-        Log.d("ZyraService", "Speech Error: $error. Count: $consecutiveErrorCount. Delay: $delay")
-        
-        // Ensure we abandon focus if we grabbed it during "Ducking" or Active Session
-        try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
-        
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-             try {
-                 startListening()
-            } catch (e: Exception) { e.printStackTrace() }
-        }, delay)
-    }
 
     private fun fallbackCutCall() {
          Log.d("ZyraService", "Attempting Fallback Cut Call...")
