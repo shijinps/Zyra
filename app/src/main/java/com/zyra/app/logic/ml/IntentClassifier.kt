@@ -5,7 +5,10 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 // Handles the bridging between Text and Neural Network probabilities
-class IntentClassifier(private val context: android.content.Context) {
+object IntentClassifier {
+
+    private var context: android.content.Context? = null
+    private var isTrained = false
 
     // Vocabulary for Bag-of-Words (Significantly expanded for "Extreme" intelligence)
     private val vocabulary = listOf(
@@ -32,9 +35,12 @@ class IntentClassifier(private val context: android.content.Context) {
         IntentType.UNKNOWN
     )
 
-    private val nn: NeuralNetwork
+    private lateinit var nn: NeuralNetwork
 
-    init {
+    fun init(ctx: android.content.Context) {
+        if (isTrained) return
+        context = ctx.applicationContext
+        
         // Input: Vocab Size
         // Hidden: 64 neurons (Deep learning capacity)
         // Output: Number of Intents
@@ -43,7 +49,10 @@ class IntentClassifier(private val context: android.content.Context) {
         // "Extreme" On-Device Training
         // Move to background thread to avoid ANR/OOM on Main Thread
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
-            trainNetwork()
+            if (!isTrained) {
+                trainNetwork()
+                isTrained = true
+            }
         }
     }
 
@@ -67,11 +76,13 @@ class IntentClassifier(private val context: android.content.Context) {
         )
 
         // Load Persistent Data
-        val savedData = IntentPersistence.load(context)
-        for ((text, type) in savedData) {
-            val idx = intents.indexOf(type)
-            if (idx != -1) {
-                trainingData.add(text to idx)
+        context?.let { ctx ->
+            val savedData = IntentPersistence.load(ctx)
+            for ((text, type) in savedData) {
+                val idx = intents.indexOf(type)
+                if (idx != -1) {
+                    trainingData.add(text to idx)
+                }
             }
         }
 
@@ -87,6 +98,8 @@ class IntentClassifier(private val context: android.content.Context) {
     }
 
     fun predict(text: String): IntentType {
+        if (!::nn.isInitialized) return IntentType.UNKNOWN
+        
         val inputVector = textToVector(text)
         
         // Check for empty input to avoid noise
@@ -129,7 +142,7 @@ class IntentClassifier(private val context: android.content.Context) {
         if (idx == -1) return
         
         // PERSISTENCE SAVE
-        IntentPersistence.save(context, text, type)
+        context?.let { IntentPersistence.save(it, text, type) }
 
         val params = textToVector(text)
         

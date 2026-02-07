@@ -389,6 +389,59 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     // Duplicate onError removed. Keeping onResults below.
 
 
+    override fun onError(error: Int) {
+        isListening = false
+        // Release focus immediately on error
+        try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
+        
+        Log.e("ZyraService", "Speech Error: $error")
+        
+        // Handle specific errors
+        if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+            consecutiveErrorCount++
+            
+            // EXPONENTIAL BACKOFF
+            // 1st error: 500ms
+            // 2nd error: 2000ms
+            // 3rd error: 5000ms
+            // 4th error: 10000ms
+            // Max: 30000ms
+            val backoff = when (consecutiveErrorCount) {
+                1 -> 500L
+                2 -> 2000L
+                3 -> 5000L
+                4 -> 10000L
+                else -> 30000L
+            }
+            
+            Log.d("ZyraService", "Speech Error: $error. Count: $consecutiveErrorCount. Delay: $backoff")
+            
+            // Only restart if we are in "Active Session" or if we want continuous listening.
+            // But for "Passive listening" (Hotword), we should be gentle.
+            // If the user isn't talking to us (No Match), and we are just waiting for "Zyra", 
+            // the backoff helps battery and audio focus.
+            
+            restartListening(backoff)
+            
+            // If not in active session, ensure we broadcast IDLE so UI doesn't stick
+            if (!isActiveSession) broadcastState(ZyraState.IDLE)
+            
+        } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+            // Wait a bit longer if busy
+            restartListening(2000)
+        } else {
+            // Other errors (Network, Audio, Client)
+            // Be careful not to loop on fatal errors
+            if (error == SpeechRecognizer.ERROR_CLIENT) {
+                // Often happens if we start too fast.
+                restartListening(2000)
+            } else {
+                 restartListening(1000)
+            }
+            if (!isActiveSession) broadcastState(ZyraState.IDLE)
+        }
+    }
+
     override fun onResults(results: Bundle?) {
         isListening = false
         // Abandon focus immediately on results to allow media to resume full volume if ducked

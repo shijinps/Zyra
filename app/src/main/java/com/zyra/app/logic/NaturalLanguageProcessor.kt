@@ -50,7 +50,12 @@ data class ParsedIntent(
 
 class NaturalLanguageProcessor(private val context: android.content.Context) {
 
-    private val classifier = IntentClassifier(context)
+    private val classifier = IntentClassifier
+    
+    init {
+        IntentClassifier.init(context)
+    }
+
     fun train(text: String, type: IntentType) {
         classifier.trainDynamic(text, type)
     }
