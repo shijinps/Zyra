@@ -214,7 +214,7 @@ def send_notification(notification: Notification, token: str = Security(verify_t
 
 
 # --- Quantum Integration ---
-from .quantum import CiscoQRNG, IBMQuantumBrain
+from quantum import CiscoQRNG, IBMQuantumBrain
 
 @app.get("/quantum/mood")
 async def get_quantum_mood(token: str = Security(verify_token)):
