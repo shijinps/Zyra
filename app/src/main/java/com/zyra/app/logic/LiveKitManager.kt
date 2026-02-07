@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import io.livekit.android.LiveKit
 import io.livekit.android.room.Room
-import io.livekit.android.room.RoomListener
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import kotlinx.coroutines.CoroutineScope
