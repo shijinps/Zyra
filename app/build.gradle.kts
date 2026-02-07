@@ -64,6 +64,9 @@ dependencies {
     // ElevenLabs Conversational AI
     implementation("io.elevenlabs:elevenlabs-android:0.7.2")
 
+    // LiveKit Real-time Voice
+    implementation("io.livekit:livekit-android:2.2.0")
+
     // Location & Maps
     implementation("com.google.android.gms:play-services-location:21.0.1")
 

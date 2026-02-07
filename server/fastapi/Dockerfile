@@ -16,9 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy logic
 COPY main.py .
 COPY quantum.py .
+COPY voice_agent.py .
+COPY start.sh .
+RUN chmod +x start.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run both services
+CMD ["./start.sh"]

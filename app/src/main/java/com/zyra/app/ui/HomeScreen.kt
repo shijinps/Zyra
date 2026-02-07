@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,6 +71,7 @@ fun HomeScreen(
 ) {
     var zyraState by remember { mutableStateOf(ZyraState.IDLE) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showDiagnostics by remember { mutableStateOf(false) }
     var commands by remember { mutableStateOf(commandManager.getAllCommands()) }
     val context = LocalContext.current
     
@@ -194,6 +197,9 @@ fun HomeScreen(
                             IconButton(onClick = onNavigateToFeedback) {
                                 Icon(Icons.Default.Feedback, null, tint = Color.White.copy(0.7f))
                             }
+                            IconButton(onClick = { showDiagnostics = true }) {
+                                Icon(Icons.Default.BugReport, "Diagnostics", tint = Color.Red.copy(0.7f))
+                            }
                         }
                         Spacer(modifier = Modifier.height(20.dp))
                         
@@ -299,8 +305,62 @@ fun HomeScreen(
                     }
                 )
             }
+
+            if (showDiagnostics) {
+                DiagnosticsDialog(
+                    onDismiss = { showDiagnostics = false },
+                    onTestConnection = {
+                         onManualWake() // Re-uses the Wake/Connect logic
+                         // Optional: You might want to close dialog or keep it open to see logs if you stream them
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+fun DiagnosticsDialog(
+    onDismiss: () -> Unit,
+    onTestConnection: () -> Unit
+) {
+    val report = remember { com.zyra.app.logic.ElevenLabsConversationManager.getStatusReport() }
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("System Diagnostics", color = NeonGreen) },
+        text = {
+            Column {
+                Text(report, color = Color.White, style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Tap 'Test Connection' to force a new session attempt.", color = Color.Gray)
+            }
+        },
+        confirmButton = {
+            Row {
+                Button(
+                    onClick = onTestConnection,
+                    colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = Color.Black)
+                ) {
+                    Text("Test ElevenLabs")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { com.zyra.app.logic.LiveKitManager.connect(context) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B0FF), contentColor = Color.Black)
+                ) {
+                    Text("Test LiveKit")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color.White)
+            }
+        },
+        containerColor = Color(0xFF1E1E1E)
+    )
 }
 
 @Composable

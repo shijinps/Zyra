@@ -164,4 +164,15 @@ object ElevenLabsConversationManager {
             "Error checking $host: ${e.message}"
         }
     }
+
+    fun getStatusReport(): String {
+        return """
+            ElevenLabs Link Status:
+            -----------------------
+            SDK Initialized: $isInitialized
+            Connection State: ${_connectionState.value}
+            Session Object: ${if (currentSession != null) "Active" else "Null"}
+            Last Event: ${eventListener?.let { "Listener Attached" } ?: "No Listener"}
+        """.trimIndent()
+    }
 }
