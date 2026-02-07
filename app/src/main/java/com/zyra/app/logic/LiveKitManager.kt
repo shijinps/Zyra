@@ -23,7 +23,7 @@ object LiveKitManager {
     // ^ USER NEEDS TO GENERATE A CLIENT TOKEN FROM DASHBOARD OR SERVER, 
     // THE API KEY/SECRET CANNOT BE USED DIRECTLY ON CLIENT SIDE. 
 
-    fun init(context: Context) {
+    fun init() {
         // Initialize if needed, though usually just creating room is enough
     }
 

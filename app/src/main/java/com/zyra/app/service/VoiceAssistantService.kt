@@ -1132,6 +1132,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 
                 // Let's assume user likely has 10 digit numbers stored, maybe prefix default code if desired?
                 // For now, send as is.
+                Log.w("ZyraService", "Number might need country code: $cleanNumber")
             }
             
             // Use generic ACTION_VIEW with API
@@ -2001,6 +2002,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  // Only hide if still calling (safety check)
                  if (isActiveSession) { // Logic check: isActiveSession might be false, but state is CALLING
                      // No-op: Let the user end it.
+                     Log.d("ZyraService", "Call timeout check: Session still active, not hiding overlay.")
                  }
             }, 3600000) 
             
