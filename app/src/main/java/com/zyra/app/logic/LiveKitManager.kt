@@ -30,7 +30,8 @@ object LiveKitManager {
     fun connect(context: Context, token: String = TEST_TOKEN) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                room = LiveKit.create(context)
+                // Use applicationContext to prevent memory leaks since LiveKitManager is a singleton
+                room = LiveKit.create(context.applicationContext)
                 
                 room?.events?.collect { event ->
                     when (event) {

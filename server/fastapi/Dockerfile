@@ -1,4 +1,7 @@
-FROM python:3.11
+FROM python:3.11-bookworm
+
+# Set PKG_CONFIG_PATH for ARM64 to help PyAV find ffmpeg libraries
+ENV PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
 
 # Install system tools
 RUN apt-get update && apt-get install -y \
