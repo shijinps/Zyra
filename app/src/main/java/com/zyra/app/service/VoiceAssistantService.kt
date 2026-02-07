@@ -341,7 +341,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             } catch (_: Exception) { Log.e("ZyraService", "Focus error") }
             
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
+                // Use FREE_FORM for better noise tolerance and natural speech in traffic
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US") // Switched to US English per user request/issue
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true) 

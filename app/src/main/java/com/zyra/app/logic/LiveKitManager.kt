@@ -60,11 +60,17 @@ object LiveKitManager {
     private fun publishAudio() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Publish local microphone
-                val localTrack = room?.localParticipant?.createAudioTrack("microphone")
+                // Publish local microphone with Noise Cancellation
+                val audioOptions = io.livekit.android.room.track.LocalAudioTrackOptions(
+                    noiseSuppression = true,
+                    echoCancellation = true,
+                    autoGainControl = true,
+                    highPassFilter = true
+                )
+                val localTrack = room?.localParticipant?.createAudioTrack("microphone", audioOptions)
                 localTrack?.start()
                 room?.localParticipant?.publishAudioTrack(localTrack!!)
-                Log.d(TAG, "Microphone published")
+                Log.d(TAG, "Microphone published with Noise Cancellation")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to publish audio", e)
             }
