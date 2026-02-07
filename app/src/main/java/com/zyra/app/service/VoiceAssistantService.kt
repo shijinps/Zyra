@@ -115,32 +115,26 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
                 val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as android.telephony.TelephonyManager
-                telephonyManager.listen(object : android.telephony.PhoneStateListener() {
-                    @Deprecated("Deprecated in Java", ReplaceWith("telephonyCallback"))
-                    override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-                        super.onCallStateChanged(state, phoneNumber)
-                        if (state == android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-                            if (isCallInProgress) {
-                                Log.d("ZyraService", "Call ended remotely. Resetting state.")
-                                isCallInProgress = false
-                                broadcastState(ZyraState.IDLE)
-                                if (!isListening) startListening()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    // Modern API (Android 12+)
+                    telephonyManager.registerTelephonyCallback(
+                        mainExecutor,
+                        object : android.telephony.TelephonyCallback(), android.telephony.TelephonyCallback.CallStateListener {
+                            override fun onCallStateChanged(state: Int) {
+                                handleCallStateChange(state, null)
                             }
-                        } else if (state == android.telephony.TelephonyManager.CALL_STATE_RINGING) {
-                            // SIRI MODEL: Announce Caller and Listen for "Answer" or "Decline"
-                            val caller = if (!phoneNumber.isNullOrEmpty()) {
-                                // Resolve contact name if possible (simple lookup)
-                                // For now, just say "Incoming call"
-                                "Incoming call" 
-                            } else "Incoming call"
-                            
-                            // Speak over ringtone (requires Utils to lower ringtone, but we'll try just speaking)
-                            // We need to request focus to be heard over ringtone
-                            conversationManager.startIncomingCall()
-                            speak("$caller. Say Answer or Decline.")
                         }
-                    }
-                }, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
+                    )
+                } else {
+                    // Legacy API
+                    @Suppress("DEPRECATION")
+                    telephonyManager.listen(object : android.telephony.PhoneStateListener() {
+                        @Suppress("DEPRECATION") // Deprecated in Java
+                        override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                            handleCallStateChange(state, phoneNumber)
+                        }
+                    }, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
+                }
             } else {
                  Log.w("ZyraService", "READ_PHONE_STATE permission missing. Auto-cleanup of call state disabled.")
             }
@@ -182,7 +176,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         })
     }
 
+    private var isExplicitlyStopped = false
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "com.zyra.app.ACTION_STOP_SERVICE") {
+            Log.d("ZyraService", "Service explicitly stopped by user. Shutting down.")
+            isExplicitlyStopped = true
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         // Ensure service stays alive - Refresh Foreground Notification
         startForegroundService()
         
@@ -254,12 +258,21 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         )
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
 
+        // Stop Intent
+        val stopIntent = Intent(this, VoiceAssistantService::class.java).apply {
+            action = "com.zyra.app.ACTION_STOP_SERVICE"
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification: Notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("Zyra")
             .setContentText("Listening for commands...")
             .setSmallIcon(R.drawable.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .addAction(R.drawable.ic_launcher, "Stop", stopPendingIntent) // TODO: Add a proper 'stop' icon if available
             .build()
 
         // Android 14 requirements: "microphone" type requires RECORD_AUDIO permission at runtime.
@@ -305,6 +318,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
             speechRecognizer.setRecognitionListener(this)
             // Do NOT start listening here automatically. Caller must invoke startListening().
+        } else {
+            Log.e("ZyraService", "Speech Recognition NOT Available!")
+            speak("I cannot hear you. Speech recognition is missing.")
         }
     }
 
@@ -2013,6 +2029,50 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // Don't restart listening immediately if we are leaving the app to call
         // BUT keep session active so if they return quickly or it fails, we are ready
         resetSessionTimeout()
+    }
+    
+
+    private fun handleCallStateChange(state: Int, phoneNumber: String?) {
+        when (state) {
+            android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> {
+                // Call Answered or Outgoing Call Started
+                Log.d("ZyraService", "Call Active (OFFHOOK). Pausing Assistant...")
+                isCallInProgress = true
+                isListening = false
+                
+                // CRITICAL: Stop recognizer to free mic for the phone call
+                try {
+                    speechRecognizer.stopListening()
+                    // Optional: speechRecognizer.cancel() if stop isn't enough
+                } catch (e: Exception) { Log.e("ZyraService", "Error stopping recognizer on call start", e) }
+                
+                broadcastState(ZyraState.CALLING)
+            }
+            
+            android.telephony.TelephonyManager.CALL_STATE_RINGING -> {
+                // SIRI MODEL: Announce Caller and Listen for "Answer" or "Decline"
+                val caller = if (!phoneNumber.isNullOrEmpty()) {
+                    // TODO: Resolve contact name
+                    "Incoming call" 
+                } else "Incoming call"
+                
+                // Speak over ringtone
+                conversationManager.startIncomingCall() // Sets volume
+                speak("$caller. Say Answer or Decline.")
+            }
+            
+            android.telephony.TelephonyManager.CALL_STATE_IDLE -> {
+                Log.d("ZyraService", "Call Ended (IDLE). Resuming Assistant...")
+                isCallInProgress = false
+                broadcastState(ZyraState.IDLE)
+                
+                // Resume listening if we were "Always On"
+                // We use a small delay to let the audio system settle after the call
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    if (!isListening) startListening()
+                }, 1000)
+            }
+        }
     }
     
     // Recognition Listener Methods
