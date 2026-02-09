@@ -37,7 +37,7 @@ async def main():
 
     try:
         # Connect to 'zyra-room'
-        await room.connect(LIVEKIT_URL, await api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
+        await room.connect(LIVEKIT_URL, api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
                            .with_identity("zyra-server")
                            .with_name("Zyra Host")
                            .with_grants(api.VideoGrants(room_join=True, room="zyra-room"))
