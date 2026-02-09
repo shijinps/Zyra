@@ -2054,15 +2054,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         when (state) {
             android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> {
                 // Call Answered or Outgoing Call Started
-                Log.d("ZyraService", "Call Active (OFFHOOK). Pausing Assistant...")
+                Log.d("ZyraService", "Call Active (OFFHOOK). Zyra attempting to stay alive...")
                 isCallInProgress = true
-                isListening = false
                 
-                // CRITICAL: Stop recognizer to free mic for the phone call
-                try {
-                    speechRecognizer.stopListening()
-                    // Optional: speechRecognizer.cancel() if stop isn't enough
-                } catch (e: Exception) { Log.e("ZyraService", "Error stopping recognizer on call start", e) }
+                // EXPERIMENTAL: DO NOT STOP LISTENING
+                // We want Zyra to be able to "hear" even during a call.
+                // Note: Android Hardware might block the mic, causing ERROR_BUSY or ERROR_AUDIO.
+                // We rely on onError() to retry.
+                
+                // Ensure we are listening if not already
+                if (!isListening) {
+                     startListening()
+                }
                 
                 broadcastState(ZyraState.CALLING)
             }
@@ -2138,7 +2141,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             
             // Re-init completely
             initSpeechRecognizer() 
-            startListening() // FIX: Actually START listening after re-init
+            
+            // DELAYED START: Give the OS 1s to settle the 'swipe' animation/kill
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                 startListening()
+            }, 1000)
             
         } catch (_: Exception) {
             // If destroy fails, just try starting manually

@@ -19,7 +19,7 @@ object LiveKitManager {
     
     // In production, Token should be fetched from your FastAPI server, NOT hardcoded.
     // However, for testing, you can generate a token in the dashboard and paste it here.
-    private const val TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzA0NjAwODgsImlkZW50aXR5IjoienlyYS10ZXN0LXVzZXIiLCJpc3MiOiJBUElaUE5NdGhhSGpUY24iLCJuYmYiOjE3NzA0NTkxODgsInN1YiI6Inp5cmEtdGVzdC11c2VyIiwidmlkZW8iOnsiY2FuUHVibGlzaCI6dHJ1ZSwicm9vbSI6Inp5cmEtcm9vbSIsInJvb21Kb2luIjp0cnVlfX0.CXI1b9sU5vxd2EqNJ1DCq4dSxjZDGBORZdyNnLvq7dE" 
+    private const val TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQW5kcm9pZCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ6eXJhLXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoienlyYS1hbmRyb2lkLXVzZXIiLCJpc3MiOiJBUElaUE5NdGhhSGpUY24iLCJuYmYiOjE3NzA2Mjk2NzcsImV4cCI6MTc3MDY1MTI3N30.CV5KzsY3gKhtBUcJfBGyjttW3bDLfRnCbYOvUkixWM8" 
     // ^ USER NEEDS TO GENERATE A CLIENT TOKEN FROM DASHBOARD OR SERVER, 
     // THE API KEY/SECRET CANNOT BE USED DIRECTLY ON CLIENT SIDE. 
 
