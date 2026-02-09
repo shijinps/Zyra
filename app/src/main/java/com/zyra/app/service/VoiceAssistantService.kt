@@ -1133,6 +1133,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // 0. WAKE UP SCREEN
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         if (!powerManager.isInteractive) {
+            @Suppress("DEPRECATION")
             val wakeLock = powerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
                 "Zyra:UnlockWakeLock"
@@ -1155,7 +1156,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         if (pin != null) {
             // Wait for swipe animation to finish (e.g. 500ms)
             android.os.Handler(mainLooper).postDelayed({
-                enterPin(pin!!)
+                enterPin(pin)
             }, 600)
         } else {
             speak("I don't know your PIN. Please tell me 'My password is...' so I can learn it.")
@@ -1712,6 +1713,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             if (checkSelfPermission(android.Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                 val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
                 try {
+                    @Suppress("DEPRECATION")
                     telecomManager.acceptRingingCall()
                     speak(com.zyra.app.logic.PersonaManager.getCallAnswerResponse())
                     
@@ -1720,6 +1722,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                          android.os.Handler(mainLooper).postDelayed({
                              val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
                              audioManager.mode = AudioManager.MODE_IN_CALL
+                             @Suppress("DEPRECATION")
                              audioManager.isSpeakerphoneOn = true
                              speak(com.zyra.app.logic.PersonaManager.getConfirmation("activating loud speaker"))
                          }, 1000)
@@ -1757,6 +1760,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              if (checkSelfPermission(android.Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
                  val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
                  try {
+                     @Suppress("DEPRECATION")
                      telecomManager.endCall()
                      speak(com.zyra.app.logic.PersonaManager.getCallCutResponse())
                  } catch (e: Exception) {
