@@ -23,6 +23,10 @@ def startup_db_client():
         db_password = os.getenv("POSTGRES_PASSWORD", "password")
         db_name = os.getenv("POSTGRES_DB", "postgres")
         db_host = os.getenv("POSTGRES_HOST", "postgres")
+        
+        # SANITIZATION: Remove protocol if user accidentally pasted a URL
+        if db_host.startswith("http"):
+            db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
 
         conn = psycopg2.connect(
             dbname=db_name,
