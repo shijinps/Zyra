@@ -472,12 +472,10 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             // 3rd error: 5000ms
             // 4th error: 10000ms
             // Max: 30000ms
+            // OPTIMIZED BACKOFF: Max 2 seconds to keep it responsive
             val backoff = when (consecutiveErrorCount) {
                 1 -> 500L
-                2 -> 2000L
-                3 -> 5000L
-                4 -> 10000L
-                else -> 30000L
+                else -> 2000L // Cap at 2 seconds
             }
             
             Log.d("ZyraService", "Speech Error: $error. Count: $consecutiveErrorCount. Delay: $backoff")
@@ -556,8 +554,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         val text = matches[0].lowercase()
         // Quick check for wake word - STRICT LIST
          val wakeWordVariations = listOf(
-            "zyra", "zara", "zira", "cyra", "xyla", "viera"
-            // REMOVED: "sara", "sarah", "saira", "sherra", etc.
+            "zyra", "zara", "zira", "cyra", "xyla", "viera",
+            "saira", "sai", "sarah", "sara" // Common misinterpretations
         )
         
         val isWakeWord = wakeWordVariations.any { text.contains(it) }
@@ -677,9 +675,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // --- Wake Word Logic ---
         @Suppress("SpellCheckingInspection")
         val wakeWordVariations = listOf(
-            "zyra", "zara", "zira", "cyra", "xyla", "viera" 
-            // REMOVED: "sara", "sarah" (too close to 'saira'), "sierra", "chehra", "ishara"
-            // We want STRICTER waking to avoid music triggers.
+            "zyra", "zara", "zira", "cyra", "xyla", "viera",
+            "saira", "sai", "sarah", "sara"
         )
         // Strict match: must contain one of the above explicitly
         val hasWakeWord = wakeWordVariations.any { bestMatch.contains(it) }
@@ -2172,6 +2169,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             // Force reset state
             isListening = false 
+            isElevenLabsSessionActive = false // CRITICAL FIX: Reset session flag so we don't block restart 
+            elevenLabsManager.stopConversation() // CRITICAL FIX: Kill zombie session immediately 
             
             // Kill existing recognizer to be safe
             try { speechRecognizer.destroy() } catch (_: Exception) {}
@@ -2193,6 +2192,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         val restartIntent = Intent(this, BootReceiver::class.java)
         restartIntent.action = "com.zyra.app.RESTART"
         sendBroadcast(restartIntent)
+        
+        // 3. NUCLEAR OPTION: Kill Process to ensure all threads/websockets die
+        // The service is STICKY, so Android will restart it automatically.
+        // This guarantees no "zombie" ElevenLabs session remains.
+        Log.d("ZyraService", "Killing process to ensure clean restart...")
+        android.os.Process.killProcess(android.os.Process.myPid())
     }
 
     override fun onDestroy() {
@@ -2200,6 +2205,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             speechRecognizer.destroy()
         } catch (_: Exception) { }
+        
+        isElevenLabsSessionActive = false // CRITICAL FIX
+        elevenLabsManager.stopConversation() // Ensure WebRTC is killed
         
         tts?.stop()
         tts?.shutdown()
@@ -2213,23 +2221,31 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     // --- HELPER: Maximize Volume for clear AI Speech ---
+    // --- HELPER: Maximize Volume for clear AI Speech ---
     private fun maximizeCallVolume() {
-        try {
-            val maxVoice = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)
-            val currentVoice = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL)
-            
-            val maxMusic = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val currentMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-            
-            Log.d("ZyraService", "Maximizing Volume. Voice: $currentVoice/$maxVoice, Music: $currentMusic/$maxMusic")
-            
-            // Set to 100% or at least 80% if it was very low
-            audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVoice, 0)
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0) // LiveKit often uses Music stream too
-            
-        } catch (e: Exception) {
-            Log.e("ZyraService", "Error setting volume", e)
+        fun setMax() {
+            try {
+                val maxVoice = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)
+                val currentVoice = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL)
+                
+                val maxMusic = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                val currentMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                
+                Log.d("ZyraService", "Maximizing Volume. Voice: $currentVoice/$maxVoice, Music: $currentMusic/$maxMusic")
+                
+                // Set to 100% to ensure clarity
+                audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVoice, 0)
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0) 
+            } catch (e: Exception) {
+                Log.e("ZyraService", "Error setting volume", e)
+            }
         }
+
+        // 1. Set immediately
+        setMax()
+
+        // 2. Retry after 500ms (Audio Mode switches can sometimes reset volume)
+        connectionHandler.postDelayed({ setMax() }, 500)
     }
 
     private fun normalizePhonetics(input: String): String {
@@ -2322,6 +2338,21 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     // End of Handlers
 
     private fun startElevenLabsSession() {
+        // Stop SpeechRecognizer to release mic and focus
+        try {
+            speechRecognizer.cancel()
+            isListening = false
+             // Temporarily idle until ElevenLabs starts (avoid LISTENING state conflict)
+            if (!isActiveSession) broadcastState(ZyraState.IDLE)
+            
+            // Abandon focus so LiveKit can take it cleanly
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null)
+            Log.d("ZyraService", "Released Mic & Focus for ElevenLabs")
+        } catch (e: Exception) {
+            Log.e("ZyraService", "Error stopping recognizer for ElevenLabs", e)
+        }
+
         // Start Watchdog (12 seconds timeout)
         connectionHandler.removeCallbacks(connectionTimeoutRunnable)
         connectionHandler.postDelayed(connectionTimeoutRunnable, 12000) // 12s to allow for cold start / slow network

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import io.elevenlabs.ConversationClient
 import io.elevenlabs.ConversationConfig
+// import io.elevenlabs.Conversation
 // import com.elevenlabs.android.Conversation 
 // import com.elevenlabs.android.ConversationConfig
 // import com.elevenlabs.android.ConversationCallback
@@ -57,11 +58,14 @@ object ElevenLabsConversationManager {
     }
 
     private var currentSession: Any? = null
+    private var conversationJob: kotlinx.coroutines.Job? = null
 
     fun startConversation(context: Context, agentId: String) {
         if (!isInitialized) init(context)
         
-        CoroutineScope(Dispatchers.IO).launch {
+
+        
+        conversationJob = CoroutineScope(Dispatchers.IO).launch {
             _connectionState.value = ConnectionState.CONNECTING
             try {
                 Log.d(TAG, "Starting conversation with Agent: $agentId")
@@ -107,8 +111,38 @@ object ElevenLabsConversationManager {
 
     fun stopConversation() {
         Log.d(TAG, "Stopping conversation")
+        
+        // 1. Cancel the Job (Interrupts startSession if suspended)
+        conversationJob?.cancel()
+        conversationJob = null
+        
+        // 2. Try Manual Session End (Best Effort)
         try {
-             currentSession?.javaClass?.getMethod("endSession")?.invoke(currentSession)
+             val endMethod = currentSession?.javaClass?.methods?.find { it.name == "endSession" }
+             if (endMethod != null) {
+                 // Kotlin suspend functions take a Continuation as the last argument.
+                 // Java reflection validation of arg count will fail if we don't account for it.
+                 // If it requires args, we can't easily call it via simple reflection.
+                 Log.d(TAG, "Found endSession method: ${endMethod.name}, args: ${endMethod.parameterTypes.size}")
+                 
+                 if (endMethod.parameterTypes.isEmpty()) {
+                     endMethod.invoke(currentSession)
+                 } else {
+                     Log.w(TAG, "endSession requires arguments (likely suspend). Cannot invoke easily via reflection.")
+                     // Debug listing to confirm
+                     currentSession?.javaClass?.methods?.forEach { method ->
+                        if (method.name.contains("Session")) {
+                             Log.e(TAG, "Method: ${method.name} -> Args: ${method.parameterTypes.joinToString { it.simpleName }}")
+                        }
+                     }
+                 }
+             } else {
+                 Log.e(TAG, "No endSession method found!")
+                 // Log all methods to see what IS available
+                 currentSession?.javaClass?.methods?.forEach { method ->
+                     Log.e(TAG, "Method: ${method.name}")
+                 }
+             }
         } catch (e: Exception) {
              Log.e(TAG, "Could not end session", e)
         }

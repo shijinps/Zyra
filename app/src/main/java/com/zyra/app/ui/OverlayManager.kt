@@ -39,7 +39,7 @@ import com.zyra.app.service.VoiceAssistantService
 class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private var composeView: ComposeView? = null
+    private var overlayView: android.widget.FrameLayout? = null
     private var currentZyraState by mutableStateOf(ZyraState.IDLE)
     
     // Lifecycle components required for Compose in a Service/Window
@@ -57,7 +57,7 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     }
 
     fun show() {
-        if (composeView != null) {
+        if (overlayView != null) {
             Log.d("OverlayManager", "show() called but already showing. Update state only.")
             return
         }
@@ -83,18 +83,25 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
             gravity = Gravity.BOTTOM
         }
 
-        composeView = ComposeView(context).apply {
+        // WRAPPER FIX: Wrap ComposeView in a FrameLayout
+        // Compose requires the ViewTreeLifecycleOwner to be set on a parent or the view itself.
+        // In WindowManager, adding the owners to a wrapper ViewGroup is the most reliable method.
+        overlayView = android.widget.FrameLayout(context).apply {
             setViewTreeLifecycleOwner(this@OverlayManager)
             setViewTreeViewModelStoreOwner(this@OverlayManager)
             setViewTreeSavedStateRegistryOwner(this@OverlayManager)
-            
+        }
+
+        val composeView = ComposeView(context).apply {
             setContent {
                 OverlayContent(currentZyraState)
             }
         }
+        
+        overlayView?.addView(composeView)
 
         try {
-            windowManager.addView(composeView, params)
+            windowManager.addView(overlayView, params)
             Log.d("OverlayManager", "View added to WindowManager.")
         } catch (e: Exception) {
             Log.e("OverlayManager", "Failed to add view: ${e.message}", e)
@@ -103,11 +110,11 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     }
 
     fun hide() {
-        if (composeView == null) return
+        if (overlayView == null) return
 
         try {
-            windowManager.removeView(composeView)
-            composeView = null
+            windowManager.removeView(overlayView)
+            overlayView = null
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         } catch (e: Exception) {
             e.printStackTrace()
