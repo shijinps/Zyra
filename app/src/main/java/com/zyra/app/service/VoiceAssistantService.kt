@@ -330,7 +330,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 try {
                      // FALLBACK: Use Location + Media Playback (TTS) to keep service alive.
                      // This prevents "ForegroundServiceDidNotStartInTimeException" crash.
-                     var fallbackType = 0
+                     var fallbackType: Int
                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                          fallbackType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or 
                                       android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
@@ -392,7 +392,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                      }
                  } else {
                      // Ensure we have abandoned focus if we are entering passive mode
-                     try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
+                     // Abandon focus immediately on results to allow media to resume full volume if ducked
+        try { 
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null) 
+        } catch (_: Exception) {}
                  }
             } catch (_: Exception) { Log.e("ZyraService", "Focus error") }
             
@@ -450,7 +454,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onError(error: Int) {
         isListening = false
         // Release focus immediately on error
-        try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
+        // Abandon focus immediately on results to allow media to resume full volume if ducked
+        try { 
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null) 
+        } catch (_: Exception) {}
         
         Log.e("ZyraService", "Speech Error: $error")
         
@@ -517,7 +525,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     override fun onResults(results: Bundle?) {
         isListening = false
         // Abandon focus immediately on results to allow media to resume full volume if ducked
-        try { audioManager.abandonAudioFocus(null) } catch (_: Exception) {}
+        // Abandon focus immediately on results to allow media to resume full volume if ducked
+        try { 
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null) 
+        } catch (_: Exception) {}
         
         broadcastState(ZyraState.PROCESSING)
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -1630,7 +1642,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                              
                              val score = com.zyra.app.logic.algorithms.Levenshtein.calculateSimilarity(spokenName.lowercase(), matchName.lowercase())
                              
-                             if (score > 90 || matchName.lowercase() == spokenName.lowercase()) {
+                             if (score > 90 || matchName.equals(spokenName, ignoreCase = true)) {
                                  // HIGH CONFIDENCE
                                  makeCall(contact.phoneNumber)
                              } else {
@@ -1704,7 +1716,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     speak(com.zyra.app.logic.PersonaManager.getCallAnswerResponse())
                     
                     if (mode == "speaker") {
-                         // Wait for call to connect
+                     // Wait for call to connect
                          android.os.Handler(mainLooper).postDelayed({
                              val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
                              audioManager.mode = AudioManager.MODE_IN_CALL
@@ -1800,7 +1812,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              query = payload
              targetApp = "generic"
         } else if (payload != null && payload.startsWith("spotify|")) {
-             query = payload.substring(8)
+             query = payload.drop(8)
         }
 
         // --- TRACKING ---
@@ -1852,7 +1864,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         speak("Playing $query")
         
         // ... (Search Logic) ...
-        if (targetApp.contains("spotify") || (targetApp == "context_in_app" && currentOpenPackage?.contains("spotify") == true)) {
+        if (targetApp.contains("spotify")) {
              // Use SEARCH INTENT with package set to Spotify (Best for auto-play)
              val intent = Intent(android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH).apply {
                  // Open Spotify
@@ -1916,7 +1928,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // Format 2: "fact:remember that [KEY] is [VALUE]"
         
         if (text.startsWith("alias:")) {
-             val instruction = text.substring(6) // remove "alias:"
+             val instruction = text.drop(6) // remove "alias:"
              // Regex to find "learn command (.+) as (.+)"
              val pattern = java.util.regex.Pattern.compile("learn command (.+) as (.+)")
              val matcher = pattern.matcher(instruction)
@@ -1929,7 +1941,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  speak("Please say 'Learn command [Example] as [Action]'.")
              }
         } else if (text.startsWith("fact:")) {
-             val instruction = text.substring(5) // remove "fact:"
+             val instruction = text.drop(5) // remove "fact:"
              // Regex to find "remember that (.+) is (.+)"
              // Also "save that..."
              val pattern = java.util.regex.Pattern.compile("(remember|save) that (.+) is (.+)")
