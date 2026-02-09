@@ -57,6 +57,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var wakeLock: PowerManager.WakeLock? = null
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
+    private var isElevenLabsSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
 
     // Connection Watchdog
     private val connectionHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -160,14 +161,23 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             override fun onConversationStarted() {
                 connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                 Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
+                isElevenLabsSessionActive = true // LOCK local listener
                 isListening = false
-                speechRecognizer.stopListening()
+                
+                // Explicitly cancel to ensure no trailing errors trigger restarts
+                try {
+                     speechRecognizer.cancel()
+                } catch (e: Exception) {
+                     speechRecognizer.stopListening()
+                }
+                
                 broadcastState(ZyraState.LISTENING) // Update UI to show active listening
             }
 
             override fun onConversationStopped() {
                 android.os.Handler(mainLooper).post {
                     Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
+                    isElevenLabsSessionActive = false // UNLOCK
                     isActiveSession = false
                     startListening() // Resume local wake word listening
                     broadcastState(ZyraState.IDLE)
@@ -178,13 +188,15 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 android.os.Handler(mainLooper).post {
                     connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                     Log.e("ZyraService", "ElevenLabs Error: $message")
+                    
+                    isElevenLabsSessionActive = false // UNLOCK on error
+                    
                     if (message.contains("unauthorized") || message.contains("401")) {
                         speak("My authentication failed. Please check my settings.")
                     } else {
                         speak("I lost the connection. $message")
                     }
-                    // Call onConversationStopped explicitly on main thread logic if needed, 
-                    // or just copy the logic to avoid double-posting
+                    // Resume local listener
                     Log.d("ZyraService", "Resume local listener after error.")
                     isActiveSession = false
                     startListening()
@@ -344,6 +356,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun startListening() {
+        if (isElevenLabsSessionActive) {
+            Log.d("ZyraService", "startListening BLOCKED: ElevenLabs session is active.")
+            return
+        }
+
         if (!isListening) {
              // Noise Cancellation / Environment Setup
             try {
