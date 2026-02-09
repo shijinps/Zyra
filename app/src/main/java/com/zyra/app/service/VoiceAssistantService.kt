@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.telecom.TelecomManager
+import android.app.PendingIntent
 
 import android.os.Build
 import android.os.Bundle
@@ -56,6 +57,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var wakeLock: PowerManager.WakeLock? = null
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
+
+    // Connection Watchdog
+    private val connectionHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val connectionTimeoutRunnable = Runnable {
+        Log.e("ZyraService", "ElevenLabs Connection Timed Out")
+        elevenLabsManager.stopConversation()
+        speak("I am unable to connect to the cloud. Switching to local mode.")
+        isActiveSession = false
+        broadcastState(ZyraState.IDLE)
+        startListening()
+    }
 
     // ElevenLabs Integration
     private val elevenLabsManager = com.zyra.app.logic.ElevenLabsConversationManager
@@ -146,6 +158,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         elevenLabsManager.init(this)
         elevenLabsManager.setListener(object : com.zyra.app.logic.ElevenLabsConversationManager.ConversationEventListener {
             override fun onConversationStarted() {
+                connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                 Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
                 isListening = false
                 speechRecognizer.stopListening()
@@ -163,8 +176,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
             override fun onError(message: String) {
                 android.os.Handler(mainLooper).post {
+                    connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                     Log.e("ZyraService", "ElevenLabs Error: $message")
-                    speak("I'm having trouble connecting to my brain.")
+                    if (message.contains("unauthorized") || message.contains("401")) {
+                        speak("My authentication failed. Please check my settings.")
+                    } else {
+                        speak("I lost the connection. $message")
+                    }
                     // Call onConversationStopped explicitly on main thread logic if needed, 
                     // or just copy the logic to avoid double-posting
                     Log.d("ZyraService", "Resume local listener after error.")
@@ -207,7 +225,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              }
              
              // Start ElevenLabs
-             elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+
+             startElevenLabsSession()
              return START_STICKY
         }
 
@@ -447,6 +466,20 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
             // Wait a bit longer if busy
             restartListening(2000)
+        } else if (error == 11 || error == SpeechRecognizer.ERROR_SERVER) { 
+             // Error 11 = ERROR_SERVER_DISCONNECTED (Android 12+)
+             // This often happens in a loop if Google App is unstable or network drops.
+             // We MUST backoff to prevent drain.
+             consecutiveErrorCount++
+             val backoff = when (consecutiveErrorCount) {
+                1 -> 1000L
+                2 -> 3000L
+                else -> 10000L // Cool down significantly
+             }
+             Log.w("ZyraService", "Server Disconnected (Error $error). Backing off for ${backoff}ms")
+             restartListening(backoff)
+             
+             if (!isActiveSession) broadcastState(ZyraState.IDLE)
         } else {
             // Other errors (Network, Audio, Client)
             // Be careful not to loop on fatal errors
@@ -637,24 +670,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             // TRIGGER ELEVENLABS SESSION
             // Instead of local processing, we start the full-duplex session
             Log.d("ZyraService", "Wake Word Detected -> Starting ElevenLabs Session")
-            elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+            startElevenLabsSession()
             
             return // Stop local processing, let ElevenLabs handle the rest
-            
-            /* LEGACY LOCAL LOGIC COMMENTED OUT FOR ELEVENLABS TRANSITION
-            // If ONLY wake word was said ("Hey Zyra"), acknowledge and wait
-            // We strip all variations to find the "command" part
-            var cleanText = bestMatch
-            wakeWordVariations.forEach { cleanText = cleanText.replace(it, "") }
-            cleanText = cleanText.replace("hey", "").trim()
-            
-            if (cleanText.isEmpty()) {
-                lastInteractionTime = System.currentTimeMillis()
-                speak("Yes, Sir?") // JARVIS Acknowledge
-                return
-            }
-            // If command followed ("Hey Zyra play music"), continue to process `cleanText` (or full text)
-            */
         } else {
              // In Active Session, refresh timeout
              resetSessionTimeout()
@@ -2239,6 +2257,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     // End of Handlers
+
+    private fun startElevenLabsSession() {
+        // Start Watchdog (12 seconds timeout)
+        connectionHandler.removeCallbacks(connectionTimeoutRunnable)
+        connectionHandler.postDelayed(connectionTimeoutRunnable, 12000) // 12s to allow for cold start / slow network
+        
+        elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+    }
 }
 
 data class Candidate(val label: String, val packageName: String, val score: Int)

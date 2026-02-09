@@ -98,9 +98,9 @@ object ElevenLabsConversationManager {
 
 
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start conversation", e)
+                Log.e(TAG, "CRITICAL: Failed to start conversation", e)
                 _connectionState.value = ConnectionState.ERROR
-                eventListener?.onError(e.message ?: "Unknown error")
+                eventListener?.onError(e.message ?: "Unknown start error")
             }
         }
     }

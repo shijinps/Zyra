@@ -7,6 +7,7 @@ qiskit==1.0.0
 qiskit-ibm-runtime==0.20.0
 httpx==0.27.0
 livekit
+livekit-api
 faster-whisper==0.10.0
 numpy
 
