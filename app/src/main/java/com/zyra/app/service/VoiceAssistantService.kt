@@ -161,6 +161,10 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             override fun onConversationStarted() {
                 connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                 Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
+                
+                // FORCE VOLUME UP
+                maximizeCallVolume()
+                
                 isElevenLabsSessionActive = true // LOCK local listener
                 isListening = false
                 
@@ -2192,7 +2196,26 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         sendBroadcast(restartIntent)
     }
 
-    // --- HELPER: Phonetic Normalization for Indian/Kerala Accents ---
+    // --- HELPER: Maximize Volume for clear AI Speech ---
+    private fun maximizeCallVolume() {
+        try {
+            val maxVoice = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)
+            val currentVoice = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL)
+            
+            val maxMusic = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val currentMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            
+            Log.d("ZyraService", "Maximizing Volume. Voice: $currentVoice/$maxVoice, Music: $currentMusic/$maxMusic")
+            
+            // Set to 100% or at least 80% if it was very low
+            audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, maxVoice, 0)
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0) // LiveKit often uses Music stream too
+            
+        } catch (e: Exception) {
+            Log.e("ZyraService", "Error setting volume", e)
+        }
+    }
+
     private fun normalizePhonetics(input: String): String {
         var text = input.lowercase().trim()
         
