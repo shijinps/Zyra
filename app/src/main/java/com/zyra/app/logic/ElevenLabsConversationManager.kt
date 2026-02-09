@@ -71,13 +71,7 @@ object ElevenLabsConversationManager {
                 Log.d(TAG, "Starting conversation with Agent: $agentId")
                 
                 // Client Tool Implementation
-                val checkServerTool = object : io.elevenlabs.ClientTool {
-                    override suspend fun execute(parameters: Map<String, Any>): io.elevenlabs.ClientToolResult {
-                        Log.d(TAG, "Tool called: check_server with $parameters")
-                        val result = handleClientTool("check_server", parameters)
-                        return io.elevenlabs.ClientToolResult.success(result)
-                    }
-                }
+// Client Tool removed: Configuring as Webhook directly in ElevenLabs Dashboard
                 
                 val config = ConversationConfig(
                     agentId = agentId,
@@ -92,7 +86,7 @@ object ElevenLabsConversationManager {
                         eventListener?.onConversationStopped()
                         currentSession = null
                     },
-                    clientTools = mapOf("check_server" to checkServerTool)
+                    clientTools = emptyMap()
                 )
                 
                 // Correct Signature: Config, then Context
@@ -116,36 +110,43 @@ object ElevenLabsConversationManager {
         conversationJob?.cancel()
         conversationJob = null
         
-        // 2. Try Manual Session End (Best Effort)
+        // 2. Reflection Stop (Handling Suspend Function)
+        // Since we cannot import 'Conversation' directly (Unresolved Reference),
+        // we use reflection to call 'endSession(Continuation)'.
         try {
-             val endMethod = currentSession?.javaClass?.methods?.find { it.name == "endSession" }
-             if (endMethod != null) {
-                 // Kotlin suspend functions take a Continuation as the last argument.
-                 // Java reflection validation of arg count will fail if we don't account for it.
-                 // If it requires args, we can't easily call it via simple reflection.
-                 Log.d(TAG, "Found endSession method: ${endMethod.name}, args: ${endMethod.parameterTypes.size}")
-                 
-                 if (endMethod.parameterTypes.isEmpty()) {
-                     endMethod.invoke(currentSession)
-                 } else {
-                     Log.w(TAG, "endSession requires arguments (likely suspend). Cannot invoke easily via reflection.")
-                     // Debug listing to confirm
-                     currentSession?.javaClass?.methods?.forEach { method ->
-                        if (method.name.contains("Session")) {
-                             Log.e(TAG, "Method: ${method.name} -> Args: ${method.parameterTypes.joinToString { it.simpleName }}")
+            val session = currentSession ?: return
+            val endMethod = session.javaClass.methods.find { it.name == "endSession" }
+            
+            if (endMethod != null) {
+                Log.d(TAG, "Invoking endSession via reflection")
+                
+                // Create a dummy Continuation
+                val continuation = object : kotlin.coroutines.Continuation<Unit> {
+                    override val context = kotlin.coroutines.EmptyCoroutineContext
+                    override fun resumeWith(result: Result<Unit>) {
+                        if (result.isFailure) {
+                            Log.e(TAG, "endSession failed", result.exceptionOrNull())
+                        } else {
+                            Log.d(TAG, "endSession completed successfully")
                         }
-                     }
-                 }
-             } else {
-                 Log.e(TAG, "No endSession method found!")
-                 // Log all methods to see what IS available
-                 currentSession?.javaClass?.methods?.forEach { method ->
-                     Log.e(TAG, "Method: ${method.name}")
-                 }
-             }
+                    }
+                }
+                
+                // Invoke: endSession(Continuation)
+                // Note: Suspend functions compile to methods taking Continuation as last param.
+                if (endMethod.parameterTypes.isNotEmpty()) {
+                    endMethod.invoke(session, continuation)
+                } else {
+                    // Fallback if not suspend (unlikely given logs)
+                    endMethod.invoke(session)
+                }
+            } else {
+                Log.e(TAG, "No endSession method found during cleanup")
+            }
         } catch (e: Exception) {
-             Log.e(TAG, "Could not end session", e)
+            Log.e(TAG, "Failed to end session via reflection", e)
         }
+        
         currentSession = null
         _connectionState.value = ConnectionState.DISCONNECTED
         eventListener?.onConversationStopped()
