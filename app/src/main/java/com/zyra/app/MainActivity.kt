@@ -76,6 +76,9 @@ class MainActivity : ComponentActivity() {
 
         val contactRepository = ContactRepository(this)
         val commandManager = CommandManager(this)
+        
+        // Initialize Intelligence System with all 12 modules
+        com.zyra.app.logic.IntelligenceSystem.initialize(this, contactRepository)
 
         setContent {
             ZyraTheme {
@@ -89,6 +92,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Save all intelligence module states
+        com.zyra.app.logic.IntelligenceSystem.saveAll(this)
     }
 
     private fun requestPermissions() {

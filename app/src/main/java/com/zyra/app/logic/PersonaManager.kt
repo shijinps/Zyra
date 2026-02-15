@@ -8,29 +8,47 @@ object PersonaManager {
     
     private val title: String
         get() = userTitles.random()
+
+    var currentMood: String = "Neutral" // Quantum Mood Storage
     
     fun getGreeting(): String {
         // Time-based intelligence
         val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
         
         val timeGreeting = when (hour) {
-             in 5..11 -> "Good morning, $title."
-             in 12..16 -> "Good afternoon, $title."
-             in 17..23 -> "Good evening, $title."
-             else -> "You are up late, $title." // 00..4
+            in 5..11 -> "Good morning"
+            in 12..16 -> "Good afternoon"
+            in 17..20 -> "Good evening"
+            else -> "Hello"
         }
         
-        // Return time greeting 50% of the time, generic others 50%
-        if (Random.nextBoolean()) return timeGreeting
+        // Check emotional context
+        val emotion = try {
+            EmotionalIntelligence.getCurrentEmotion()
+        } catch (e: Exception) {
+            EmotionalIntelligence.UserEmotion.NEUTRAL
+        }
         
-        val greetings = listOf(
-            "For you, $title, always.",
-            "Zyra protocols online. Ready, $title.",
-            "Good to see you, $title.",
-            "At your service, $title. Systems are operative.",
-            "Hello, $title."
-        )
-        return greetings.random()
+        val personalityVariants = when (emotion) {
+            EmotionalIntelligence.UserEmotion.HAPPY, EmotionalIntelligence.UserEmotion.EXCITED -> listOf(
+                "$timeGreeting, $title! Great to see you!",
+                "$timeGreeting! You seem in a good mood, $title!",
+                "Hey $title, $timeGreeting! What's making you happy today?"
+            )
+            EmotionalIntelligence.UserEmotion.STRESSED, EmotionalIntelligence.UserEmotion.FRUSTRATED -> listOf(
+                "$timeGreeting, $title. I'm here to help.",
+                "$timeGreeting. Let me make things easier for you, $title.",
+                "Hey $title, $timeGreeting. How can I assist?"
+            )
+            else -> listOf(
+                "$timeGreeting, $title!",
+                "$timeGreeting! How can I help you, $title?",
+                "Hey $title, $timeGreeting!",
+                "$timeGreeting! Ready to assist, $title."
+            )
+        }
+        
+        return personalityVariants.random()
     }
     
     fun getSystemStatus(batteryLevel: Int): String {

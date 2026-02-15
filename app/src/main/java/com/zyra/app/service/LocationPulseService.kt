@@ -102,6 +102,12 @@ class LocationPulseService : Service() {
         val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         val timestamp = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
 
+        // Update Spatial Intelligence with current location
+        com.zyra.app.logic.SpatialIntelligence.updateCurrentLocation(
+            location.latitude,
+            location.longitude
+        )
+
         val pulse = PulseData(
             latitude = location.latitude,
             longitude = location.longitude,
@@ -153,6 +159,7 @@ class LocationPulseService : Service() {
                 if (response.isSuccessful) {
                     val mood = response.body()?.mood ?: "Neutral"
                     Log.d("ZyraPulse", "Quantum Mood: $mood")
+                    com.zyra.app.logic.PersonaManager.currentMood = mood // Update Brain
                     val notificationManager = getSystemService(NotificationManager::class.java)
                     notificationManager.notify(NOTIFICATION_ID, createNotification("Mood: $mood"))
                 }
