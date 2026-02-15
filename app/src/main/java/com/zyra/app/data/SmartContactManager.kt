@@ -147,7 +147,7 @@ object SmartContactManager {
         val matches = smartContacts.values.filter { smart ->
             smart.contact.name.lowercase().contains(lowerQuery) ||
             lowerQuery.contains(smart.contact.name.lowercase()) ||
-            Levenshtein.distance(smart.contact.name.lowercase(), lowerQuery) <= 3
+            com.zyra.app.logic.algorithms.Levenshtein.calculate(smart.contact.name.lowercase(), lowerQuery) <= 3
         }
         
         // Sort by relevance (favorites first, then by frequency)

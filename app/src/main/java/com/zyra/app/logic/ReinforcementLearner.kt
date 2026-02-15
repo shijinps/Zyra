@@ -172,7 +172,7 @@ object ReinforcementLearner {
         }
         
         // Check Levenshtein distance
-        val distance = com.zyra.app.logic.algorithms.Levenshtein.distance(normalized1, normalized2)
+        val distance = com.zyra.app.logic.algorithms.Levenshtein.calculate(normalized1, normalized2)
         return distance <= 5
     }
     
