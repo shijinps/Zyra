@@ -278,6 +278,7 @@ object SmartContactManager {
                 }
                 
                 val contact = Contact(
+                    id = obj.optString("id", obj.getString("phoneNumber")), // Use phone as fallback ID
                     name = obj.getString("name"),
                     phoneNumber = obj.getString("phoneNumber")
                 )

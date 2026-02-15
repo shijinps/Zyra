@@ -54,15 +54,42 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     init {
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        // Pre-calculate view to avoid jank on show()
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+             createOverlayView()
+        }
+    }
+
+    private fun createOverlayView() {
+        if (overlayView != null) return
+
+        // WRAPPER FIX: Wrap ComposeView in a FrameLayout
+        overlayView = android.widget.FrameLayout(context).apply {
+            setViewTreeLifecycleOwner(this@OverlayManager)
+            setViewTreeViewModelStoreOwner(this@OverlayManager)
+            setViewTreeSavedStateRegistryOwner(this@OverlayManager)
+        }
+
+        val composeView = ComposeView(context).apply {
+            setContent {
+                OverlayContent(currentZyraState)
+            }
+        }
+        
+        overlayView?.addView(composeView)
     }
 
     fun show() {
-        if (overlayView != null) {
+        if (overlayView == null) {
+            createOverlayView()
+        }
+
+        if (overlayView?.parent != null) {
             Log.d("OverlayManager", "show() called but already showing. Update state only.")
             return
         }
         
-        Log.d("OverlayManager", "show() called. Creating view.")
+        Log.d("OverlayManager", "show() called. Adding pre-calculated view.")
 
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -83,23 +110,6 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
             gravity = Gravity.BOTTOM
         }
 
-        // WRAPPER FIX: Wrap ComposeView in a FrameLayout
-        // Compose requires the ViewTreeLifecycleOwner to be set on a parent or the view itself.
-        // In WindowManager, adding the owners to a wrapper ViewGroup is the most reliable method.
-        overlayView = android.widget.FrameLayout(context).apply {
-            setViewTreeLifecycleOwner(this@OverlayManager)
-            setViewTreeViewModelStoreOwner(this@OverlayManager)
-            setViewTreeSavedStateRegistryOwner(this@OverlayManager)
-        }
-
-        val composeView = ComposeView(context).apply {
-            setContent {
-                OverlayContent(currentZyraState)
-            }
-        }
-        
-        overlayView?.addView(composeView)
-
         try {
             windowManager.addView(overlayView, params)
             Log.d("OverlayManager", "View added to WindowManager.")
@@ -110,11 +120,11 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     }
 
     fun hide() {
-        if (overlayView == null) return
+        if (overlayView == null || overlayView?.parent == null) return
 
         try {
             windowManager.removeView(overlayView)
-            overlayView = null
+            // Do NOT set overlayView = null, we want to reuse it!
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         } catch (e: Exception) {
             e.printStackTrace()

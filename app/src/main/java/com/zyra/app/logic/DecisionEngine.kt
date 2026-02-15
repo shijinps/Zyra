@@ -62,13 +62,34 @@ object DecisionEngine {
     }
 
     private fun performBinaryDecision(query: String): String {
-        // "Insane" logic: Use random "Chaos Theory" justification
+        // QUANTUM INTEGRATION: Merging Cisco Entropy (Mood) with IBM Logic
+        val mood = PersonaManager.currentMood
+        
+        // 1. Analytical / Professional -> Logic & Probability
+        if (mood.contains("Analytical") || mood.contains("Professional") || mood.contains("Concise")) {
+             val prob = Random.nextInt(75, 99)
+             return "Quantum Analysis (Mode: $mood): The probability distribution favors action. Proceed with ${prob}% confidence."
+        }
+        
+        // 2. Witty / Sassy -> Chaos & Risk
+        if (mood.contains("Witty") || mood.contains("Humorous") || mood.contains("Creative")) {
+             return "My quantum state is currently 'Witty'. I say do it. Add some entropy to the universe."
+        }
+        
+        // 3. Empathetic / Protective -> Caution & Safety
+        if (mood.contains("Empathetic") || mood.contains("Warm") || mood.contains("Protective")) {
+             return "I have analyzed the outcomes. Please be careful, but I believe this is the right path."
+        }
+
+        // Default Quantum Superposition (True Random via logic if mood is Neutral/Unknown)
         val options = listOf(
-            "Proceed. The potential entropy increase favors action.",
-            "Desist. Conservation of energy suggests inaction is optimal.",
-            "The variables are too volatile. Execute a random walk strategy: Flip a coin.",
-            "Logically, if P implies Q, and you desire Q, then do P."
+            "Superposition collapsed: Outcome Positive. Go ahead.",
+            "Quantum interference detected. Recommendation: Hold position.",
+            "The qubits have aligned to 'Yes'.",
+            "Entanglement suggests a 'No' at this specific moment."
         )
+        
+        // Zombie/Survival Logic
         // Zombie/Survival Logic
         if (query.contains("zombie") || query.contains("apocalypse")) {
             return "Survival Probability Analysis: In a zombie apocalypse, cardio and double-tapping are essential. Recommended strategy: Secure a defensible high-ground with renewable water sources. Probability of survival increases by 40% with a team of 3 trusted individuals."

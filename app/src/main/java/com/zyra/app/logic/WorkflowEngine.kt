@@ -2,6 +2,9 @@ package com.zyra.app.logic
 
 import android.content.Context
 import com.zyra.app.logic.IntentType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -148,7 +151,7 @@ object WorkflowEngine {
             val dayMatches = trigger.daysOfWeek.isEmpty() || trigger.daysOfWeek.contains(currentDay)
             
             if (timeMatches && dayMatches) {
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+                CoroutineScope(Dispatchers.Default).launch {
                     executeWorkflow(context, workflow)
                 }
             }
@@ -163,7 +166,7 @@ object WorkflowEngine {
             val trigger = workflow.trigger as Trigger.LocationTrigger
             
             if (trigger.placeName.equals(placeName, ignoreCase = true) && trigger.entering == entering) {
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+                CoroutineScope(Dispatchers.Default).launch {
                     executeWorkflow(context, workflow)
                 }
             }
@@ -178,7 +181,7 @@ object WorkflowEngine {
             val trigger = workflow.trigger as Trigger.EventTrigger
             
             if (trigger.eventType == eventType && (trigger.value == null || trigger.value == value)) {
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+                CoroutineScope(Dispatchers.Default).launch {
                     executeWorkflow(context, workflow)
                 }
             }

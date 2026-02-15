@@ -185,7 +185,7 @@ class OfflineBrain {
                     }
                     intent.extra?.contains("wifi") == true -> "Accessing wireless configurations."
                     intent.extra?.contains("bluetooth") == true -> "Accessing Bluetooth configurations."
-                    else -> "Device control engaged."
+                    else -> "I do not know how to control that device yet."
                 }
             }
             IntentType.ALARM -> "Setting alarm for ${intent.extra}."

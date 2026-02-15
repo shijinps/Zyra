@@ -44,7 +44,8 @@ class HybridIntelligence(private val context: Context) {
         
         // 3. Try offline first for simple queries (faster)
         if (isSimpleQuery) {
-            val offlineAnswer = offlineBrain.getResponse(nlpResult, context)
+            val parsedIntent = ParsedIntent(IntentType.UNKNOWN, query)
+            val offlineAnswer = offlineBrain.getResponse(parsedIntent, context)
             
             if (!isGenericResponse(offlineAnswer)) {
                 cacheResponse(query, offlineAnswer, "offline")
@@ -70,7 +71,8 @@ class HybridIntelligence(private val context: Context) {
         }
         
         // 5. Final fallback to offline
-        val offlineAnswer = offlineBrain.getResponse(nlpResult, context)
+        val parsedIntent = ParsedIntent(IntentType.UNKNOWN, query)
+        val offlineAnswer = offlineBrain.getResponse(parsedIntent, context)
         cacheResponse(query, offlineAnswer, "offline")
         return offlineAnswer
     }

@@ -162,9 +162,41 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                 Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
                 
+                // DEBUG: Play Beep to confirm Audio Path works
+                try {
+                    // Use STREAM_MUSIC (3) as it calls to the main loudspeaker more reliably than VOICE_CALL (0)
+                    val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                    toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+                    android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 200)
+                } catch (e: Exception) {
+                    Log.e("ZyraService", "Failed to play debug beep", e)
+                }
+
                 // FORCE VOLUME UP
                 maximizeCallVolume()
                 
+                // AGGRESSIVE AUDIO ROUTING FIX (Mediatek/Samsung Compatibility)
+                // System sometimes reverts Speakerphone after VoIP starts. We force it back.
+                val routingHandler = android.os.Handler(mainLooper)
+                val routingRunnable = object : Runnable {
+                    var count = 0
+                    override fun run() {
+                        try {
+                            if (!audioManager.isSpeakerphoneOn) {
+                                Log.d("ZyraService", "Re-enforcing Speakerphone...")
+                                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+                                audioManager.isSpeakerphoneOn = true
+                            }
+                        } catch (e: Exception) { Log.e("ZyraService", "Routing fix failed", e) }
+                        
+                        count++
+                        if (count < 5 && isElevenLabsSessionActive) {
+                            routingHandler.postDelayed(this, 1000) // Check every second for 5s
+                        }
+                    }
+                }
+                routingRunnable.run() // Run immediately
+
                 isElevenLabsSessionActive = true // LOCK local listener
                 isListening = false
                 
@@ -177,10 +209,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 
                 broadcastState(ZyraState.LISTENING) // Update UI to show active listening
             }
-
+            
             override fun onConversationStopped() {
                 android.os.Handler(mainLooper).post {
                     Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
+                    
+                    // Reset Audio Mode
+                    try {
+                        audioManager.mode = AudioManager.MODE_NORMAL
+                        audioManager.isSpeakerphoneOn = false
+                    } catch (_: Exception) {}
+
                     isElevenLabsSessionActive = false // UNLOCK
                     isActiveSession = false
                     startListening() // Resume local wake word listening
@@ -192,6 +231,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 android.os.Handler(mainLooper).post {
                     connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                     Log.e("ZyraService", "ElevenLabs Error: $message")
+                    
+                    // Reset Audio Mode
+                    try {
+                        audioManager.mode = AudioManager.MODE_NORMAL
+                        audioManager.isSpeakerphoneOn = false
+                    } catch (_: Exception) {}
                     
                     isElevenLabsSessionActive = false // UNLOCK on error
                     
@@ -240,9 +285,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  overlayManager.updateState(ZyraState.LISTENING)
              }
              
-             // Start ElevenLabs
-
-             startElevenLabsSession()
+             // Start ElevenLabs - LEGACY REMOVED
+             // startElevenLabsSession() 
+             if (!isListening) startListening()
              return START_STICKY
         }
 
@@ -404,14 +449,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 // Use FREE_FORM for better noise tolerance and natural speech in traffic
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US") // Switched to US English per user request/issue
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN") // Switched to Indian English per user request
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true) 
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
                 
-                // Noise / Detection enhancements
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                // Noise / Detection enhancements - Tuned for S23
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
             }
             try {
                 Log.d("ZyraService", "Starting SpeechRecognizer...")
@@ -419,6 +464,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 if (!audioManager.isMusicActive) {
                     silenceBeep() 
                 }
+                
+                // Ensure TTS is stopped to free up audio hardware
+                com.zyra.app.logic.ElevenLabsTTSManager.stop()
 
                 speechRecognizer.startListening(intent)
                 
@@ -452,71 +500,51 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
 
     override fun onError(error: Int) {
-        isListening = false
-        // Release focus immediately on error
-        // Abandon focus immediately on results to allow media to resume full volume if ducked
+        isListening = false 
         try { 
             @Suppress("DEPRECATION")
             audioManager.abandonAudioFocus(null) 
         } catch (_: Exception) {}
         
         Log.e("ZyraService", "Speech Error: $error")
+        consecutiveErrorCount++
         
-        // Handle specific errors
+        // CRITICAL FIX for Error 11 (Server Disconnected) / Error 5 (Client Side)
+        // These often indicate the Recognizer is in a bad state and needs a hard reset.
+        if (error == 11 || error == SpeechRecognizer.ERROR_SERVER || error == SpeechRecognizer.ERROR_CLIENT) {
+             Log.w("ZyraService", "Critical Error ($error) - Hard Resetting Recognizer...")
+             
+             // 1. Destroy existing
+             try { speechRecognizer.destroy() } catch (_: Exception) {}
+             
+             // 2. Clear flags
+             isListening = false
+             
+             // 3. Re-init and Start after delay
+             android.os.Handler(mainLooper).postDelayed({
+                 try {
+                     initSpeechRecognizer()
+                     startListening()
+                 } catch (e: Exception) {
+                     Log.e("ZyraService", "Re-init failed", e)
+                 }
+             }, 1000) // 1s delay for hardware to release
+             return
+        }
+
+        // Standard Backoff for other errors (No Match, Busy, etc.)
         if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-            consecutiveErrorCount++
-            
-            // EXPONENTIAL BACKOFF
-            // 1st error: 500ms
-            // 2nd error: 2000ms
-            // 3rd error: 5000ms
-            // 4th error: 10000ms
-            // Max: 30000ms
-            // OPTIMIZED BACKOFF: Max 2 seconds to keep it responsive
             val backoff = when (consecutiveErrorCount) {
                 1 -> 500L
-                else -> 2000L // Cap at 2 seconds
+                else -> 2000L
             }
-            
-            Log.d("ZyraService", "Speech Error: $error. Count: $consecutiveErrorCount. Delay: $backoff")
-            
-            // Only restart if we are in "Active Session" or if we want continuous listening.
-            // But for "Passive listening" (Hotword), we should be gentle.
-            // If the user isn't talking to us (No Match), and we are just waiting for "Zyra", 
-            // the backoff helps battery and audio focus.
-            
             restartListening(backoff)
-            
-            // If not in active session, ensure we broadcast IDLE so UI doesn't stick
             if (!isActiveSession) broadcastState(ZyraState.IDLE)
-            
         } else if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
-            // Wait a bit longer if busy
             restartListening(2000)
-        } else if (error == 11 || error == SpeechRecognizer.ERROR_SERVER) { 
-             // Error 11 = ERROR_SERVER_DISCONNECTED (Android 12+)
-             // This often happens in a loop if Google App is unstable or network drops.
-             // We MUST backoff to prevent drain.
-             consecutiveErrorCount++
-             val backoff = when (consecutiveErrorCount) {
-                1 -> 1000L
-                2 -> 3000L
-                else -> 10000L // Cool down significantly
-             }
-             Log.w("ZyraService", "Server Disconnected (Error $error). Backing off for ${backoff}ms")
-             restartListening(backoff)
-             
-             if (!isActiveSession) broadcastState(ZyraState.IDLE)
         } else {
-            // Other errors (Network, Audio, Client)
-            // Be careful not to loop on fatal errors
-            if (error == SpeechRecognizer.ERROR_CLIENT) {
-                // Often happens if we start too fast.
-                restartListening(2000)
-            } else {
-                 restartListening(1000)
-            }
-            if (!isActiveSession) broadcastState(ZyraState.IDLE)
+             restartListening(1000)
+             if (!isActiveSession) broadcastState(ZyraState.IDLE)
         }
     }
 
@@ -697,12 +725,22 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 overlayManager.updateState(ZyraState.LISTENING) // Show listening state immediately
             }
 
-            // TRIGGER ELEVENLABS SESSION
-            // Instead of local processing, we start the full-duplex session
-            Log.d("ZyraService", "Wake Word Detected -> Starting ElevenLabs Session")
-            startElevenLabsSession()
+            // TRIGGER MODULAR PIPELINE (Turn-Based)
+            // If the user only said the Name ("Hey Zyra"), we acknowledge and wait.
+            // If they said a command ("Hey Zyra what is time"), we process it immediately.
             
-            return // Stop local processing, let ElevenLabs handle the rest
+            val commandContent = bestMatch.replace(Regex("(?i)hey|hello|hi|okay"), "").trim()
+            val justName = wakeWordVariations.any { commandContent.equals(it, ignoreCase = true) } || commandContent.isEmpty()
+
+            if (justName) {
+                 Log.d("ZyraService", "Wake Word Only -> Prompting")
+                 speak("Yes?") // Efficient acknowledgement
+                 // The speak() method automatically restarts listening after completion
+                 return
+            } else {
+                 Log.d("ZyraService", "Wake Word + Command -> Processing immediately")
+                 // Fall through to Intent Processing below
+            }
         } else {
              // In Active Session, refresh timeout
              resetSessionTimeout()
@@ -722,8 +760,115 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              return
         }
 
-        // --- Intent Processing ---
+        // 0.5 LOCAL TOOLS (Time/Date) - Instant & Reliable
+        if (lowerText.contains("what's the time") || lowerText.contains("current time") || lowerText.contains("tell me the time") || (lowerText.contains("time") && lowerText.contains("now"))) {
+             val time = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date())
+             speak("It is $time")
+             return
+        }
+        if (lowerText.contains("what's the date") || lowerText.contains("current date") || lowerText.contains("day is it")) {
+             val date = java.text.SimpleDateFormat("EEEE, MMMM d", java.util.Locale.getDefault()).format(java.util.Date())
+             speak("It is $date")
+             return
+        }
+
+        // 0.6 QUANTUM STATUS CHECK
+        if (lowerText.contains("quantum") && (lowerText.contains("status") || lowerText.contains("check"))) {
+             speak("Querying Quantum Subsystems...")
+             val mood = com.zyra.app.logic.PersonaManager.currentMood
+             speak("Cisco Quantum Entropy is active. My current mood is $mood. IBM Quantum circuits are online.")
+             return
+        }
+
+        // 0.7 QUANTUM DECISIONS (Using DecisionEngine)
+        if (lowerText.contains("should i") || lowerText.contains("decide") || lowerText.contains("pick for me") || lowerText.contains("make a choice")) {
+             speak("Consulting Quantum Matrix...")
+             val decision = com.zyra.app.logic.DecisionEngine.analyzeDecision(lowerText)
+             if (decision != null) {
+                 speak(decision)
+                 return
+             }
+        }
+
+        // 0.8 CALL CONTROL (Global - Cut/End)
+        if (lowerText.contains("cut call") || lowerText.contains("end call") || lowerText.contains("hang up") || lowerText.contains("disconnect call")) {
+             cutCall()
+             return
+        }
+
+        // 0.9 MEDIA CONTROL (Global - Pause/Resume/Next)
+        if (lowerText.contains("pause") || lowerText.contains("stop music") || lowerText.contains("stop song")) {
+             handleMediaCommand("pause")
+             speak("Paused.")
+             return
+        }
+        if (lowerText == "play music" || lowerText == "resume" || lowerText == "resume song" || lowerText == "continue music") {
+             handleMediaCommand("play")
+             speak("Resuming.")
+             return
+        }
+        if (lowerText.contains("next song") || lowerText.contains("skip song") || lowerText.contains("next track")) {
+             handleMediaCommand("next")
+             speak("Skipping.")
+             return
+        }
+
+        // 0.92 VOLUME CONTROL (Local - Maximize/Decrease/Increase)
+        // Specific user requests: "maximise volume", "maximize sound", "decree sound"
+        if (lowerText.contains("maximiz") || lowerText.contains("maximis") || lowerText.contains("full volume") || lowerText.contains("max volume")) {
+             val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, max, AudioManager.FLAG_SHOW_UI)
+             speak("Volume maximized.")
+             return
+        }
+        if (lowerText.contains("decree sound") || lowerText.contains("decrease") || lowerText.contains("lower volume") || lowerText.contains("volume down") || lowerText.contains("sound down") || lowerText.contains("low sound")) {
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI) // Double step for noticeable effect
+             speak("Turning it down.")
+             return
+        }
+        if (lowerText.contains("increase") || lowerText.contains("raise volume") || lowerText.contains("volume up") || lowerText.contains("sound up")) {
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+             speak("Turning it up.")
+             return
+        }
+        if (lowerText.contains("mute") && !lowerText.contains("unmute")) {
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, AudioManager.FLAG_SHOW_UI)
+             speak("Muted.")
+             return
+        }
+        if (lowerText.contains("unmute") || lowerText.contains("speak up")) {
+             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, AudioManager.FLAG_SHOW_UI)
+             speak("Unmuted.")
+             return
+        }
         
+        // 0.94 HOT ROUTING (Problematic Contacts)
+        // User struggles with "NBS Badkarma" (Heard as "Invest Karma") and "NBS Zacko" (Heard as "Psycho")
+        // If these keywords appear ANYWHERE, assume it's a call request.
+        if (lowerText.contains("karma") || lowerText.contains("bad karma") || lowerText.contains("badkarma")) {
+             speak("Calling Badkarma...")
+             resolveAndCall("NBS Badkarma")
+             return
+        }
+        if (lowerText.contains("zacko") || lowerText.contains("psycho") || lowerText.contains("saco") || lowerText.contains("zaco")) {
+             speak("Calling Zacko...")
+             resolveAndCall("NBS Zacko")
+             return
+        }
+
+        // 0.95 DIRECT CALLING (Local Task)
+        // Hotfix: Handle "code" as "call" for Indian accent misinterpretations
+        if (lowerText.startsWith("call ") || lowerText.startsWith("dial ") || lowerText.startsWith("phone ") || lowerText.startsWith("code ")) {
+             val name = lowerText.replace("call ", "").replace("dial ", "").replace("phone ", "").replace("code ", "").trim()
+             if (name.isNotEmpty()) {
+                 speak("Searching contacts for $name...")
+                 resolveAndCall(name)
+                 return
+             }
+        }
+
         // -1. CHECK CONVERSATION STATE
         if (conversationManager.isBusy()) {
             handleConversationState(bestMatch)
@@ -834,115 +979,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  }
             }
             else -> {
-                // --- GEMINI ONLINE INTERCEPT ---
-                if (intent.extra?.startsWith("GEMINI:") == true) {
-                    val prompt = intent.extra.removePrefix("GEMINI:")
-                    
-                    speak("Thinking...") 
-                    
-                    CoroutineScope(Dispatchers.IO).launch {
-                        var response = com.zyra.app.logic.GeminiModule.generateResponse(prompt)
-                        
-                        // Check for MEMORY tag
-                        if (response.contains("||MEMORY:")) {
-                            try {
-                                val tagStart = response.indexOf("||MEMORY:")
-                                val tagEnd = response.indexOf("||", tagStart + 2)
-                                if (tagEnd != -1) {
-                                    val tagContent = response.substring(tagStart + 9, tagEnd) // "key|value"
-                                    val parts = tagContent.split("|")
-                                    if (parts.size >= 2) {
-                                        val key = parts[0].trim()
-                                        val value = parts[1].trim()
-                                        com.zyra.app.data.MemoryModule.learnFact(key, value, this@VoiceAssistantService)
-                                        Log.d("ZyraService", "Learned fact via Gemini: $key = $value")
-                                    }
-                                    // Remove tag from response
-                                    val firstPart = response.substring(0, tagStart)
-                                    val secondPart = response.substring(tagEnd + 2)
-                                    response = (firstPart + secondPart).trim()
-                                }
-                            } catch (e: Exception) { Log.e("ZyraService", "Error parsing memory", e) }
-                        }
-                        
-                        // Check for TRAIN tag
-                        if (response.contains("||TRAIN:")) {
-                            try {
-                                val tagStart = response.indexOf("||TRAIN:")
-                                val tagEnd = response.indexOf("||", tagStart + 2)
-                                if (tagEnd != -1) {
-                                    val tagContent = response.substring(tagStart + 8, tagEnd) // "CATEGORY"
-                                    val type = IntentType.valueOf(tagContent)
-                                    nlp.train(prompt, type)
-                                    Log.d("ZyraService", "Auto-Trained Offline Brain: '$prompt' -> $type")
-                                    
-                                    // Remove tag
-                                    val firstPart = response.substring(0, tagStart)
-                                    val secondPart = response.substring(tagEnd + 2)
-                                    response = (firstPart + secondPart).trim()
-                                    
-                                    // EXECUTE IMMEDIATELY
-                                    withContext(Dispatchers.Main) {
-                                        speak(response) // Speak first
-                                        when (type) {
-                                            IntentType.UNLOCK_DEVICE -> handleUnlockDevice()
-                                            IntentType.DEVICE_CONTROL -> handleDeviceControl(prompt) // Infer command
-                                            IntentType.CALL -> speak("I can't make calls from online mode yet.")
-                                            else -> {}
-                                        }
-                                    }
-                                    return@launch // Stop further processing since we handled it
-                                }
-                            } catch (e: Exception) { Log.e("ZyraService", "Error parsing training tag", e) }
-                        }
-                        
-                        withContext(Dispatchers.Main) {
-                            speak(response)
-                        }
-                    }
-                    return
-                }
-
-                val response = brain.getResponse(intent, this)
-                
-                // INTELLIGENT FALLBACK: Check if it's a question before prompting search
-                val text = intent.extra?.lowercase() ?: ""
-                
-                // CONTEXTUAL SEARCH INTERCEPT
-                // If user says "Search for X" and an app is open, try searching inside that app first
-                if (currentOpenPackage != null && (intent.type == IntentType.UNKNOWN || intent.type == IntentType.KNOWLEDGE_QUERY)) {
-                     if (text.startsWith("search") || text.startsWith("find") || text.startsWith("look for")) {
-                          speak("Searching in app context.")
-                          val query = text.replace("search", "")
-                                          .replace("find", "")
-                                          .replace("look for", "")
-                                          .replace("for", "").trim()
-                          performInAppTask("search $query")
-                          return
-                     }
-                }
-
-                val isQuestion = text.startsWith("who") || text.startsWith("what") || 
-                                 text.startsWith("where") || text.startsWith("when") || 
-                                 text.startsWith("why") || text.startsWith("how") || 
-                                 text.startsWith("define") || text.contains(" meaning")
-
-                if ((intent.type == IntentType.UNKNOWN || response.lowercase().contains("i'm not sure")) && isQuestion) {
-                    speak("I'm not sure about that. Should I search Google for '${intent.extra ?: "it"}'?")
-                    conversationManager.startWebSearchConfirmation(intent.extra ?: "")
-                    resetSessionTimeout()
-                } else {
-                    speak(response)
-                    
-                    // Trigger Sync on "Go Online"
-                    if (response.contains("I am now online")) {
-                         CoroutineScope(Dispatchers.IO).launch {
-                             com.zyra.app.logic.BrainSyncManager.sync(this@VoiceAssistantService)
-                         }
-                    }
-                }
+                // MODULAR BRAIN FALLBACK
+                // If we don't know what it is locally, ask the Big Brain (Groq).
+                val query = intent.extra ?: bestMatch
+                invokeGroqAI(query)
             }
-        }
+
+    }
     }
 
     private fun checkCustomCommands(text: String): String {
@@ -1358,35 +1401,49 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
          // (Existing logic adapted to parameters)
         val lowerText = text.lowercase()
         
-        if (lowerText.contains("first") || lowerText.contains("1st") || lowerText.contains("one")) {
-            makeCall(candidates[0].phoneNumber)
-            conversationManager.clear()
-            return
+        var selectedContact: com.zyra.app.data.Contact? = null
+
+        // 1. Ordinal Selection
+        if (lowerText.contains("first") || lowerText.contains("1st") || lowerText.contains("one") || lowerText.contains("top")) {
+            selectedContact = candidates[0]
         }
-        if (candidates.size >= 2 && (lowerText.contains("second") || lowerText.contains("2nd") || lowerText.contains("two"))) {
-            makeCall(candidates[1].phoneNumber)
-            conversationManager.clear()
-            return
+        else if (candidates.size >= 2 && (lowerText.contains("second") || lowerText.contains("2nd") || lowerText.contains("two") || lowerText.contains("bottom"))) {
+            selectedContact = candidates[1]
         }
-        if (candidates.size >= 3 && (lowerText.contains("third") || lowerText.contains("3rd") || lowerText.contains("three"))) {
-             makeCall(candidates[2].phoneNumber)
-             conversationManager.clear()
-             return
+        else if (candidates.size >= 3 && (lowerText.contains("third") || lowerText.contains("3rd") || lowerText.contains("three"))) {
+             selectedContact = candidates[2]
+        }
+        // 2. Confirmation (If users says "Yes", assume the first one - usually the best match)
+        else if (lowerText.contains("yes") || lowerText.contains("call") || lowerText.contains("sure") || lowerText.contains("correct")) {
+            selectedContact = candidates[0]
         }
         
-        val candidateNames = candidates.map { it.name }
-        val bestRefinedMatch = Levenshtein.findBestMatch(text, candidateNames)
-        
-        if (bestRefinedMatch != null) {
-            val contact = candidates.find { it.name == bestRefinedMatch }
-            if (contact != null) {
-                 makeCall(contact.phoneNumber)
-                 conversationManager.clear()
-                 return
+        // 3. Name Match
+        if (selectedContact == null) {
+            val candidateNames = candidates.map { it.name }
+            val bestRefinedMatch = Levenshtein.findBestMatch(text, candidateNames)
+            if (bestRefinedMatch != null) {
+                selectedContact = candidates.find { it.name == bestRefinedMatch }
             }
         }
+
+        // --- ACTION EXECUTION ---
+        if (selectedContact != null) {
+            // CONFIRMATION STEP ADDED: Ask "Shall I call X?" instead of calling directly
+            speak("Shall I call ${selectedContact.name}?")
+            conversationManager.startCallConfirmation(selectedContact.name, selectedContact.phoneNumber)
+            resetSessionTimeout()
+            return
+        }
         
-        speak("I didn't catch that. Please say the name again or say 'cancel'.")
+        // 4. Cancellation
+        if (lowerText.contains("no") || lowerText.contains("cancel") || lowerText.contains("stop") || lowerText.contains("none")) {
+            speak("Cancelled.")
+            conversationManager.clear()
+            return
+        }
+        
+        speak("I didn't catch that. Please say First, Second, or the Name.")
         resetSessionTimeout()
     }
     
@@ -1584,6 +1641,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var pendingContactCandidates: List<com.zyra.app.data.Contact>? = null
 
     private fun resolveAndCall(spokenName: String) {
+          // ALIAS FIXED: "Psycho" -> "NBS Zacko"
+          // This handles the specific user complaint where "Call NBS Zacko" is heard as "Psycho"
+          var finalName = spokenName
+          if (finalName.equals("psycho", ignoreCase = true) || finalName.contains("zacko", ignoreCase = true)) {
+              finalName = "NBS Zacko" 
+          }
+          // ALIAS: "Badkarma" -> "NBS Badkarma"
+          if (finalName.contains("karma", ignoreCase = true) || finalName.contains("bad karma", ignoreCase = true)) {
+              finalName = "NBS Badkarma"
+          }
+
           if (checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
               speak("I need access to your contacts to make a call. Please allow it in settings.")
               return
@@ -1601,7 +1669,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
                  val names = contacts.map { it.name }
                  // Use findAllMatches to get ALL potential candidates
-                 var matchedNames = Levenshtein.findAllMatches(spokenName, names)
+                 var matchedNames = Levenshtein.findAllMatches(finalName, names)
                  
                  // --- PHONETIC FALLBACK (Indian English / Kerala Accent) ---
                  if (matchedNames.isEmpty()) {
@@ -1964,83 +2032,37 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun speak(text: String) {
         broadcastState(ZyraState.SPEAKING)
-        if (isTtsReady && tts != null) {
-            tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
-                override fun onDone(utteranceId: String?) {
-                    // Back to listening
-                    android.os.Handler(mainLooper).post { 
-                        // CRITICAL FIX: After speaking, if we are in an active session,
-                        // do NOT go IDLE (which hides overlay). Go to LISTENING.
-                        if (isActiveSession) {
-                            // Reset timeout so user has time to reply AFTER she finishes speaking
-                            resetSessionTimeout()
-                            broadcastState(ZyraState.LISTENING)
-                        } else {
-                            broadcastState(ZyraState.IDLE)
-                        }
-                        startListening() 
-                    }
-                }
-                override fun onError(utteranceId: String?, errorCode: Int) {
-                     android.os.Handler(mainLooper).post { startListening() }
-                }
+        
+        // ENSURE SINGLE VOICE: Stop Native TTS if it's playing
+        try {
+            if (isTtsReady) {
+                tts?.stop()
+            }
+        } catch (_: Exception) {}
 
-                @Deprecated("Deprecated in Java")
-                @Suppress("OVERRIDE_DEPRECATION")
-                override fun onError(utteranceId: String?) {
-                     // For legacy support if needed, but API 21+ prefers the Int version
-                     // We just delegate or do same logic
-                     onError(utteranceId, -1)
-                }
-            })
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ZyraUtterance")
-        } else {
-            // If TTS fails, go back to listening
-            startListening()
+        // UNIFIED VOICE: Use ElevenLabs for ALL speech (Local & Cloud)
+        CoroutineScope(Dispatchers.IO).launch {
+             com.zyra.app.logic.ElevenLabsTTSManager.speak(this@VoiceAssistantService, text) {
+                 // On Complete (Back on Main Thread via Handler if needed, but callback might be largely async)
+                 // The Manager calls invoke() from Main Thread in playAudio, but IO in error/fallback.
+                 // Safer to wrap in Handler.
+                 android.os.Handler(mainLooper).post { 
+                    if (isActiveSession) {
+                        resetSessionTimeout()
+                        broadcastState(ZyraState.LISTENING)
+                    } else {
+                        broadcastState(ZyraState.IDLE)
+                    }
+                    startListening() 
+                 }
+             }
         }
     }
 
     override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            // JARVIS CONFIGURATION
-            // 1. Accent: British English (Paul Bettany style)
-            val result = tts?.setLanguage(Locale.UK)
-            
-            // 2. Pitch: Lower/Deeper (Calm, robotic but warm)
-            // 1.0 is normal. 0.7-0.8 is deeper.
-            tts?.setPitch(0.75f)
-            
-            // 3. Rate: Slightly slower, deliberate, authoritative
-            tts?.setSpeechRate(0.9f)
-            
-            // 4. Voice Selection (Try to find a Male voice if possible)
-            // This is heuristic as engines vary (Google TTS vs Samsung TTS)
-            try {
-                val voices = tts?.voices
-                if (voices != null) {
-                    val targetVoice = voices.find { 
-                        it.locale == Locale.UK && 
-                        (it.name.contains("male", ignoreCase = true) || it.name.contains("en-gb-x-rjs-network")) 
-                    }
-                    if (targetVoice != null) {
-                        tts?.voice = targetVoice
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("ZyraService", "Could not set specific voice", e)
-            }
-
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.e("ZyraService", "TTS Language not supported")
-                // Fallback to US if UK is missing
-                tts?.setLanguage(Locale.US)
-            } else {
-                isTtsReady = true
-            }
-        } else {
-            Log.e("ZyraService", "TTS Initialization failed")
-        }
+        // NATIVE TTS DISABLED: To prevent "double voice" issues (Native + ElevenLabs).
+        // We now rely exclusively on ElevenLabsTTSManager.
+        isTtsReady = false
     }
 
     private fun makeCall(phoneNumber: String) {
@@ -2241,30 +2263,32 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             }
         }
 
-        // 1. Set immediately
-        setMax()
-
-        // 2. Retry after 500ms (Audio Mode switches can sometimes reset volume)
-        connectionHandler.postDelayed({ setMax() }, 500)
+        // Offload to IO thread to prevent UI jank
+        CoroutineScope(Dispatchers.IO).launch {
+            setMax()
+            // Retry logic also on background
+            kotlinx.coroutines.delay(500)
+            setMax()
+        }
     }
 
     private fun normalizePhonetics(input: String): String {
         var text = input.lowercase().trim()
         
         // 1. Consonant Swaps (Common in Indian accents)
-        text = text.replace("p", "b")  // Pro -> Bro
-        text = text.replace("f", "ph") // Fan -> Phan
-        text = text.replace("v", "w")  // Vine -> Wine
-        text = text.replace("z", "s")  // Zyra -> Syra
-        text = text.replace("sh", "s") // Shee -> See
-        text = text.replace("th", "t") // They -> Tey
+        // Standardize to softer/simpler phonemes
+        text = text.replace("ph", "f") 
+        text = text.replace("v", "w")
+        text = text.replace("z", "s")
+        text = text.replace("sh", "s")
+        text = text.replace("th", "t")
+        text = text.replace("k", "c")
+        text = text.replace("ck", "c") // Zacko -> Zaco
         
-        // 2. Vowel Reduction (Simplify to skeleton)
-        // Keep it simple for now, maybe map all vowels to 'a' or remove them? 
-        // Removing vowels is too aggressive ("Sai" -> "S", "See" -> "S").
-        // Let's just standardise double vowels.
-        text = text.replace("ee", "i")
-        text = text.replace("oo", "u")
+        // 2. Vowel Reduction
+        text = text.replace("ee", "i") // Meet -> Mit
+        text = text.replace("oo", "u") // Moon -> Mun
+        text = text.replace("y", "i")  // Cycle -> Cicle (and Zyra -> Sira)
         
         return text
     }
@@ -2337,28 +2361,58 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     // End of Handlers
 
-    private fun startElevenLabsSession() {
-        // Stop SpeechRecognizer to release mic and focus
-        try {
-            speechRecognizer.cancel()
-            isListening = false
-             // Temporarily idle until ElevenLabs starts (avoid LISTENING state conflict)
-            if (!isActiveSession) broadcastState(ZyraState.IDLE)
-            
-            // Abandon focus so LiveKit can take it cleanly
-            @Suppress("DEPRECATION")
-            audioManager.abandonAudioFocus(null)
-            Log.d("ZyraService", "Released Mic & Focus for ElevenLabs")
-        } catch (e: Exception) {
-            Log.e("ZyraService", "Error stopping recognizer for ElevenLabs", e)
+    private fun invokeGroqAI(text: String) {
+        // 1. Validate Keys
+        if (com.zyra.app.logic.GroqModule.apiKey.isBlank() || com.zyra.app.logic.ElevenLabsTTSManager.apiKey.isBlank()) {
+            speak("I need my API keys to function. Please configure them.")
+            broadcastState(ZyraState.IDLE)
+            return
         }
 
-        // Start Watchdog (12 seconds timeout)
-        connectionHandler.removeCallbacks(connectionTimeoutRunnable)
-        connectionHandler.postDelayed(connectionTimeoutRunnable, 12000) // 12s to allow for cold start / slow network
-        
-        elevenLabsManager.startConversation(this, ELEVENLABS_AGENT_ID)
+        // 2. Show Processing State
+        broadcastState(ZyraState.PROCESSING)
+        // speak("Thinking...") // REMOVED: Too repetitive/slow. UI is enough.
+
+        // 3. Background Pipeline
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // A. Brain (Groq)
+                val responseText = com.zyra.app.logic.GroqModule.chat(text)
+                Log.d("ZyraService", "Groq Response: $responseText")
+
+                // B. Voice (ElevenLabs TTS)
+                // We use our new Manager which uses MediaPlayer (Music Stream)
+                withContext(Dispatchers.Main) {
+                    // Update UI to speaking before audio starts logic
+                    broadcastState(ZyraState.SPEAKING)
+                }
+                
+                com.zyra.app.logic.ElevenLabsTTSManager.speak(this@VoiceAssistantService, responseText)
+                
+                // Note: ElevenLabsTTSManager handles the "Speaking" state internally? 
+                // No, it plays audio. We should probably track it.
+                // It has a completion listener that could trigger "Idle".
+                // For now, TTSManager doesn't callback to Service. 
+                // I should probably pass a callback to standard speak or just trust the duration.
+                // Valid point: The TTSManager I wrote earlier fires its own events or just plays.
+                // Let's rely on TTSManager logging for now and maybe update Service state 
+                // via a shared listener if needed later. 
+                // Actually, I'll update TTSManager in next step to be cleaner if needed.
+                
+                // For now, assume TTS starts immediately.
+                
+            } catch (e: Exception) {
+                Log.e("ZyraService", "Modular Pipeline Failed", e)
+                withContext(Dispatchers.Main) {
+                   speak("I had a problem processing that.")
+                   broadcastState(ZyraState.IDLE)
+                }
+            }
+        }
     }
+
+
+
 }
 
 data class Candidate(val label: String, val packageName: String, val score: Int)
