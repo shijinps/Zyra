@@ -20,6 +20,17 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        // Load API keys from local.properties
+        val properties = java.util.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            properties.load(localPropertiesFile.inputStream())
+        }
+        
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"${properties.getProperty("GOOGLE_MAPS_API_KEY", "")}\"")
+        buildConfigField("String", "IBM_QUANTUM_API_KEY", "\"${properties.getProperty("IBM_QUANTUM_API_KEY", "snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo")}\"")
+        buildConfigField("String", "CISCO_QUANTUM_API_KEY", "\"${properties.getProperty("CISCO_QUANTUM_API_KEY", "gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G")}\"")
     }
 
     buildTypes {
@@ -37,6 +48,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.7"

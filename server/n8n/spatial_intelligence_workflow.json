@@ -11,117 +11,123 @@
             "id": "webhook-spatial-query",
             "name": "Webhook - Spatial Query",
             "type": "n8n-nodes-base.webhook",
-            "typeVersion": 1,
+            "typeVersion": 1.1,
             "position": [
-                250,
+                240,
                 300
             ]
         },
         {
             "parameters": {
-                "jsCode": "// Extract query parameters\nconst body = $input.item.json.body;\nconst currentLat = body.current_lat;\nconst currentLng = body.current_lng;\nconst destinationLat = body.destination_lat;\nconst destinationLng = body.destination_lng;\nconst destinationName = body.destination_name || 'Destination';\nconst placeType = body.place_type || 'atm';\nconst keyword = body.keyword || null;\nconst maxDetourMinutes = body.max_detour_minutes || 2;\n\nreturn {\n  json: {\n    current_lat: currentLat,\n    current_lng: currentLng,\n    destination_lat: destinationLat,\n    destination_lng: destinationLng,\n    destination_name: destinationName,\n    place_type: placeType,\n    keyword: keyword,\n    max_detour_minutes: maxDetourMinutes\n  }\n};"
+                "jsCode": "// Extract query parameters\nconst currentLat = $input.item.json.current_lat;\nconst currentLng = $input.item.json.current_lng;\nconst destinationLat = $input.item.json.destination_lat;\nconst destinationLng = $input.item.json.destination_lng;\nconst destinationName = $input.item.json.destination_name || 'destination';\nconst placeType = $input.item.json.place_type || 'atm';\nconst maxDetourMinutes = $input.item.json.max_detour_minutes || 2;\n\nreturn {\n  current_lat: currentLat,\n  current_lng: currentLng,\n  destination_lat: destinationLat,\n  destination_lng: destinationLng,\n  destination_name: destinationName,\n  place_type: placeType,\n  max_detour_minutes: maxDetourMinutes\n};"
             },
             "id": "parse-query",
             "name": "Parse Query",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                450,
+                460,
                 300
             ]
         },
         {
             "parameters": {
-                "method": "GET",
-                "url": "=https://maps.googleapis.com/maps/api/directions/json?origin={{$json.current_lat}},{{$json.current_lng}}&destination={{$json.destination_lat}},{{$json.destination_lng}}&mode=driving&key=YOUR_GOOGLE_MAPS_API_KEY",
+                "url": "=https://maps.googleapis.com/maps/api/directions/json?origin={{$json.current_lat}},{{$json.current_lng}}&destination={{$json.destination_lat}},{{$json.destination_lng}}&mode=driving&key=AIzaSyAnV4qvtqRnDZ7Akjbu5oQ6TXi-bJmN8b4",
                 "options": {}
             },
             "id": "get-route",
             "name": "Get Route",
             "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4,
+            "typeVersion": 4.2,
             "position": [
-                650,
+                680,
                 300
             ]
         },
         {
             "parameters": {
-                "jsCode": "// Decode polyline and sample route points\nfunction decodePolyline(encoded) {\n  const poly = [];\n  let index = 0;\n  const len = encoded.length;\n  let lat = 0;\n  let lng = 0;\n  \n  while (index < len) {\n    let b;\n    let shift = 0;\n    let result = 0;\n    do {\n      b = encoded.charCodeAt(index++) - 63;\n      result |= (b & 0x1f) << shift;\n      shift += 5;\n    } while (b >= 0x20);\n    const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));\n    lat += dlat;\n    \n    shift = 0;\n    result = 0;\n    do {\n      b = encoded.charCodeAt(index++) - 63;\n      result |= (b & 0x1f) << shift;\n      shift += 5;\n    } while (b >= 0x20);\n    const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));\n    lng += dlng;\n    \n    poly.push({ lat: lat / 1E5, lng: lng / 1E5 });\n  }\n  \n  return poly;\n}\n\nfunction samplePoints(points, intervalMeters) {\n  if (points.length === 0) return [];\n  \n  const sampled = [points[0]];\n  let accumulatedDistance = 0;\n  \n  for (let i = 1; i < points.length; i++) {\n    const distance = calculateDistance(points[i - 1], points[i]);\n    accumulatedDistance += distance;\n    \n    if (accumulatedDistance >= intervalMeters) {\n      sampled.push(points[i]);\n      accumulatedDistance = 0;\n    }\n  }\n  \n  return sampled;\n}\n\nfunction calculateDistance(p1, p2) {\n  const R = 6371000;\n  const dLat = (p2.lat - p1.lat) * Math.PI / 180;\n  const dLng = (p2.lng - p1.lng) * Math.PI / 180;\n  \n  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +\n            Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *\n            Math.sin(dLng / 2) * Math.sin(dLng / 2);\n  \n  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));\n  \n  return R * c;\n}\n\nconst routeData = $input.item.json;\nconst polyline = routeData.routes[0].overview_polyline.points;\nconst routePoints = decodePolyline(polyline);\nconst sampledPoints = samplePoints(routePoints, 2000); // Sample every 2km\n\nreturn sampledPoints.map(point => ({\n  json: {\n    lat: point.lat,\n    lng: point.lng,\n    place_type: $('Parse Query').item.json.place_type,\n    keyword: $('Parse Query').item.json.keyword\n  }\n}));"
+                "jsCode": "// Decode polyline and sample route points\nfunction decodePolyline(encoded) {\n  const points = [];\n  let index = 0, len = encoded.length;\n  let lat = 0, lng = 0;\n  \n  while (index < len) {\n    let b, shift = 0, result = 0;\n    do {\n      b = encoded.charCodeAt(index++) - 63;\n      result |= (b & 0x1f) << shift;\n      shift += 5;\n    } while (b >= 0x20);\n    const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));\n    lat += dlat;\n    \n    shift = 0;\n    result = 0;\n    do {\n      b = encoded.charCodeAt(index++) - 63;\n      result |= (b & 0x1f) << shift;\n      shift += 5;\n    } while (b >= 0x20);\n    const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));\n    lng += dlng;\n    \n    points.push({ lat: lat / 1e5, lng: lng / 1e5 });\n  }\n  return points;\n}\n\nconst polyline = $input.item.json.routes[0].overview_polyline.points;\nconst allPoints = decodePolyline(polyline);\n\n// Sample every 2km (approximately every 20 points)\nconst sampledPoints = [];\nfor (let i = 0; i < allPoints.length; i += 20) {\n  sampledPoints.push(allPoints[i]);\n}\n\nreturn sampledPoints.map(point => ({\n  lat: point.lat,\n  lng: point.lng,\n  place_type: $input.item.json.place_type,\n  keyword: $input.item.json.keyword || ''\n}));"
             },
             "id": "sample-route-points",
             "name": "Sample Route Points",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                850,
+                900,
                 300
             ]
         },
         {
             "parameters": {
-                "method": "GET",
-                "url": "=https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={{$json.lat}},{{$json.lng}}&radius=1000&type={{$json.place_type}}&keyword={{$json.keyword}}&key=YOUR_GOOGLE_MAPS_API_KEY",
+                "url": "=https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={{$json.lat}},{{$json.lng}}&radius=1000&type={{$json.place_type}}&keyword={{$json.keyword}}&key=AIzaSyAnV4qvtqRnDZ7Akjbu5oQ6TXi-bJmN8b4",
                 "options": {}
             },
             "id": "search-places",
             "name": "Search Places",
             "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4,
+            "typeVersion": 4.2,
             "position": [
-                1050,
+                1120,
                 300
             ]
         },
         {
             "parameters": {
-                "jsCode": "// Aggregate and deduplicate places\nconst allPlaces = [];\nconst seenPlaces = new Set();\n\nfor (const item of $input.all()) {\n  if (item.json.results) {\n    for (const place of item.json.results) {\n      const key = `${place.geometry.location.lat},${place.geometry.location.lng}`;\n      if (!seenPlaces.has(key)) {\n        seenPlaces.add(key);\n        allPlaces.push({\n          name: place.name,\n          address: place.vicinity || '',\n          lat: place.geometry.location.lat,\n          lng: place.geometry.location.lng,\n          rating: place.rating || 0,\n          is_open: place.opening_hours?.open_now\n        });\n      }\n    }\n  }\n}\n\nreturn allPlaces.map(place => ({ json: place }));"
+                "jsCode": "// Aggregate and deduplicate places\nconst allPlaces = [];\nconst seenPlaceIds = new Set();\n\nfor (const item of $input.all()) {\n  const results = item.json.results || [];\n  for (const place of results) {\n    if (!seenPlaceIds.has(place.place_id)) {\n      seenPlaceIds.add(place.place_id);\n      allPlaces.push({\n        name: place.name,\n        address: place.vicinity,\n        lat: place.geometry.location.lat,\n        lng: place.geometry.location.lng,\n        rating: place.rating,\n        is_open: place.opening_hours?.open_now\n      });\n    }\n  }\n}\n\nreturn [{ json: { places: allPlaces, count: allPlaces.length } }];"
             },
             "id": "aggregate-places",
             "name": "Aggregate Places",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1250,
+                1340,
                 300
             ]
         },
         {
             "parameters": {
-                "model": "llama-3.3-70b-versatile",
-                "prompt": "=Based on these places found along the route:\\n\\n{{$json}}\\n\\nGenerate a concise, voice-friendly summary for the user. Mention the top 3 options with their detour times and any notable details like ratings or if they're currently open. Keep it conversational and helpful.",
-                "options": {
-                    "temperature": 0.7,
-                    "maxTokens": 200
-                }
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "groqApi",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "model",
+                            "value": "llama-3.3-70b-versatile"
+                        },
+                        {
+                            "name": "messages",
+                            "value": "=[{\"role\": \"system\", \"content\": \"You are Zyra, a helpful voice assistant. Summarize the following places in a natural, conversational way. Mention the top 3 results with their names, detour times, and ratings. Keep it concise for voice output.\"}, {\"role\": \"user\", \"content\": \"Places found: \" + JSON.stringify($json.places)}]"
+                        },
+                        {
+                            "name": "temperature",
+                            "value": "0.7"
+                        }
+                    ]
+                },
+                "options": {}
             },
             "id": "groq-summarize",
             "name": "Groq - Summarize",
-            "type": "n8n-nodes-base.groq",
-            "typeVersion": 1,
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
             "position": [
-                1450,
+                1560,
                 300
-            ],
-            "credentials": {
-                "groqApi": {
-                    "id": "1",
-                    "name": "Groq API"
-                }
-            }
+            ]
         },
         {
             "parameters": {
-                "method": "POST",
-                "url": "https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID",
                 "authentication": "genericCredentialType",
                 "genericAuthType": "httpHeaderAuth",
+                "url": "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
                 "sendBody": true,
                 "bodyParameters": {
                     "parameters": [
                         {
                             "name": "text",
-                            "value": "={{$json.response}}"
+                            "value": "={{$json.choices[0].message.content}}"
                         },
                         {
                             "name": "model_id",
@@ -134,30 +140,23 @@
             "id": "elevenlabs-tts",
             "name": "ElevenLabs TTS",
             "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4,
+            "typeVersion": 4.2,
             "position": [
-                1650,
+                1780,
                 300
-            ],
-            "credentials": {
-                "httpHeaderAuth": {
-                    "id": "2",
-                    "name": "ElevenLabs API"
-                }
-            }
+            ]
         },
         {
             "parameters": {
                 "respondWith": "json",
-                "responseBody": "={{ { \"summary\": $('Groq - Summarize').item.json.response, \"audio_url\": $json.audio_url, \"places_count\": $('Aggregate Places').all().length } }}",
-                "options": {}
+                "responseBody": "={{ { \"summary\": $('Groq - Summarize').item.json.choices[0].message.content, \"audio_url\": \"data:audio/mpeg;base64,\" + $binary.data.toString('base64'), \"places_count\": $('Aggregate Places').item.json.count } }}"
             },
             "id": "respond-to-webhook",
             "name": "Respond to Webhook",
             "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1,
+            "typeVersion": 1.1,
             "position": [
-                1850,
+                2000,
                 300
             ]
         }
@@ -252,10 +251,5 @@
             ]
         }
     },
-    "settings": {},
-    "staticData": null,
-    "tags": [],
-    "triggerCount": 1,
-    "updatedAt": "2026-02-15T07:20:25.000Z",
-    "versionId": "1"
+    "pinData": {}
 }
