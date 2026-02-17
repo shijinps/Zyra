@@ -19,9 +19,8 @@ object ElevenLabsTTSManager {
     private const val TAG = "ElevenLabsTTS"
     private const val API_URL = "https://api.elevenlabs.io/v1/text-to-speech"
     
-    // Replace with your preferred Voice ID (e.g., "21m00Tcm4TlvDq8ikWAM" is Rachel)
-    // Using a default placeholder; should be configurable.
-    private const val VOICE_ID = "21m00Tcm4TlvDq8ikWAM" 
+    // Voice ID: "CwhRBWXzGAHq8TQ4Fs17" (Roger - British Male)
+    private const val VOICE_ID = "CwhRBWXzGAHq8TQ4Fs17" 
     
     // We need the API Key. 
     // User Provided: sk_836b76037c9c1699dba27e70dfb33eb8d63014ec7c99b478
@@ -60,7 +59,8 @@ object ElevenLabsTTSManager {
 
 
     private fun fetchAudio(context: Context, text: String): File? {
-        val fileName = "tts_${text.hashCode()}.mp3"
+        // Include VOICE_ID in filename to avoid playing cached files from previous voices (e.g. female voice)
+        val fileName = "tts_${text.hashCode()}_$VOICE_ID.mp3"
         val file = File(context.cacheDir, fileName)
         
         // 1. Check Cache

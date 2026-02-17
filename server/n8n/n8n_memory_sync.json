@@ -1,0 +1,234 @@
+{
+    "name": "Zyra Memory Sync - Complete",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/memory/init",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-init",
+            "name": "Webhook - Initialize DB",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "CREATE TABLE IF NOT EXISTS zyra_conversations (\n    id SERIAL PRIMARY KEY,\n    device_id VARCHAR(255) NOT NULL,\n    timestamp BIGINT NOT NULL,\n    user_input TEXT NOT NULL,\n    zyra_response TEXT NOT NULL,\n    intent_type VARCHAR(100),\n    success BOOLEAN DEFAULT TRUE,\n    context TEXT,\n    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    UNIQUE(device_id, timestamp)\n);\n\nCREATE TABLE IF NOT EXISTS zyra_actions (\n    id SERIAL PRIMARY KEY,\n    device_id VARCHAR(255) NOT NULL,\n    timestamp BIGINT NOT NULL,\n    action_type VARCHAR(100) NOT NULL,\n    action_data TEXT,\n    location TEXT,\n    success BOOLEAN DEFAULT TRUE,\n    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE IF NOT EXISTS zyra_searches (\n    id SERIAL PRIMARY KEY,\n    device_id VARCHAR(255) NOT NULL,\n    timestamp BIGINT NOT NULL,\n    search_type VARCHAR(100) NOT NULL,\n    query TEXT NOT NULL,\n    result TEXT,\n    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE INDEX IF NOT EXISTS idx_conversations_device ON zyra_conversations(device_id);\nCREATE INDEX IF NOT EXISTS idx_conversations_timestamp ON zyra_conversations(timestamp);\nCREATE INDEX IF NOT EXISTS idx_actions_device ON zyra_actions(device_id);\nCREATE INDEX IF NOT EXISTS idx_searches_device ON zyra_searches(device_id);",
+                "options": {}
+            },
+            "id": "create-tables",
+            "name": "Create Tables",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                100
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "YOUR_POSTGRES_CRED_ID",
+                    "name": "ZYRA-BACKEND"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"message\": \"Database initialized\" } }}"
+            },
+            "id": "respond-init",
+            "name": "Respond Init",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/memory/sync",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-sync",
+            "name": "Webhook - Sync",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "={{ \"INSERT INTO zyra_conversations (device_id, timestamp, user_input, zyra_response, intent_type, success) VALUES ('\" + $json.device_id + \"', \" + $json.conversations[0].timestamp + \", '\" + $json.conversations[0].user_input + \"', '\" + $json.conversations[0].zyra_response + \"', '\" + $json.conversations[0].intent_type + \"', \" + $json.conversations[0].success + \") ON CONFLICT (device_id, timestamp) DO NOTHING\" }}",
+                "options": {}
+            },
+            "id": "postgres-insert",
+            "name": "Insert to PostgreSQL",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "YOUR_POSTGRES_CRED_ID",
+                    "name": "ZYRA-BACKEND"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"synced\": $json.conversations.length } }}"
+            },
+            "id": "respond-success",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "GET",
+                "path": "zyra/memory/pull",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-pull",
+            "name": "Webhook - Pull",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "={{ \"SELECT timestamp, user_input, zyra_response, intent_type, success, context FROM zyra_conversations WHERE device_id = '\" + $json.query.device_id + \"' AND timestamp > \" + $json.query.since + \" ORDER BY timestamp DESC LIMIT 1000\" }}",
+                "options": {}
+            },
+            "id": "postgres-select",
+            "name": "Query PostgreSQL",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2,
+            "position": [
+                450,
+                500
+            ],
+            "credentials": {
+                "postgres": {
+                    "id": "YOUR_POSTGRES_CRED_ID",
+                    "name": "ZYRA-BACKEND"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"conversations\": $json } }}"
+            },
+            "id": "respond-pull",
+            "name": "Respond Pull",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook - Initialize DB": {
+            "main": [
+                [
+                    {
+                        "node": "Create Tables",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Tables": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Init",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook - Sync": {
+            "main": [
+                [
+                    {
+                        "node": "Insert to PostgreSQL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert to PostgreSQL": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook - Pull": {
+            "main": [
+                [
+                    {
+                        "node": "Query PostgreSQL",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query PostgreSQL": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Pull",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "1",
+    "id": "zyra-memory-complete",
+    "meta": {
+        "instanceId": "your-instance-id"
+    },
+    "tags": []
+}

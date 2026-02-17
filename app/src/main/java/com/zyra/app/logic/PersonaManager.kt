@@ -4,12 +4,21 @@ import kotlin.random.Random
 
 object PersonaManager {
 
-    private val userTitles = listOf("Sir", "Boss", "Shijin", "Zyco")
+    private val userTitles = listOf("Sir", "Boss") // STRICTLY Jarvis-like
     
     private val title: String
         get() = userTitles.random()
 
-    var currentMood: String = "Neutral" // Quantum Mood Storage
+    private const val PREFS_NAME = "ZyraPersonaPrefs"
+    private const val ST_MOOD = "mood"
+
+    var currentMood: String
+        get() = com.zyra.app.ZyraApp.instance.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+            .getString(ST_MOOD, "Neutral") ?: "Neutral"
+        set(value) {
+            com.zyra.app.ZyraApp.instance.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                .edit().putString(ST_MOOD, value).apply()
+        }
     
     fun getGreeting(): String {
         // Time-based intelligence
@@ -29,26 +38,18 @@ object PersonaManager {
             EmotionalIntelligence.UserEmotion.NEUTRAL
         }
         
-        val personalityVariants = when (emotion) {
-            EmotionalIntelligence.UserEmotion.HAPPY, EmotionalIntelligence.UserEmotion.EXCITED -> listOf(
-                "$timeGreeting, $title! Great to see you!",
-                "$timeGreeting! You seem in a good mood, $title!",
-                "Hey $title, $timeGreeting! What's making you happy today?"
-            )
-            EmotionalIntelligence.UserEmotion.STRESSED, EmotionalIntelligence.UserEmotion.FRUSTRATED -> listOf(
-                "$timeGreeting, $title. I'm here to help.",
-                "$timeGreeting. Let me make things easier for you, $title.",
-                "Hey $title, $timeGreeting. How can I assist?"
-            )
-            else -> listOf(
-                "$timeGreeting, $title!",
-                "$timeGreeting! How can I help you, $title?",
-                "Hey $title, $timeGreeting!",
-                "$timeGreeting! Ready to assist, $title."
-            )
+        return when (emotion) {
+            EmotionalIntelligence.UserEmotion.HAPPY, EmotionalIntelligence.UserEmotion.EXCITED -> 
+                "$timeGreeting, $title. Systems indicate you are in high spirits."
+            EmotionalIntelligence.UserEmotion.STRESSED, EmotionalIntelligence.UserEmotion.FRUSTRATED -> 
+                "$timeGreeting, $title. I detect elevated stress levels. How may I be of service?"
+            else -> 
+                "$timeGreeting, $title. Online and ready."
         }
-        
-        return personalityVariants.random()
+    }
+
+    fun getGreetingResponse(): String {
+        return getGreeting()
     }
     
     fun getSystemStatus(batteryLevel: Int): String {

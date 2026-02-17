@@ -96,6 +96,9 @@ object EmotionalIntelligence {
         recordEmotion(finalEmotion, confidence, text)
         currentEmotion = finalEmotion
         
+        // PERSISTENCE: Update the global mood in PersonaManager (which saves to Prefs)
+        PersonaManager.currentMood = finalEmotion.name
+        
         return finalEmotion
     }
     

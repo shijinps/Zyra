@@ -1,0 +1,157 @@
+{
+    "name": "Zyra Spatial - Complete Working",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/spatial",
+                "responseMode": "responseNode"
+            },
+            "id": "webhook-1",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "=https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={{ $json.body.latitude }},{{ $json.body.longitude }}&radius={{ $json.body.radius }}&type={{ $json.body.place_type }}&key=AIzaSyAnV4qvtqRnDZ7Akjbu5oQ6TXi-bJmN8b4"
+            },
+            "id": "maps-1",
+            "name": "Google Maps",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                450,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.groq.com/openai/v1/chat/completions",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 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"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Summarize these 3 restaurants in 2 sentences: {{ $json.results[0].name }}, {{ $json.results[1].name }}, {{ $json.results[2].name }}\"\n  }]\n}"
+            },
+            "id": "groq-1",
+            "name": "Groq AI",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                650,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "xi-api-key",
+                            "value": "aa673c3caceb6d36adce6fe526585862e692591479b55b2278a239e648e88648"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"text\": \"{{ $json.choices[0].message.content }}\",\n  \"model_id\": \"eleven_turbo_v2\"\n}"
+            },
+            "id": "elevenlabs-1",
+            "name": "ElevenLabs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                850,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "text",
+                "responseBody": "={{ $('Groq AI').item.json.choices[0].message.content }}"
+            },
+            "id": "respond-1",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Google Maps",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Maps": {
+            "main": [
+                [
+                    {
+                        "node": "Groq AI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Groq AI": {
+            "main": [
+                [
+                    {
+                        "node": "ElevenLabs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ElevenLabs": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "1"
+}

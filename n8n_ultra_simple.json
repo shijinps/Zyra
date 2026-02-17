@@ -1,0 +1,51 @@
+{
+    "name": "Zyra Test - Ultra Simple",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/test-simple",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-simple",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"status\": \"success\", \"message\": \"Webhook is working!\", \"data\": $json } }}"
+            },
+            "id": "respond-simple",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "versionId": "1"
+}

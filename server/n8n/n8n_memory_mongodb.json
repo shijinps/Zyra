@@ -1,0 +1,166 @@
+{
+    "name": "Zyra Memory Sync - MongoDB",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/memory/sync",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-sync",
+            "name": "Webhook - Sync",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "insert",
+                "collection": "zyra_conversations",
+                "fields": "={{ $json.conversations }}",
+                "options": {}
+            },
+            "id": "mongodb-insert",
+            "name": "Insert to MongoDB",
+            "type": "n8n-nodes-base.mongoDb",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ],
+            "credentials": {
+                "mongoDb": {
+                    "id": "YOUR_MONGODB_CRED_ID",
+                    "name": "ZYRA MongoDB"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"synced\": $json.conversations.length } }}"
+            },
+            "id": "respond-success",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "GET",
+                "path": "zyra/memory/pull",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-pull",
+            "name": "Webhook - Pull",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "find",
+                "collection": "zyra_conversations",
+                "query": "={{ { \"device_id\": $json.query.device_id, \"timestamp\": { \"$gt\": parseInt($json.query.since) } } }}",
+                "options": {
+                    "limit": 1000,
+                    "sort": "={ \"timestamp\": -1 }"
+                }
+            },
+            "id": "mongodb-find",
+            "name": "Query MongoDB",
+            "type": "n8n-nodes-base.mongoDb",
+            "typeVersion": 1,
+            "position": [
+                450,
+                500
+            ],
+            "credentials": {
+                "mongoDb": {
+                    "id": "YOUR_MONGODB_CRED_ID",
+                    "name": "ZYRA MongoDB"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"success\": true, \"conversations\": $json } }}"
+            },
+            "id": "respond-pull",
+            "name": "Respond Pull",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook - Sync": {
+            "main": [
+                [
+                    {
+                        "node": "Insert to MongoDB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert to MongoDB": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook - Pull": {
+            "main": [
+                [
+                    {
+                        "node": "Query MongoDB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query MongoDB": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Pull",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "versionId": "1",
+    "id": "zyra-memory-mongodb",
+    "meta": {
+        "instanceId": "your-instance-id"
+    },
+    "tags": []
+}

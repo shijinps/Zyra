@@ -26,6 +26,124 @@ object QuantumSpatialOptimizer {
         "YOUR_CISCO_QUANTUM_API_KEY" // Fallback
     }
     
+    // n8n Webhook URL for spatial intelligence
+    private const val N8N_WEBHOOK_URL = "https://n8n.shijin.in/webhook/zyra/spatial"
+    
+    /**
+     * Get AI-powered spatial intelligence summary
+     * Calls n8n workflow which integrates Google Maps, Groq AI, and ElevenLabs
+     */
+    suspend fun getSpatialIntelligence(
+        latitude: Double,
+        longitude: Double,
+        placeType: String = "restaurant",
+        radius: Int = 1000
+    ): SpatialIntelligenceResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val connection = URL(N8N_WEBHOOK_URL).openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 30000 // 30 seconds
+                connection.readTimeout = 30000
+                
+                val requestBody = JSONObject().apply {
+                    put("latitude", latitude)
+                    put("longitude", longitude)
+                    put("place_type", placeType)
+                    put("radius", radius)
+                }
+                
+                connection.outputStream.write(requestBody.toString().toByteArray())
+                
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().readText()
+                    
+                    // The response is just the text summary from Groq AI
+                    SpatialIntelligenceResult(
+                        success = true,
+                        summary = response,
+                        audioUrl = null, // Audio is generated but not returned in current workflow
+                        placeCount = 0,
+                        error = null
+                    )
+                } else {
+                    SpatialIntelligenceResult(
+                        success = false,
+                        summary = null,
+                        audioUrl = null,
+                        placeCount = 0,
+                        error = "HTTP Error: $responseCode"
+                    )
+                }
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+                SpatialIntelligenceResult(
+                    success = false,
+                    summary = null,
+                    audioUrl = null,
+                    placeCount = 0,
+                    error = e.message ?: "Unknown error"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Detect current location and get AI-powered analysis
+     * "Where am I?" feature with reviews and recommendations
+     */
+    suspend fun whereAmI(
+        latitude: Double,
+        longitude: Double
+    ): WhereAmIResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val connection = URL("https://n8n.shijin.in/webhook/zyra/where-am-i").openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 30000
+                connection.readTimeout = 30000
+                
+                val requestBody = JSONObject().apply {
+                    put("latitude", latitude)
+                    put("longitude", longitude)
+                }
+                
+                connection.outputStream.write(requestBody.toString().toByteArray())
+                
+                val responseCode = connection.responseCode
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = connection.inputStream.bufferedReader().readText()
+                    
+                    WhereAmIResult(
+                        success = true,
+                        message = response,
+                        error = null
+                    )
+                } else {
+                    WhereAmIResult(
+                        success = false,
+                        message = null,
+                        error = "HTTP Error: $responseCode"
+                    )
+                }
+                
+            } catch (e: Exception) {
+                e.printStackTrace()
+                WhereAmIResult(
+                    success = false,
+                    message = null,
+                    error = e.message ?: "Unknown error"
+                )
+            }
+        }
+    }
+    
     /**
      * Optimize multi-stop route using IBM Quantum
      * Solves Traveling Salesman Problem for optimal stop order
@@ -248,5 +366,19 @@ object QuantumSpatialOptimizer {
         val predictedDelay: Int, // seconds
         val alternativeRoutes: List<String>,
         val confidence: Double // 0.0 to 1.0
+    )
+    
+    data class SpatialIntelligenceResult(
+        val success: Boolean,
+        val summary: String?,
+        val audioUrl: String?,
+        val placeCount: Int,
+        val error: String?
+    )
+    
+    data class WhereAmIResult(
+        val success: Boolean,
+        val message: String?,
+        val error: String?
     )
 }

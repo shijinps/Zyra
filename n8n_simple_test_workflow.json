@@ -1,0 +1,75 @@
+{
+    "name": "Zyra Spatial Intelligence - Simple Test",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "zyra/spatial-query",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-1",
+            "name": "Webhook - Spatial Query",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Simple test response\nconst body = $input.item.json.body || $input.item.json;\n\nreturn {\n  summary: `Received request for ${body.place_type || 'places'} near location (${body.latitude}, ${body.longitude})`,\n  audio_url: \"https://example.com/test-audio.mp3\",\n  place_count: 5,\n  status: \"success\",\n  message: \"Workflow is working! APIs not yet connected.\"\n};"
+            },
+            "id": "code-1",
+            "name": "Simple Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}"
+            },
+            "id": "respond-1",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook - Spatial Query": {
+            "main": [
+                [
+                    {
+                        "node": "Simple Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Simple Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "versionId": "1"
+}

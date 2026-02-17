@@ -263,11 +263,11 @@ class OfflineBrain {
                 }
                 else {
                     val responses = listOf(
-                        "I am afraid I didn't catch that, Sir.",
-                        "Could you rephrase that directive?",
-                        "My protocols are unsure of that request.",
+                        "I am afraid I didn't catch that, Sir. (Heard: $text)",
+                        "Could you rephrase that directive? (Input: $text)",
+                        "My protocols are unsure of '$text'.",
                         "Data input unclear. Please state your command again.",
-                        "I am listening, but I did not understand.",
+                        "I am listening, but I did not understand '$text'.",
                         "I don't have a response for that yet, Sir."
                     )
                     responses.random()
