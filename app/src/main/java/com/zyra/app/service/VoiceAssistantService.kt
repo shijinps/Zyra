@@ -425,10 +425,19 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             isActiveSession = true
             resetSessionTimeout()
             
-            // Show Overlay
+            // Show Overlay and Beep IMMEDIATELY
              if (Settings.canDrawOverlays(this)) {
                  overlayManager.show()
                  overlayManager.updateState(ZyraState.LISTENING)
+             }
+             
+             // Immediate Feedback Beep
+             try {
+                 val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                 toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+                 android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
+             } catch (e: Exception) {
+                 Log.e("ZyraService", "Failed to play instant wake beep", e)
              }
              
              // Start LiveKit Session
@@ -592,8 +601,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     // Activate Active Session
                     isActiveSession = true // Mark session active
                     
-                    // User Feedback (Sound / Visual)
+                    // User Feedback (Sound / Visual) IMMEDIATELY
                     silenceBeep() // Prep for upcoming beep
+                    
+                    try {
+                        val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                        toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+                        android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
+                    } catch (e: Exception) {
+                        Log.e("ZyraService", "Failed to play instant wake beep", e)
+                    }
+                    
+                    broadcastState(ZyraState.LISTENING)
                     
                     // Start LiveKit Agent Session
                     com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
@@ -606,7 +625,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             builder.setKeyword(Porcupine.BuiltInKeyword.PORCUPINE) // Fallback to safe default
             try {
                  porcupineManager = builder.build(this) { 
-                      Log.d("ZyraService", "Wake Word Detected (Fallback)!")
+                     // Activate Active Session
+                      isActiveSession = true // Mark session active
+
+                      // Immediate Feedback Beep
+                      try {
+                          val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                          toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+                          android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
+                      } catch (e: Exception) {}
+                      
+                      broadcastState(ZyraState.LISTENING)
+
                       com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
                  }
             } catch (e2: Exception) {
