@@ -57,6 +57,15 @@ def startup_db_client():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS incidents_geom_idx ON kochi_incidents USING GIST (geom);
+        
+        CREATE TABLE IF NOT EXISTS zyra_contacts (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            alias TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(name, phone)
+        );
         """
         
         with conn.cursor() as cursor:
@@ -236,3 +245,53 @@ def get_quantum_decision(token: str = Security(verify_token)):
     result = IBMQuantumBrain.run_superposition_check()
     return result
 
+# --- Contacts Sync ---
+from typing import List
+
+class Contact(BaseModel):
+    name: str
+    phone: str
+    alias: Optional[str] = None
+
+class SyncContactsRequest(BaseModel):
+    contacts: List[Contact]
+
+@app.post("/sync/contacts")
+def sync_contacts(request: SyncContactsRequest, token: str = Security(verify_token)):
+    """
+    Receives contacts from Android and saves them to the DB.
+    """
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "password")
+    db_name = os.getenv("POSTGRES_DB", "postgres")
+    db_host = os.getenv("POSTGRES_HOST", "postgres")
+    
+    if db_host.startswith("http"):
+        db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
+
+    try:
+        conn = psycopg2.connect(
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            host=db_host
+        )
+        conn.autocommit = True
+        
+        with conn.cursor() as cursor:
+            # Batch upsert contacts
+            for contact in request.contacts:
+                cursor.execute(
+                    """
+                    INSERT INTO zyra_contacts (name, phone, alias) 
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (name, phone) DO UPDATE SET 
+                    alias = EXCLUDED.alias
+                    """,
+                    (contact.name, contact.phone, contact.alias)
+                )
+        conn.close()
+        return {"status": "Success", "synced_count": len(request.contacts)}
+    except Exception as e:
+        print(f"Error syncing contacts: {e}")
+        raise HTTPException(status_code=500, detail="Database error during sync")

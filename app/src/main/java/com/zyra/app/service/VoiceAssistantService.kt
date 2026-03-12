@@ -21,6 +21,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.zyra.app.R
 import com.zyra.app.logic.CommandManager
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import com.zyra.app.network.ZyraApiService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import android.net.Uri
 import com.zyra.app.logic.NaturalLanguageProcessor
 import com.zyra.app.logic.OfflineBrain
 // import com.zyra.app.logic.ParsedIntent 
@@ -48,9 +55,6 @@ import ai.picovoice.porcupine.PorcupineException
 import ai.picovoice.porcupine.Porcupine
 import com.zyra.app.BuildConfig
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnInitListener {
@@ -68,14 +72,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var porcupineManager: PorcupineManager? = null // Wake Word Engine
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
-    private var isElevenLabsSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
+    private var isLiveKitSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
 
     // WATCHDOG: Restart listener if silent/frozen for too long
     private var lastVoiceActivityTime: Long = System.currentTimeMillis()
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val watchdogRunnable = object : Runnable {
         override fun run() {
-            if (isElevenLabsSessionActive) {
+            if (isLiveKitSessionActive) {
                 // If ElevenLabs is active, we don't interfere. Check again later.
                 watchdogHandler.postDelayed(this, 2000)
                 return
@@ -114,15 +118,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private val connectionHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val connectionTimeoutRunnable = Runnable {
         Log.e("ZyraService", "ElevenLabs Connection Timed Out")
-        elevenLabsManager.stopConversation()
+        com.zyra.app.logic.LiveKitManager.disconnect()
         speak("I am unable to connect to the cloud. Switching to local mode.")
         isActiveSession = false
         broadcastState(ZyraState.IDLE)
         startListening()
     }
 
-    // ElevenLabs Integration
-    private val elevenLabsManager = com.zyra.app.logic.ElevenLabsConversationManager
+    // LiveKit Integration
     private val ELEVENLABS_AGENT_ID = "agent_5401kg271w7hemrvsb9dkje7rkwv" // Correct Agent ID provided by user
 
 
@@ -139,8 +142,39 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var currentOpenPackage: String? = null
     private var lastMusicAppPackage: String? = null
 
+    private fun syncContactsInBackground() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val contacts = contactRepository.getContacts()
+                if (contacts.isNotEmpty()) {
+                    Log.d("ZyraService", "Syncing ${contacts.size} contacts to Zyra Brain...")
+                    // TODO: Replace with Real VPS IP
+                    val retrofit = Retrofit.Builder()
+                        .baseUrl("http://192.168.1.5:8000") 
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+                    val apiService = retrofit.create(ZyraApiService::class.java)
+                    val request = ZyraApiService.SyncContactsRequest(contacts)
+                    
+                    val call = apiService.syncContacts("zyra-secret-key-123", request)
+                    call.enqueue(object : retrofit2.Callback<Any> {
+                        override fun onResponse(call: retrofit2.Call<Any>, response: retrofit2.Response<Any>) {
+                            Log.d("ZyraService", "Contacts synced successfully: ${response.code()}")
+                        }
+                        override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
+                            Log.e("ZyraService", "Failed to sync contacts", t)
+                        }
+                    })
+                }
+            } catch (e: Exception) {
+                Log.e("ZyraService", "Contact sync Error", e)
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
+        syncContactsInBackground()
         commandManager = CommandManager(this)
         nlp = NaturalLanguageProcessor(this)
         brain = OfflineBrain()
@@ -235,12 +269,23 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             Log.e("ZyraService", "Failed to register PhoneStateListener", e)
         }
 
-        // Initialize ElevenLabs Manager
-        elevenLabsManager.init(this)
-        elevenLabsManager.setListener(object : com.zyra.app.logic.ElevenLabsConversationManager.ConversationEventListener {
-            override fun onConversationStarted() {
+        // Initialize LiveKit Manager
+        com.zyra.app.logic.LiveKitManager.init()
+        com.zyra.app.logic.LiveKitManager.setListener(object : com.zyra.app.logic.LiveKitManager.LiveKitListener {
+            override fun onCallCommandReceived(phone: String, name: String) {
+                Log.d("ZyraService", "Jarvis Call Request Received: $name ($phone)")
+                try {
+                    val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$phone"))
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    Log.e("ZyraService", "Failed to start phone call", e)
+                }
+            }
+
+            override fun onConnected() {
                 connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
-                Log.d("ZyraService", "ElevenLabs Conversation Started. Pausing local listener.")
+                Log.d("ZyraService", "LiveKit Conversation Started. Pausing local listener.")
                 
                 // DEBUG: Play Beep to confirm Audio Path works
                 try {
@@ -270,14 +315,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                         } catch (e: Exception) { Log.e("ZyraService", "Routing fix failed", e) }
                         
                         count++
-                        if (count < 5 && isElevenLabsSessionActive) {
+                        if (count < 5 && isLiveKitSessionActive) {
                             routingHandler.postDelayed(this, 1000) // Check every second for 5s
                         }
                     }
                 }
                 routingRunnable.run() // Run immediately
 
-                isElevenLabsSessionActive = true // LOCK local listener
+                isLiveKitSessionActive = true // LOCK local listener
                 isListening = false
                 
                 // Explicitly cancel to ensure no trailing errors trigger restarts
@@ -290,9 +335,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 broadcastState(ZyraState.LISTENING) // Update UI to show active listening
             }
             
-            override fun onConversationStopped() {
+            override fun onDisconnected() {
                 android.os.Handler(mainLooper).post {
-                    Log.d("ZyraService", "ElevenLabs Conversation Stopped. Resuming local listener.")
+                    Log.d("ZyraService", "LiveKit Conversation Stopped. Resuming local listener.")
                     
                     // Reset Audio Mode
                     try {
@@ -300,7 +345,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                         audioManager.isSpeakerphoneOn = false
                     } catch (_: Exception) {}
 
-                    isElevenLabsSessionActive = false // UNLOCK
+                    isLiveKitSessionActive = false // UNLOCK
                     isActiveSession = false
                     startListening() // Resume local wake word listening
                     broadcastState(ZyraState.IDLE)
@@ -310,7 +355,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             override fun onError(message: String) {
                 android.os.Handler(mainLooper).post {
                     connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
-                    Log.e("ZyraService", "ElevenLabs Error: $message")
+                    Log.e("ZyraService", "LiveKit Error: $message")
                     
                     // Reset Audio Mode
                     try {
@@ -318,7 +363,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                         audioManager.isSpeakerphoneOn = false
                     } catch (_: Exception) {}
                     
-                    isElevenLabsSessionActive = false // UNLOCK on error
+                    isLiveKitSessionActive = false // UNLOCK on error
                     
                     if (message.contains("unauthorized") || message.contains("401")) {
                         speak("My authentication failed. Please check my settings.")
@@ -386,9 +431,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  overlayManager.updateState(ZyraState.LISTENING)
              }
              
-             // Start ElevenLabs - LEGACY REMOVED
-             // startElevenLabsSession() 
-             if (!isListening) startListening()
+             // Start LiveKit Session
+             com.zyra.app.logic.LiveKitManager.connect(this)
              return START_STICKY
         }
 
@@ -521,13 +565,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun initPorcupine() {
+        val builder = PorcupineManager.Builder()
+                .setAccessKey("tRVb1NSy86S8dnw+SQoJ2FleWA11wXkeOvxHRGEJl8UEmCl6Nuhy+A==")
+                .setSensitivity(0.5f) // Optimized for fewer false positives
+
         try {
             val keywordPath = "zyra.ppn" // Expecting this filename in assets
             val customModelPath = com.zyra.app.util.AssetExtractor.extractAsset(this, keywordPath)
-            
-            val builder = PorcupineManager.Builder()
-                .setAccessKey("tRVb1NSy86S8dnw+SQoJ2FleWA11wXkeOvxHRGEJl8UEmCl6Nuhy+A==")
-                .setSensitivity(0.5f) // Optimized for fewer false positives
             
             if (java.io.File(customModelPath).exists()) {
                 Log.d("ZyraService", "Loading Custom Wake Word: Zyra")
@@ -551,17 +595,28 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     // User Feedback (Sound / Visual)
                     silenceBeep() // Prep for upcoming beep
                     
-                    // Start Active Recognition
-                    startActiveListening()
+                    // Start LiveKit Agent Session
+                    com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
                 }
              Log.d("ZyraService", "Porcupine initialized successfully")
         } catch (e: PorcupineException) {
             Log.e("ZyraService", "Porcupine Init Failed", e)
+        } catch (e: Exception) {
+            Log.e("ZyraService", "Porcupine Init Critical Error (Native?)", e)
+            builder.setKeyword(Porcupine.BuiltInKeyword.PORCUPINE) // Fallback to safe default
+            try {
+                 porcupineManager = builder.build(this) { 
+                      Log.d("ZyraService", "Wake Word Detected (Fallback)!")
+                      com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
+                 }
+            } catch (e2: Exception) {
+                 Log.e("ZyraService", "Porcupine Fallback Failed", e2)
+            }
         }
     }
 
     private fun startListening() {
-        if (isElevenLabsSessionActive) return
+        if (isLiveKitSessionActive) return
 
         // Dispatcher: Active vs Passive
         if (isActiveSession) {
@@ -593,7 +648,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun startActiveListening() {
-        if (isElevenLabsSessionActive) {
+        if (isLiveKitSessionActive) {
             Log.d("ZyraService", "startListening BLOCKED: ElevenLabs session is active.")
             return
         }
@@ -642,12 +697,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 // CONCURRENT AUDIO ACCESS - Allow listening while media plays
                 // SOURCE 6 (VOICE_RECOGNITION) is best for Assistants. 
                 // SOURCE 7 (VOICE_COMMUNICATION) enables AEC (Echo Cancellation) which helps with music.
-                // Switching to VOICE_COMMUNICATION to "implement environment noise cancelling" features
-                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, android.media.MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+                // NOTE: Removed EXTRA_AUDIO_SOURCE due to ClassCastException (Integer vs Parcelable) and Google App compatibility issues.
+                // Defaulting to system default (usually VOICE_RECOGNITION or MIC).
+                // putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, android.media.MediaRecorder.AudioSource.VOICE_COMMUNICATION)
                 
                 // Noise / Detection enhancements - Tuned for S23
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L) // Increased to 5s for slower speech
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000) // Changed to Int
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000)
             }
             try {
                 Log.d("ZyraService", "Starting SpeechRecognizer...")
@@ -711,18 +767,10 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         consecutiveErrorCount++
         
         // CRITICAL FIX for Error 11 (Server Disconnected) / Error 5 (Client Side)
-        // These often indicate the Recognizer is in a bad state and needs a hard reset.
         if (error == 11 || error == SpeechRecognizer.ERROR_SERVER || error == SpeechRecognizer.ERROR_CLIENT) {
              Log.w("ZyraService", "Critical Error ($error) - Hard Resetting Recognizer...")
-             
-             // 1. Destroy existing
              try { speechRecognizer.destroy() } catch (_: Exception) {}
-             
-             // 2. Clear flags
              isListening = false
-             
-             // 3. Re-init and Start after delay
-             // ALWAYS restart, even in passive mode, to recover from temporary mic loss
              android.os.Handler(mainLooper).postDelayed({
                  try {
                      initSpeechRecognizer()
@@ -730,31 +778,40 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                  } catch (e: Exception) {
                      Log.e("ZyraService", "Re-init failed", e)
                  }
-             }, 1000) // 1s delay for hardware to release
+             }, 1000)
              return
         }
 
-        // Standard Backoff for other errors (No Match, Busy, etc.)
-        // ALWAYS restart to keep listening for "Hey Zyra"
-        val backoff = when {
-            // If "No Match" or "Timeout", we want to restart quickly to keep listening
-            error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                if (consecutiveErrorCount < 3) 100L else 1000L
+        // GIVE UP after 3 consecutive "No Matches" to prevent infinite loops
+        if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+            if (consecutiveErrorCount >= 3) {
+                 Log.w("ZyraService", "Too many errors ($consecutiveErrorCount). Giving up.")
+                 if (isActiveSession) {
+                     speak("I'm sorry, I didn't hear anything.") 
+                     isActiveSession = false
+                     broadcastState(ZyraState.IDLE)
+                     startListening() // Calls startPassiveListening inside
+                 }
+                 return
             }
-            // If Busy, wait a bit
+        }
+
+        // Standard Backoff
+        val backoff = when {
+            error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 600L // Increased from 100ms
             error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 2000L
-            // Other errors
             else -> 1000L
         }
         
-        // If in active session, we might want to notify user or give up eventually?
-        // No, Keep trying.
+        // Retrying...
         restartListening(backoff)
         
+        // ONLY broadcast IDLE if we are NOT in an active session (Passive Mode usually handles this internally)
+        // OR if we are about to give up (handled above).
+        // If we are retrying in Active Session, keep UI as LISTENING (or similar) to avoid flickering
         if (isActiveSession) {
-             broadcastState(ZyraState.IDLE)
-        } else {
-             // In passive mode, we don't broadcast IDLE to avoid UI flickering, just restart silently
+             // broadcastState(ZyraState.IDLE) // REMOVED to prevent "flicker" during retry
+             // Optionally show "Processing..." or keep "Listening"
         }
     }
 
@@ -2679,8 +2736,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             // Force reset state
             isListening = false 
             isActiveSession = false // Force Passive Mode on app swipe
-            isElevenLabsSessionActive = false // CRITICAL FIX: Reset session flag so we don't block restart 
-            elevenLabsManager.stopConversation() // CRITICAL FIX: Kill zombie session immediately 
+            isLiveKitSessionActive = false // CRITICAL FIX: Reset session flag so we don't block restart 
+            com.zyra.app.logic.LiveKitManager.disconnect() // CRITICAL FIX: Kill zombie session immediately 
             
             // Clean Stop Porcupine to ensure fresh start
             try {
@@ -2748,8 +2805,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         } catch (_: Exception) { }
         
         // 4. ElevenLabs & TTS Cleanup
-        isElevenLabsSessionActive = false 
-        elevenLabsManager.stopConversation() 
+        isLiveKitSessionActive = false 
+        com.zyra.app.logic.LiveKitManager.disconnect() 
         
         try {
             tts?.stop()

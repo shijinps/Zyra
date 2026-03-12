@@ -9,6 +9,7 @@ import io.livekit.android.events.collect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 object LiveKitManager {
     private const val TAG = "LiveKitManager"
@@ -20,8 +21,19 @@ object LiveKitManager {
     // In production, Token should be fetched from your FastAPI server, NOT hardcoded.
     // However, for testing, you can generate a token in the dashboard and paste it here.
     private const val TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQW5kcm9pZCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ6eXJhLXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoienlyYS1hbmRyb2lkLXVzZXIiLCJpc3MiOiJBUElaUE5NdGhhSGpUY24iLCJuYmYiOjE3NzA2Mjk2NzcsImV4cCI6MTc3MDY1MTI3N30.CV5KzsY3gKhtBUcJfBGyjttW3bDLfRnCbYOvUkixWM8" 
-    // ^ USER NEEDS TO GENERATE A CLIENT TOKEN FROM DASHBOARD OR SERVER, 
-    // THE API KEY/SECRET CANNOT BE USED DIRECTLY ON CLIENT SIDE. 
+
+    interface LiveKitListener {
+        fun onConnected()
+        fun onDisconnected()
+        fun onError(error: String)
+        fun onCallCommandReceived(phone: String, name: String)
+    }
+    
+    private var listener: LiveKitListener? = null
+    
+    fun setListener(newListener: LiveKitListener?) {
+        listener = newListener
+    }
 
     fun init() {
         // Initialize if needed, though usually just creating room is enough
@@ -37,13 +49,32 @@ object LiveKitManager {
                     when (event) {
                         is RoomEvent.Connected -> {
                             Log.d(TAG, "Connected to LiveKit Room!")
+                            listener?.onConnected()
                             publishAudio()
                         }
                         is RoomEvent.Disconnected -> {
                             Log.d(TAG, "Disconnected from LiveKit")
+                            listener?.onDisconnected()
+                        }
+                        is RoomEvent.FailedToConnect -> {
+                            Log.e(TAG, "Failed to connect to LiveKit: \${event.error?.message}")
+                            listener?.onError(event.error?.message ?: "Unknown Connection Error")
                         }
                         is RoomEvent.TrackSubscribed -> {
-                            Log.d(TAG, "Subscribed to track: ${event.track.name}")
+                            Log.d(TAG, "Subscribed to track: \${event.track.name}")
+                        }
+                        is RoomEvent.DataReceived -> {
+                            try {
+                                val jsonStr = String(event.data)
+                                val json = JSONObject(jsonStr)
+                                if (json.optString("action") == "ACTION_CALL") {
+                                    val phone = json.optString("phone")
+                                    val name = json.optString("name")
+                                    listener?.onCallCommandReceived(phone, name)
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error parsing data channel message", e)
+                            }
                         }
                         else -> {}
                     }
@@ -53,6 +84,7 @@ object LiveKitManager {
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to connect to LiveKit", e)
+                listener?.onError(e.message ?: "Exception during connect")
             }
         }
     }
