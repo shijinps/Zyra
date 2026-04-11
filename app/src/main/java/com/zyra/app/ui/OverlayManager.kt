@@ -168,18 +168,12 @@ fun OverlayContent(state: ZyraState) {
         }
 
         // Clickable Container for Manual Wake
-        // Logic: Always show specific "Wake Button" if IDLE, or the Wave if active
-        
+        // Removed SiriWaveAnimation as per user request
         Box(
             modifier = Modifier
                 .size(300.dp)
-                // Debug Background: Semi-transparent white to see where to tap
-                .background(Color.White.copy(alpha = 0.05f), androidx.compose.foundation.shape.CircleShape)
                 .clickable {
-                    // Feedback
                     android.widget.Toast.makeText(context, "Waking Zyra...", android.widget.Toast.LENGTH_SHORT).show()
-                    
-                    // Manual Wake Trigger
                     val intent = android.content.Intent(context, VoiceAssistantService::class.java).apply {
                         action = "com.zyra.app.ACTION_WAKE"
                     }
@@ -187,10 +181,7 @@ fun OverlayContent(state: ZyraState) {
                 },
             contentAlignment = Alignment.Center
         ) {
-            SiriWaveAnimation(
-                state = state,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Animation removed
         }
     }
 }
