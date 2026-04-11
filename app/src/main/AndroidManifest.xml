@@ -23,6 +23,7 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 
 
     <!-- Device Controls -->
@@ -88,12 +89,14 @@
             android:name=".service.VoiceAssistantService"
             android:foregroundServiceType="microphone|location|mediaPlayback"
             android:stopWithTask="false"
+            android:directBootAware="true"
             android:exported="false" />
             
         <service
             android:name=".service.WakeWordDetectionService"
             android:foregroundServiceType="microphone"
             android:stopWithTask="false"
+            android:directBootAware="true"
             android:exported="false" />
 
             
