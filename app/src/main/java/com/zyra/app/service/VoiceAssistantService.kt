@@ -17,8 +17,6 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.zyra.app.R
