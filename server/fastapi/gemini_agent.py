@@ -5,6 +5,7 @@ import psycopg2
 import os
 import json
 from rapidfuzz import process, fuzz
+import requests
 
 # Helper for Postgres connection
 def get_db_connection():
@@ -98,6 +99,64 @@ class AssistantFnc(llm.FunctionContext):
         else:
             return "Canceled. What else can I do for you, Sir?"
 
+    @llm.ai_callable(desc="Sends a WhatsApp message to a parsed contact. Uses the name to find the phone number first.")
+    async def send_whatsapp_message(self, target_name: str, text_message: str):
+        print(f"Agent asking to WhatsApp: {target_name} -> {text_message}")
+        try:
+            conn = get_db_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT name, phone, alias FROM zyra_contacts")
+                contacts = cursor.fetchall()
+            conn.close()
+
+            if not contacts:
+                return "I don't have any contacts synchronized, Sir. Please check the Android app."
+
+            search_fields = []
+            for c in contacts:
+                search_fields.append((c[0], c[1], c[0]))
+                if c[2]: search_fields.append((c[2], c[1], c[0]))
+
+            choices = [field[0] for field in search_fields]
+            best_match = process.extractOne(target_name, choices, scorer=fuzz.WRatio)
+
+            if best_match and best_match[1] > 65:
+                matched_str = best_match[0]
+                matched_contact = next(field for field in search_fields if field[0] == matched_str)
+                _, phone, display_name = matched_contact
+
+                # Format number (remove special chars, ensure country code)
+                formatted_phone = ''.join(filter(str.isdigit, phone))
+                if len(formatted_phone) == 10:
+                    formatted_phone = f"91{formatted_phone}" # Default to India for this user
+
+                # Call the Evolution API (Assuming deployed to local Coolify)
+                # In a full MetaMCP setup, this would be routed through MetaMCP.
+                evo_url = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
+                api_key = os.getenv("EVOLUTION_API_KEY", "")
+                instance = os.getenv("EVOLUTION_INSTANCE_NAME", "shijin_instance")
+                
+                url = f"{evo_url}/message/sendText/{instance}"
+                headers = {"apikey": api_key, "Content-Type": "application/json"}
+                payload = {"number": formatted_phone, "text": text_message}
+                
+                try:
+                    # Make it non-blocking
+                    loop = asyncio.get_event_loop()
+                    response = await loop.run_in_executor(None, lambda: requests.post(url, json=payload, headers=headers))
+                    response.raise_for_status()
+                    return f"I've successfully sent the WhatsApp message to {display_name}, Sir."
+                except Exception as e:
+                    print(f"Evolution API Error: {e}")
+                    return f"I found {display_name}, but the WhatsApp service seems unreachable right now."
+
+            else:
+                return f"I couldn't find a convincing contact match for {target_name}, Sir."
+
+        except Exception as e:
+            print(f"Error acting on WhatsApp intent: {e}")
+            return "I encountered an error trying to process the WhatsApp message, Sir."
+
 
 # 1. Define the Zyra Agent
 async def entrypoint(ctx: JobContext):
@@ -122,8 +181,9 @@ async def entrypoint(ctx: JobContext):
         fnc_ctx=fnc_ctx,
         chat_ctx=voice.ChatContext().append(
             role="system", 
-            text="Context: Zyco is riding his bike in Kochi. Keep responses concise. Address the user as 'Sir'. "
+            text="Context: Shijin (Zyco) is the user. Keep responses concise and conversational. Address the user as 'Sir'. "
                  "If the user asks to call someone, you MUST call `initiate_call_sequence`. "
+                 "If the user asks to send a WhatsApp, you MUST call `send_whatsapp_message` and pass the message content. "
                  "If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`."
         )
     )
