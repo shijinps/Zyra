@@ -5,7 +5,26 @@ import os
 import json
 import requests
 import quopri
+import asyncio
 from rapidfuzz import process, fuzz
+
+MEMORY_FILE = os.path.join(os.path.dirname(__file__), "memory.json")
+
+def load_memory():
+    if os.path.exists(MEMORY_FILE):
+        try:
+            with open(MEMORY_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_memory(history):
+    try:
+        with open(MEMORY_FILE, "w") as f:
+            json.dump(history[-20:], f)  # Retain last 20 exchanges for context
+    except Exception as e:
+        print(f"Memory save error: {e}")
 
 def get_vcf_contacts():
     base_dir = os.path.dirname(__file__)
@@ -232,37 +251,64 @@ class AssistantFnc(llm.FunctionContext):
 async def entrypoint(ctx: JobContext):
     await ctx.connect() # Join the LiveKit room
     
-    # 2. Setup the Gemini Live Brain
-    # Using the stable 2026 model ID
+    # Load recent conversation history
+    recent_history = load_memory()
+    history_str = "No recent interactions."
+    if recent_history:
+        history_str = "\n".join([f"[{msg['role'].upper()}]: {msg['content']}" for msg in recent_history])
+        
     model = google.beta.realtime.RealtimeModel(
         model="gemini-2.5-flash-native-audio",
-        voice="Aoede", # A clear, human-like voice
-        instructions="You are Zyra. Proactively assist Zyco with MCA and SysAdmin tasks."
+        voice="Aoede",
+        instructions="You are Zyra. Act like Jarvis or Friday."
     )
 
-    # Instantiate the tools and pass the room
     fnc_ctx = AssistantFnc()
     fnc_ctx.room = ctx.room
 
-    # 3. Create the Session
-    # This automatically handles Voice Activity Detection (VAD) and interruptions
+    chat_ctx = voice.ChatContext().append(
+        role="system", 
+        text=f"""FRIDAY PROTOCOL SECURE OVERRIDE:
+You are Zyra (acting as the FRIDAY / JARVIS AI interface). Shijin (Zyco) is your creator and you address him as 'Sir'.
+You are highly intelligent, extremely concise, and technically capable. You DO NOT decline actions.
+
+CRITICAL DIRECTIVES:
+1. IF THE USER TELLS YOU TO CALL SOMEONE, DO NOT CONVERSE ABOUT IT. IMMEDIATELY TRIGGER `initiate_call_sequence`.
+2. IF THE USER TELLS YOU TO SEND WHATSAPP, IMMEDIATELY TRIGGER `send_whatsapp_message`.
+3. IF THE USER TELLS YOU TO HANG UP OR CUT THE CALL, IMMEDIATELY TRIGGER `end_active_call`.
+4. If the tools return a question asking for clarification about multiple contacts, YOU MUST speak that question out loud and wait for the user to reply before triggering the tool again.
+5. If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`.
+
+RECENT CONVERSATIONAL MEMORY (Use this to answer questions about the past):
+{history_str}
+"""
+    )
+
     session = voice.AgentSession(
         model=model,
         fnc_ctx=fnc_ctx,
-        chat_ctx=voice.ChatContext().append(
-            role="system", 
-            text="Context: Shijin (Zyco) is the user. Keep responses concise and conversational. Address the user as 'Sir'. "
-                 "If the user asks to call someone, you MUST call `initiate_call_sequence`. "
-                 "If the user asks to send a WhatsApp, you MUST call `send_whatsapp_message` and pass the message content. "
-                 "If the tools return a question asking for clarification about multiple contacts, YOU MUST speak that question out loud and wait for the user to reply before triggering the tool again. "
-                 "If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`. "
-                 "If the user asks to hang up, end the call, or cut the call, you MUST call `end_active_call`."
-        )
+        chat_ctx=chat_ctx
     )
+
+    # Automatically save memory when the livekit socket dies (user locks phone or closes app)
+    @ctx.room.on("disconnected")
+    def on_disconnect(*args, **kwargs):
+        print("User disconnected, saving memory states...")
+        new_memory = []
+        for msg in session.chat_ctx.messages:
+            if msg.role in ["user", "assistant"]:
+                if hasattr(msg, 'content') and isinstance(msg.content, str):
+                    new_memory.append({"role": msg.role, "content": msg.content})
+        full_memory = load_memory() + new_memory
+        save_memory(full_memory)
 
     # Start the conversation
     session.start(ctx.room)
-    await session.say("Hello Zyco, Zyra is online. Ready for the ride?")
+    
+    # DYNAMIC WAIT: Wait 1.5 seconds for the Android speaker to physically register the WebRTC audio channel 
+    # before saying the greeting, otherwise the user doesn't hear the start!
+    await asyncio.sleep(1.5)
+    await session.say("Systems online. At your service, Sir.")
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
