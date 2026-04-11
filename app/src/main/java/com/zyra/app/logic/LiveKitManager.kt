@@ -95,12 +95,12 @@ object LiveKitManager {
     private fun publishAudio() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Publish local microphone with Noise Cancellation
+                // SENSITIVITY TUNE: Lowering noise suppression so ZAY hears the raw voice better
                 val audioOptions = io.livekit.android.room.track.LocalAudioTrackOptions(
-                    noiseSuppression = true,
+                    noiseSuppression = false, 
                     echoCancellation = true,
                     autoGainControl = true,
-                    highPassFilter = true
+                    highPassFilter = false
                 )
                 val localTrack = room?.localParticipant?.createAudioTrack("microphone", audioOptions)
                 localTrack?.start()

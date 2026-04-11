@@ -1,6 +1,6 @@
 import asyncio
 from livekit.agents import JobContext, WorkerOptions, cli, voice, llm
-from livekit.plugins import google
+from livekit.plugins import google, silero
 import os
 import json
 import requests
@@ -260,7 +260,13 @@ async def entrypoint(ctx: JobContext):
     model = google.beta.realtime.RealtimeModel(
         model="gemini-2.5-flash-native-audio",
         voice="Aoede",
-        instructions="You are Zyra. Act like Jarvis or Friday."
+        instructions="You are Zyra. Act like Jarvis or Friday.",
+        modalities=["audio"],
+        turn_detection=google.beta.realtime.ServerVADOptions(
+            threshold=0.3,  # Lower threshold = more sensitive to user speech
+            prefix_padding_ms=200,
+            silence_duration_ms=600  # Minimum silence before ZAY thinks you're done speaking
+        )
     )
 
     fnc_ctx = AssistantFnc()
@@ -292,8 +298,22 @@ RECENT CONVERSATIONAL MEMORY:
     session = voice.AgentSession(
         model=model,
         fnc_ctx=fnc_ctx,
-        chat_ctx=chat_ctx
+        chat_ctx=chat_ctx,
+        vad=silero.VAD.load()  # Use Silero for more accurate local processing
     )
+
+    # DEBUG LOGS: Trace the audio stream
+    @session.on("user_speech_started")
+    def on_user_speech_start(ev: voice.UserSpeechStarted):
+        print(">> ZAY HEARS YOU: User speech detected.")
+
+    @session.on("user_speech_finished")
+    def on_user_speech_end(ev: voice.UserSpeechFinished):
+        print(">> ZAY PROCESSING: User finished speaking.")
+
+    @session.on("agent_speech_started")
+    def on_agent_speech_start(ev: voice.AgentSpeechStarted):
+        print(">> ZAY SPEAKING: Responding to Sir.")
 
     # Automatically save memory when the livekit socket dies (user locks phone or closes app)
     @ctx.room.on("disconnected")
