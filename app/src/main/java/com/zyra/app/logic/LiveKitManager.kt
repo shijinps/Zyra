@@ -27,6 +27,7 @@ object LiveKitManager {
         fun onDisconnected()
         fun onError(error: String)
         fun onCallCommandReceived(phone: String, name: String)
+        fun onEndCallCommandReceived()
     }
     
     private var listener: LiveKitListener? = null
@@ -71,6 +72,8 @@ object LiveKitManager {
                                     val phone = json.optString("phone")
                                     val name = json.optString("name")
                                     listener?.onCallCommandReceived(phone, name)
+                                } else if (json.optString("action") == "ACTION_HANGUP") {
+                                    listener?.onEndCallCommandReceived()
                                 }
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error parsing data channel message", e)

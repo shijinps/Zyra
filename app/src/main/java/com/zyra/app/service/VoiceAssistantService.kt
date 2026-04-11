@@ -17,6 +17,8 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.zyra.app.R
@@ -275,11 +277,38 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             override fun onCallCommandReceived(phone: String, name: String) {
                 Log.d("ZyraService", "Jarvis Call Request Received: $name ($phone)")
                 try {
-                    val intent = Intent(Intent.ACTION_CALL, Uri.parse("tel:$phone"))
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    startActivity(intent)
+                    val uri = Uri.parse("tel:$phone")
+                    val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+                    if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                        Log.d("ZyraService", "Placing call natively via TelecomManager to bypass lock screen.")
+                        telecomManager.placeCall(uri, null)
+                    } else {
+                        Log.e("ZyraService", "Missing CALL_PHONE permission for native bypass.")
+                        val intent = Intent(Intent.ACTION_CALL, uri)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        startActivity(intent)
+                    }
                 } catch (e: Exception) {
                     Log.e("ZyraService", "Failed to start phone call", e)
+                }
+            }
+
+            override fun onEndCallCommandReceived() {
+                Log.d("ZyraService", "Hang Up Command Received from Gemini")
+                try {
+                    val telecomManager = getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+                    if (checkSelfPermission(Manifest.permission.ANSWER_PHONE_CALLS) == PackageManager.PERMISSION_GRANTED) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            telecomManager.endCall()
+                            Log.d("ZyraService", "Successfully ended call via TelecomManager.")
+                        } else {
+                            Log.e("ZyraService", "Android Version too low for native endCall.")
+                        }
+                    } else {
+                        Log.e("ZyraService", "Missing ANSWER_PHONE_CALLS permission to cut call.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("ZyraService", "Failed to hang up phone call", e)
                 }
             }
 

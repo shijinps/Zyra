@@ -1,21 +1,61 @@
 import asyncio
 from livekit.agents import JobContext, WorkerOptions, cli, voice, llm
 from livekit.plugins import google
-import psycopg2
 import os
 import json
-from rapidfuzz import process, fuzz
 import requests
+import quopri
+from rapidfuzz import process, fuzz
 
-# Helper for Postgres connection
-def get_db_connection():
-    db_user = os.getenv("POSTGRES_USER", "postgres")
-    db_password = os.getenv("POSTGRES_PASSWORD", "password")
-    db_name = os.getenv("POSTGRES_DB", "postgres")
-    db_host = os.getenv("POSTGRES_HOST", "postgres")
-    if db_host.startswith("http"):
-        db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
-    return psycopg2.connect(dbname=db_name, user=db_user, password=db_password, host=db_host)
+def get_vcf_contacts():
+    base_dir = os.path.dirname(__file__)
+    vcf_path = os.path.join(base_dir, 'my_contacts.vcf')
+    contacts_list = []
+    
+    if not os.path.exists(vcf_path):
+        print("Warning: my_contacts.vcf not found in server/fastapi folder!")
+        return contacts_list
+
+    try:
+        with open(vcf_path, 'r', encoding='utf-8', errors='ignore') as f:
+            current_name = ""
+            current_phone = ""
+            
+            for line in f:
+                line = line.strip()
+                if line == "BEGIN:VCARD":
+                    current_name = ""
+                    current_phone = ""
+                
+                # Extract Display Name
+                elif line.startswith("FN:") or line.startswith("FN;"):
+                    parts = line.split(":", 1)
+                    if len(parts) > 1:
+                        raw_name = parts[1].strip()
+                        # Clean Quoted-Printable if it exists
+                        if "QUOTED-PRINTABLE" in line:
+                            try:
+                                raw_name = quopri.decodestring(raw_name.encode('utf-8')).decode('utf-8', errors='ignore')
+                            except:
+                                pass
+                        current_name = raw_name
+                
+                # Extract Phone
+                elif line.startswith("TEL:") or line.startswith("TEL;"):
+                    parts = line.split(":", 1)
+                    if len(parts) > 1:
+                        current_phone = parts[1].strip()
+                        
+                elif line == "END:VCARD":
+                    # Save the contact if both exist
+                    if current_name and current_phone:
+                        contacts_list.append((current_name, current_phone, ''))
+                        
+    except Exception as e:
+        print(f"Error parsing VCF file: {e}")
+        
+    return contacts_list
+
 
 # State management for pending calls
 pending_calls = {}
@@ -26,15 +66,10 @@ class AssistantFnc(llm.FunctionContext):
     async def initiate_call_sequence(self, name_query: str):
         print(f"Agent asking to call: {name_query}")
         try:
-            conn = get_db_connection()
-            with conn.cursor() as cursor:
-                # Get all contacts to perform fuzzy matching
-                cursor.execute("SELECT name, phone, alias FROM zyra_contacts")
-                contacts = cursor.fetchall()
-            conn.close()
+            contacts = get_vcf_contacts()
 
             if not contacts:
-                return "I don't see any contacts in your synchronized database yet, Sir. You might want to sync them from the app first."
+                return "I don't see any contacts in your my_contacts.vcf file, Sir. Please check the server folder."
 
             # Build a list of searchable names (including aliases)
             search_fields = []
@@ -47,10 +82,24 @@ class AssistantFnc(llm.FunctionContext):
             # Fuzzy match the 'name_query' against all names and aliases
             # Using 'WRatio' because it handles "partial" string matches well (like "John" finding "John Smith")
             choices = [field[0] for field in search_fields]
-            best_match = process.extractOne(name_query, choices, scorer=fuzz.WRatio)
+            matches = process.extract(name_query, choices, scorer=fuzz.WRatio, limit=3)
 
-            if best_match and best_match[1] > 65: # 65% match confidence threshold
-                matched_str = best_match[0]
+            # Filter valid matches
+            valid_matches = [m for m in matches if m[1] > 55]
+
+            if not valid_matches:
+                return f"I couldn't find a convincing match for {name_query}, Sir. Could you repeat the name, or would you like to try a different pronunciation?"
+
+            top_score = valid_matches[0][1]
+            # Find all matches mathematically close to the winner
+            ambiguous_matches = [m for m in valid_matches if (top_score - m[1]) <= 3]
+            unique_ambiguous_names = list(set([m[0] for m in ambiguous_matches]))
+
+            if len(unique_ambiguous_names) > 1:
+                options = ", and ".join(unique_ambiguous_names)
+                return f"I found multiple similar contacts: {options}. Which specific one would you like?"
+            else:
+                matched_str = unique_ambiguous_names[0]
                 
                 # Retrieve the full contact details for the matched string
                 matched_contact = next(field for field in search_fields if field[0] == matched_str)
@@ -62,10 +111,8 @@ class AssistantFnc(llm.FunctionContext):
                     "phone": phone
                 }
                 
-                print(f"Fuzzy Matched '{name_query}' -> '{matched_str}' (Display Name: {display_name}) [{best_match[1]}%]")
+                print(f"Fuzzy Matched '{name_query}' -> '{matched_str}' (Display Name: {display_name}) [{top_score}%]")
                 return f"I've found {display_name}. Shall I proceed with the call, Sir?"
-            else:
-                return f"I couldn't find a convincing match for {name_query}, Sir. Could you repeat the name, or would you like to try a different pronunciation?"
         
         except Exception as e:
             print(f"Error reading database: {e}")
@@ -99,18 +146,29 @@ class AssistantFnc(llm.FunctionContext):
         else:
             return "Canceled. What else can I do for you, Sir?"
 
+    @llm.ai_callable(desc="Forcefully ends, cuts, or hangs up the current active phone call.")
+    async def end_active_call(self):
+        print("Agent issuing command to Hang Up the call...")
+        try:
+            command_payload = {
+                "action": "ACTION_HANGUP"
+            }
+            await self.room.local_participant.publish_data(
+                json.dumps(command_payload).encode('utf-8')
+            )
+            return "I've ended the call for you, Sir."
+        except Exception as e:
+            print(f"Failed to push hangup command: {e}")
+            return "I encountered an error trying to cut the call."
+
     @llm.ai_callable(desc="Sends a WhatsApp message to a parsed contact. Uses the name to find the phone number first.")
     async def send_whatsapp_message(self, target_name: str, text_message: str):
         print(f"Agent asking to WhatsApp: {target_name} -> {text_message}")
         try:
-            conn = get_db_connection()
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT name, phone, alias FROM zyra_contacts")
-                contacts = cursor.fetchall()
-            conn.close()
+            contacts = get_vcf_contacts()
 
             if not contacts:
-                return "I don't have any contacts synchronized, Sir. Please check the Android app."
+                return "I don't have any contacts in the VCF file, Sir. Please check the server folder."
 
             search_fields = []
             for c in contacts:
@@ -118,10 +176,22 @@ class AssistantFnc(llm.FunctionContext):
                 if c[2]: search_fields.append((c[2], c[1], c[0]))
 
             choices = [field[0] for field in search_fields]
-            best_match = process.extractOne(target_name, choices, scorer=fuzz.WRatio)
+            matches = process.extract(target_name, choices, scorer=fuzz.WRatio, limit=3)
 
-            if best_match and best_match[1] > 65:
-                matched_str = best_match[0]
+            valid_matches = [m for m in matches if m[1] > 55]
+
+            if not valid_matches:
+                return f"I couldn't find a convincing contact match for {target_name}, Sir."
+
+            top_score = valid_matches[0][1]
+            ambiguous_matches = [m for m in valid_matches if (top_score - m[1]) <= 3]
+            unique_ambiguous_names = list(set([m[0] for m in ambiguous_matches]))
+
+            if len(unique_ambiguous_names) > 1:
+                options = ", and ".join(unique_ambiguous_names)
+                return f"I found multiple similar contacts: {options}. Which specific one would you like to message?"
+            else:
+                matched_str = unique_ambiguous_names[0]
                 matched_contact = next(field for field in search_fields if field[0] == matched_str)
                 _, phone, display_name = matched_contact
 
@@ -184,7 +254,9 @@ async def entrypoint(ctx: JobContext):
             text="Context: Shijin (Zyco) is the user. Keep responses concise and conversational. Address the user as 'Sir'. "
                  "If the user asks to call someone, you MUST call `initiate_call_sequence`. "
                  "If the user asks to send a WhatsApp, you MUST call `send_whatsapp_message` and pass the message content. "
-                 "If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`."
+                 "If the tools return a question asking for clarification about multiple contacts, YOU MUST speak that question out loud and wait for the user to reply before triggering the tool again. "
+                 "If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`. "
+                 "If the user asks to hang up, end the call, or cut the call, you MUST call `end_active_call`."
         )
     )
 
