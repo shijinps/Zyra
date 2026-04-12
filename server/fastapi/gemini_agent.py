@@ -317,14 +317,14 @@ async def run_zyra_session(ctx: JobContext):
         history_str = "\n".join([f"[{msg['role'].upper()}]: {msg['content']}" for msg in recent_history])
         
     model = google.beta.realtime.RealtimeModel(
-        model="gemini-2.5-flash-native-audio",
+        model="gemini-2.0-flash-exp",
         voice="Aoede",
         instructions="You are Zyra. Act like Jarvis or Friday.",
         modalities=["audio"],
         turn_detection=google.beta.realtime.ServerVADOptions(
-            threshold=0.1,  # Lower threshold = more sensitive to user speech (Good for quiet environments)
-            prefix_padding_ms=200,
-            silence_duration_ms=2000  # 2.0s silence before ending turn (Allows user to think and speak naturally)
+            threshold=0.5,
+            prefix_padding_ms=300,
+            silence_duration_ms=800
         )
     )
 
