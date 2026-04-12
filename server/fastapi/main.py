@@ -4,7 +4,9 @@ import subprocess
 import shutil
 import os
 import psycopg2
-from typing import Optional
+from typing import Optional, List
+from livekit import api
+import time
 
 # ... (Existing code)
 
@@ -224,6 +226,35 @@ def send_notification(notification: Notification, token: str = Security(verify_t
     """
     print(f"🚨 ZYRA ALERT: {notification.title} - {notification.message} [{notification.priority}]")
     return {"status": "Alert Logged", "data": notification.dict()}
+
+@app.get("/livekit/token")
+def get_livekit_token(token: str = Security(verify_token)):
+    """
+    Generates a fresh LiveKit Access Token for the Android client.
+    Requires LIVEKIT_API_KEY and LIVEKIT_API_SECRET to be set in env.
+    """
+    api_key = os.getenv("LIVEKIT_API_KEY")
+    api_secret = os.getenv("LIVEKIT_API_SECRET")
+    
+    if not api_key or not api_secret:
+        raise HTTPException(
+            status_code=500, 
+            detail="LiveKit API credentials not configured on server."
+        )
+
+    # Token lasts for 1 hour by default
+    token_gen = api.AccessToken(api_key, api_secret) \
+        .with_identity("zyra-android-user") \
+        .with_name("Sir") \
+        .with_grants(api.VideoGrants(
+            room_join=True,
+            room="zyra-room",
+            can_publish=True,
+            can_subscribe=True,
+            can_publish_data=True
+        ))
+    
+    return {"token": token_gen.to_jwt()}
 
 
 # --- Quantum Integration ---

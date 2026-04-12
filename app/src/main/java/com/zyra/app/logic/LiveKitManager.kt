@@ -10,17 +10,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import kotlinx.coroutines.withContext
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 object LiveKitManager {
     private const val TAG = "LiveKitManager"
     private var room: Room? = null
     
-    // TODO: Replace with your actual LiveKit Cloud URL
+    // URL to your LiveKit Cloud or Self-hosted Instance
     private const val LIVEKIT_URL = "wss://zyra-sbn0wnp2.livekit.cloud" 
     
-    // In production, Token should be fetched from your FastAPI server, NOT hardcoded.
-    // However, for testing, you can generate a token in the dashboard and paste it here.
-    private const val TEST_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQW5kcm9pZCBVc2VyIiwidmlkZW8iOnsicm9vbUpvaW4iOnRydWUsInJvb20iOiJ6eXJhLXJvb20iLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoienlyYS1hbmRyb2lkLXVzZXIiLCJpc3MiOiJBUElaUE5NdGhhSGpUY24iLCJuYmYiOjE3NzA2Mjk2NzcsImV4cCI6MTc3MDY1MTI3N30.CV5KzsY3gKhtBUcJfBGyjttW3bDLfRnCbYOvUkixWM8" 
+    // BASE URL for your FastAPI Brain (where /livekit/token endpoint lives)
+    private const val BRAIN_BASE_URL = "http://192.168.1.5:8000" 
+    private const val BRAIN_SECRET = "zyra-secret-key-123"
 
     interface LiveKitListener {
         fun onConnected()
@@ -37,13 +40,36 @@ object LiveKitManager {
     }
 
     fun init() {
-        // Initialize if needed, though usually just creating room is enough
+        // Initialize if needed
     }
 
-    fun connect(context: Context, token: String = TEST_TOKEN) {
+    fun connect(context: Context) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Use applicationContext to prevent memory leaks since LiveKitManager is a singleton
+                Log.d(TAG, "Requesting fresh LiveKit token from Brain...")
+                
+                // 1. Fetch fresh token from FastAPI server
+                val retrofit = retrofit2.Retrofit.Builder()
+                    .baseUrl(BRAIN_BASE_URL)
+                    .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                    .build()
+                
+                val apiService = retrofit.create(com.zyra.app.network.ZyraApiService::class.java)
+                val response = withContext(Dispatchers.IO) {
+                    apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                }
+
+                if (!response.isSuccessful || response.body() == null) {
+                    val errorMsg = "Server failed to grant token: \${response.code()}"
+                    Log.e(TAG, errorMsg)
+                    listener?.onError(errorMsg)
+                    return@launch
+                }
+
+                val token = response.body()!!.token
+                Log.d(TAG, "Token acquired. Connecting to LiveKit...")
+
+                // 2. Connect to Room with the dynamic token
                 room = LiveKit.create(context.applicationContext)
                 
                 room?.events?.collect { event ->
