@@ -22,7 +22,7 @@ object LiveKitManager {
     private const val LIVEKIT_URL = "wss://zyra-sbn0wnp2.livekit.cloud" 
     
     // BASE URL for your FastAPI Brain (where /livekit/token endpoint lives)
-    private const val BRAIN_BASE_URL = "http://192.168.1.5:8000" 
+    private const val BRAIN_BASE_URL = "https://apizyra.shijin.in" 
     private const val BRAIN_SECRET = "zyra-secret-key-123"
 
     interface LiveKitListener {
