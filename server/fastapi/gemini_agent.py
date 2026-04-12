@@ -4,9 +4,11 @@ from livekit.plugins import google, silero
 import os
 import json
 import requests
+import httpx
 import quopri
-import asyncio
 from rapidfuzz import process, fuzz
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.sse import sse_client
 
 MEMORY_FILE = os.path.join(os.path.dirname(__file__), "memory.json")
 
@@ -80,7 +82,36 @@ def get_vcf_contacts():
 pending_calls = {}
 
 class AssistantFnc(llm.FunctionContext):
+    def __init__(self, room=None, mcp_session=None):
+        super().__init__()
+        self.room = room
+        self.mcp_session = mcp_session
     
+    @llm.ai_callable(desc="Executes an advanced tool from the MetaMCP hub (like Search, Web Fetch, Spotify, or News). Use the tool_name and arguments string as JSON.")
+    async def call_mcp_tool(self, tool_name: str, arguments_json: str):
+        if not self.mcp_session:
+             return "Sir, the MetaMCP hub is currently offline. I'm afraid I cannot access those advanced systems right now."
+        
+        try:
+            print(f"Agent executing MetaMCP tool: {tool_name} with {arguments_json}")
+            args = json.loads(arguments_json)
+            result = await self.mcp_session.call_tool(tool_name, args)
+            
+            # Extract text from result content (which is usually a list of content objects)
+            decoded_result = ""
+            for item in result.content:
+                if hasattr(item, 'text'):
+                    decoded_result += item.text
+                elif isinstance(item, dict) and 'text' in item:
+                    decoded_result += item['text']
+                else:
+                    decoded_result += str(item)
+
+            return f"System Result for {tool_name}: {decoded_result}"
+        except Exception as e:
+            print(f"MetaMCP Tool Error: {e}")
+            return f"I encountered an error while trying to bridge into the {tool_name} system, Sir."
+
     @llm.ai_callable(desc="Searches contacts and asks for confirmation before initiating a call.")
     async def initiate_call_sequence(self, name_query: str):
         print(f"Agent asking to call: {name_query}")
@@ -145,14 +176,6 @@ class AssistantFnc(llm.FunctionContext):
         pending = pending_calls.pop("target")
 
         if confirmed:
-            # We don't have direct access to `ctx.room` globally, but we can return
-            # a special instruction for the client to parse, or we can use the data channel from within the session.
-            # To keep it robust, we can just say a special keyword the Android client parses.
-            # Actually, the best way over LiveKit Native Audio is to return structured text, or have the python script send a data packet.
-            # Wait, within llm.ai_callable, we don't have self.ctx. We can pass ctx into the class.
-            
-            # Since LiveKit provides data channels, let's just use `self._session.chat_ctx`? No, we need `room.local_participant.publish_data`.
-            # We will pass room to the AssistantFnc.
             if hasattr(self, 'room') and self.room:
                 payload = json.dumps({
                     "action": "ACTION_CALL",
@@ -251,6 +274,42 @@ class AssistantFnc(llm.FunctionContext):
 async def entrypoint(ctx: JobContext):
     await ctx.connect() # Join the LiveKit room
     
+    # Start the Zyra session immediately to avoid latency
+    # The MCP hub will be connected in the background
+    await run_zyra_session(ctx)
+
+async def run_zyra_session(ctx: JobContext):
+    # --- METAMCP BACKGROUND CONNECTION ---
+    mcp_endpoint = "https://metamcp-jo4c4ggc40c8goosc88kggs4.shijin.in:12008/sse"
+    
+    # State containers
+    state = {
+        "mcp_session": None,
+        "mcp_tools_list": "Initializing tools hub...",
+        "mcp_task": None
+    }
+
+    async def connect_mcp_background():
+        try:
+            print("Connecting to MetaMCP Hub in background...")
+            async with sse_client(mcp_endpoint) as streams:
+                async with ClientSession(streams[0], streams[1]) as session:
+                    await session.initialize()
+                    state["mcp_session"] = session
+                    tools = await session.list_tools()
+                    state["mcp_tools_list"] = "\n".join([f"- {t.name}: {t.description}" for t in tools.tools])
+                    print(f"MetaMCP Connected. Tools Found: {len(tools.tools)}")
+                    
+                    # Keep the session alive for the duration of the job
+                    while ctx.room.isconnected:
+                        await asyncio.sleep(1)
+        except Exception as e:
+            print(f"Warning: MetaMCP Hub offline or slow: {e}")
+            state["mcp_tools_list"] = "Hub Offline (Timeout)."
+
+    # Start MCP connection without blocking the greeting
+    state["mcp_task"] = asyncio.create_task(connect_mcp_background())
+
     # Load recent conversation history
     recent_history = load_memory()
     history_str = "No recent interactions."
@@ -263,14 +322,20 @@ async def entrypoint(ctx: JobContext):
         instructions="You are Zyra. Act like Jarvis or Friday.",
         modalities=["audio"],
         turn_detection=google.beta.realtime.ServerVADOptions(
-            threshold=0.3,  # Lower threshold = more sensitive to user speech
+            threshold=0.1,  # Lower threshold = more sensitive to user speech (Good for quiet environments)
             prefix_padding_ms=200,
-            silence_duration_ms=600  # Minimum silence before ZAY thinks you're done speaking
+            silence_duration_ms=2000  # 2.0s silence before ending turn (Allows user to think and speak naturally)
         )
     )
 
-    fnc_ctx = AssistantFnc()
-    fnc_ctx.room = ctx.room
+    # Use a lambda or proxy for mcp_session since it initializes in the background
+    fnc_ctx = AssistantFnc(room=ctx.room, mcp_session=None) 
+    
+    # We will manually inject the session into fnc_ctx once it connects
+    def check_mcp_status():
+        if state["mcp_session"]:
+            fnc_ctx.mcp_session = state["mcp_session"]
+        return state["mcp_tools_list"]
 
     chat_ctx = voice.ChatContext().append(
         role="system", 
@@ -289,6 +354,9 @@ CRITICAL DIRECTIVES:
 3. IF THE USER TELLS YOU TO HANG UP OR CUT THE CALL, IMMEDIATELY TRIGGER `end_active_call`.
 4. If the tools return a question asking for clarification about multiple contacts, YOU MUST speak that question out loud and wait for the user to reply before triggering the tool again.
 5. If the user says yes or no to proceeding with a call, you MUST call `handle_user_confirmation`.
+6. METAMCP HUB ACCESS: You are connected to a high-level tool hub. Use `call_mcp_tool` for anything outside your basic functions.
+7. Here are the currently available MetaMCP tools:
+{check_mcp_status()}
 
 RECENT CONVERSATIONAL MEMORY:
 {history_str}
