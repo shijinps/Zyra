@@ -63,3 +63,5 @@ google-services.json
 # Zyra Specific
 intent_training_data.json
 zyra_brain_data.json
+
+.env

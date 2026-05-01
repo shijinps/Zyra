@@ -1,0 +1,107 @@
+services:
+  openclaw:
+    image: 'coollabsio/openclaw:2026.2.6'
+    environment:
+      - SERVICE_FQDN_OPENCLAW_8080
+      - AUTH_USERNAME=${AUTH_USERNAME:-zyra_admin}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-password}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - OPENCLAW_GATEWAY_PORT=18789
+      - PORT=8080
+      - OPENCLAW_STATE_DIR=/data/.openclaw
+      - OPENCLAW_WORKSPACE_DIR=/data/workspace
+      - 'BROWSER_CDP_URL=http://browser:9222'
+      - 'BROWSER_DEFAULT_PROFILE=openclaw'
+      - 'BROWSER_EVALUATE_ENABLED=true'
+      - 'BROWSER_SNAPSHOT_MODE=efficient'
+      
+      # === BOTS & COMMUNICATION ===
+      - 'TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}'
+      - 'TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}'
+      - 'TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}'
+      - 'SENDGRID_API_KEY=${SENDGRID_API_KEY}'
+
+      # === AI & ML MODELS ===
+      - 'GEMINI_API_KEY=${GEMINI_API_KEY}'
+      - 'OPENCLAW_PRIMARY_MODEL=${OPENCLAW_PRIMARY_MODEL:-google/gemini-1.5-flash}'
+      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
+      - 'ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}'
+      - 'GROQ_API_KEY=${GROQ_API_KEY}'
+      - 'HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}'
+      - 'COHERE_API_KEY=${COHERE_API_KEY}'
+      - 'WIT_AI_TOKEN=${WIT_AI_TOKEN}'
+      
+      # === UTILITIES & AUTOMATION ===
+      - 'ZAPIER_WEBHOOK_URL=${ZAPIER_WEBHOOK_URL}'
+      - 'SUPABASE_URL=${SUPABASE_URL}'
+      - 'SUPABASE_KEY=${SUPABASE_KEY}'
+      
+      # === CYBERSECURITY & THREAT INTEL ===
+      - 'VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}'
+      - 'SHODAN_API_KEY=${SHODAN_API_KEY}'
+      - 'ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY}'
+      
+      # === DATA & WEATHER ===
+      - 'NASA_API_KEY=${NASA_API_KEY}'
+      - 'OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}'
+      - 'MAPBOX_API_KEY=${MAPBOX_API_KEY}'
+      
+      # === FINANCE & BUSINESS ===
+      - 'COINGECKO_API_KEY=${COINGECKO_API_KEY}'
+      - 'ALPHAVANTAGE_API_KEY=${ALPHAVANTAGE_API_KEY}'
+      - 'STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}'
+      
+      # === ENTERTAINMENT & SOCIAL ===
+      - 'SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}'
+      - 'SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}'
+      - 'YOUTUBE_API_KEY=${YOUTUBE_API_KEY}'
+      - 'GITHUB_TOKEN=${GITHUB_TOKEN}'
+      
+      # === MCP SERVER APIS ===
+      - 'VERCEL_API_KEY=${VERCEL_API_KEY}'
+      - 'DISCORD_TOKEN=${DISCORD_TOKEN}'
+      - 'GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}'
+      - 'OPENROUTER_API_KEY=${OPENROUTER_API_KEY}'
+      - 'PRODUCTHUNT_ACCESS_TOKEN=${PRODUCTHUNT_ACCESS_TOKEN}'
+      - 'ALGOLIA_INDEX_NAME=${ALGOLIA_INDEX_NAME}'
+      - 'ALGOLIA_APPLICATION_ID=${ALGOLIA_APPLICATION_ID}'
+      - 'ALGOLIA_SEARCH_API_KEY=${ALGOLIA_SEARCH_API_KEY}'
+      - 'TAVILY_API_KEY=${TAVILY_API_KEY}'
+
+    volumes:
+      - 'openclaw-data:/data'
+    depends_on:
+      browser:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-sf'
+        - 'http://127.0.0.1:8080/healthz'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  browser:
+    image: 'zenika/alpine-chrome:with-puppeteer'
+    command: [
+      "chromium-browser",
+      "--headless",
+      "--disable-gpu",
+      "--no-sandbox",
+      "--remote-debugging-address=0.0.0.0",
+      "--remote-debugging-port=9222"
+    ]
+    shm_size: 2g
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "wget -q -O - http://127.0.0.1:9222/json || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  openclaw-data:
+  browser-data:

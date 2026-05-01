@@ -1,11 +1,15 @@
-from fastapi import FastAPI, HTTPException, Header, Security
+from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import subprocess
 import shutil
 import os
 import psycopg2
+import asyncio
+import json
+import base64
 from typing import Optional, List
 from livekit import api
+from google import genai
 import time
 
 # ... (Existing code)
@@ -326,3 +330,66 @@ def sync_contacts(request: SyncContactsRequest, token: str = Security(verify_tok
     except Exception as e:
         print(f"Error syncing contacts: {e}")
         raise HTTPException(status_code=500, detail="Database error during sync")
+
+# --- 2026 Gemini Voice Gateway (Direct-to-Brain) ---
+# This bypasses LiveKit and connects Android directly to Gemini 3.1 Flash-Live
+
+@app.websocket("/voice")
+async def voice_endpoint(websocket: WebSocket):
+    """
+    Real-time Voice Gateway for Zyra.
+    Connects Android App -> FastAPI -> Gemini 3.1 Flash-Live.
+    """
+    await websocket.accept()
+    print("🎙️ ZYRA VOICE: Android Client Connected.")
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("❌ ZYRA VOICE ERROR: GEMINI_API_KEY not found in environment.")
+        await websocket.close(code=1008)
+        return
+
+    # Initialize 2026 GenAI Client
+    client = genai.Client(api_key=api_key, http_options={'api_version': 'v1beta'})
+    
+    # Configure the 'Ultra-Cheap' Talker (Gemini 3.1 Flash-Lite)
+    config = {
+        "model": "models/gemini-3.1-flash-lite-001",
+        "generation_config": {
+            "response_modalities": ["TEXT"] # Text is 100x cheaper than Audio output
+        }
+    }
+
+    try:
+        async with client.aio.live.connect(model=config["model"], config=config) as session:
+            
+            async def receive_from_android():
+                """Forwards audio chunks from Android to Gemini."""
+                try:
+                    async for message in websocket.iter_json():
+                        # Expecting: {"audio": "base64_data"}
+                        if "audio" in message:
+                            audio_data = base64.b64decode(message["audio"])
+                            await session.send(audio_data, end_of_turn=False)
+                except Exception as e:
+                    print(f"ZYRA VOICE: Android input stream closed: {e}")
+
+            async def send_to_android():
+                """Forwards text replies from Gemini to Android for local TTS."""
+                try:
+                    async for response in session.receive():
+                        if response.text:
+                            # Send text to Android. 
+                            # The Android app uses its built-in TTS (Free) to speak.
+                            await websocket.send_json({"text": response.text})
+                except Exception as e:
+                    print(f"ZYRA VOICE: Gemini output stream closed: {e}")
+
+            # Run both directions in parallel
+            await asyncio.gather(receive_from_android(), send_to_android())
+
+    except WebSocketDisconnect:
+        print("🎙️ ZYRA VOICE: Android Client Disconnected.")
+    except Exception as e:
+        print(f"❌ ZYRA VOICE CRITICAL ERROR: {e}")
+        await websocket.close(code=1011)

@@ -92,14 +92,7 @@
             android:directBootAware="true"
             android:exported="false" />
             
-        <service
-            android:name=".service.WakeWordDetectionService"
-            android:foregroundServiceType="microphone"
-            android:stopWithTask="false"
-            android:directBootAware="true"
-            android:exported="false" />
 
-            
         <receiver
             android:name=".service.BootReceiver"
             android:exported="true"

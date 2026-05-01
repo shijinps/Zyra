@@ -50,9 +50,12 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.Priority
 import com.zyra.app.logic.ZyraState
-import ai.picovoice.porcupine.PorcupineManager
-import ai.picovoice.porcupine.PorcupineException
-import ai.picovoice.porcupine.Porcupine
+import org.vosk.Model
+import org.vosk.Recognizer
+import org.vosk.android.SpeechService
+import org.vosk.android.StorageService
+import org.json.JSONObject
+import org.vosk.android.RecognitionListener as VoskRecognitionListener
 import com.zyra.app.BuildConfig
 
 import kotlinx.coroutines.withContext
@@ -69,7 +72,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var isTtsReady = false
     private lateinit var audioManager: AudioManager
     private var wakeLock: PowerManager.WakeLock? = null
-    private var porcupineManager: PorcupineManager? = null // Wake Word Engine
+    private var voskModel: Model? = null
+    private var voskSpeechService: SpeechService? = null // Wake Word Engine
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
     private var isLiveKitSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
@@ -90,7 +94,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             // SERVICE HEALTH CHECK
             // The service is "Alive" if:
             // 1. isListening = true (SpeechRecognizer active)
-            // 2. isPorcupineActive = true (Wake Word active)
+            // 2. isVoskActive = true (Wake Word active)
             
             if (isListening) {
                 // If listening but no RMS/Partial updates for 8s -> FROZEN or SILENT
@@ -99,11 +103,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     restartListening()
                     lastVoiceActivityTime = System.currentTimeMillis() // Reset to avoid loop
                 }
-            } else if (isPorcupineActive) {
-                // Porcupine is Healthy. Do nothing.
-                 // Log.v("ZyraService", "Watchdog: Porcupine is active and healthy.")
+            } else if (isVoskActive) {
+                // Vosk is Healthy. Do nothing.
+                 // Log.v("ZyraService", "Watchdog: Vosk is active and healthy.")
             } else {
-                // If NOT listening AND NOT Porcupine AND NOT ElevenLabs -> DEAD
+                // If NOT listening AND NOT Vosk AND NOT ElevenLabs -> DEAD
                 Log.w("ZyraService", "Watchdog: Service dead. Restarting...")
                 startListening()
                 lastVoiceActivityTime = System.currentTimeMillis()
@@ -188,8 +192,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // tts = TextToSpeech(this, this) // DISABLED
         overlayManager = com.zyra.app.ui.OverlayManager(this)
 
-        // Initialize Porcupine (Wake Word)
-        initPorcupine()
+        // Initialize Vosk (Wake Word)
+        initVosk()
 
         // Initialize Brain
         val app = applicationContext as com.zyra.app.ZyraApp
@@ -600,76 +604,78 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
     }
 
-    private fun initPorcupine() {
-        val builder = PorcupineManager.Builder()
-                .setAccessKey("tRVb1NSy86S8dnw+SQoJ2FleWA11wXkeOvxHRGEJl8UEmCl6Nuhy+A==")
-                .setSensitivity(0.5f) // Optimized for fewer false positives
+    private var isVoskModelReady = false
 
-        try {
-            val keywordPath = "zyra.ppn" // Expecting this filename in assets
-            val customModelPath = com.zyra.app.util.AssetExtractor.extractAsset(this, keywordPath)
-            
-            if (java.io.File(customModelPath).exists()) {
-                Log.d("ZyraService", "Loading Custom Wake Word: Zyra")
-                builder.setKeywordPath(customModelPath)
-            } else {
-                 Log.w("ZyraService", "Custom model not found. Using Default: Porcupine")
-                 builder.setKeyword(Porcupine.BuiltInKeyword.PORCUPINE)
-            }
-
-            porcupineManager = builder.build(this) { 
-                    // Wake Word Detected Callback
-                    Log.d("ZyraService", "Wake Word Detected!")
-                    // Stop passive listening
-                    try { porcupineManager?.stop() } catch (e: Exception) {}
-                    isPorcupineActive = false
-                    isListening = false
-                    
-                    // Activate Active Session
-                    isActiveSession = true // Mark session active
-                    
-                    // User Feedback (Sound / Visual) IMMEDIATELY
-                    silenceBeep() // Prep for upcoming beep
-                    
-                    try {
-                        val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-                        toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
-                        android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
-                    } catch (e: Exception) {
-                        Log.e("ZyraService", "Failed to play instant wake beep", e)
-                    }
-                    
-                    broadcastState(ZyraState.LISTENING)
-                    
-                    // Start LiveKit Agent Session
-                    com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
+    private fun initVosk() {
+        StorageService.unpack(this, "model", "model",
+            { model ->
+                voskModel = model
+                isVoskModelReady = true
+                Log.d("ZyraService", "Vosk model loaded successfully.")
+                // Start passive listening if not already listening
+                if (!isListening && !isLiveKitSessionActive && !isActiveSession) {
+                    startPassiveListening()
                 }
-             Log.d("ZyraService", "Porcupine initialized successfully")
-        } catch (e: PorcupineException) {
-            Log.e("ZyraService", "Porcupine Init Failed", e)
-        } catch (e: Exception) {
-            Log.e("ZyraService", "Porcupine Init Critical Error (Native?)", e)
-            builder.setKeyword(Porcupine.BuiltInKeyword.PORCUPINE) // Fallback to safe default
-            try {
-                 porcupineManager = builder.build(this) { 
-                     // Activate Active Session
-                      isActiveSession = true // Mark session active
+            },
+            { exception ->
+                Log.e("ZyraService", "Failed to unpack Vosk model", exception)
+            }
+        )
+    }
 
-                      // Immediate Feedback Beep
-                      try {
-                          val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-                          toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
-                          android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
-                      } catch (e: Exception) {}
-                      
-                      broadcastState(ZyraState.LISTENING)
-
-                      com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
-                 }
-            } catch (e2: Exception) {
-                 Log.e("ZyraService", "Porcupine Fallback Failed", e2)
+    private val voskListener = object : VoskRecognitionListener {
+        override fun onPartialResult(hypothesis: String?) {
+            hypothesis?.let {
+                try {
+                    val json = JSONObject(it)
+                    val text = json.optString("partial", "").lowercase()
+                    if (text.contains("zyra") || text.contains("zara") || text.contains("terminator")) {
+                        onWakeWordDetected()
+                    }
+                } catch (e: Exception) {}
             }
         }
+
+        override fun onResult(hypothesis: String?) {
+            hypothesis?.let {
+                try {
+                    val json = JSONObject(it)
+                    val text = json.optString("text", "").lowercase()
+                    if (text.contains("zyra") || text.contains("zara") || text.contains("terminator")) {
+                        onWakeWordDetected()
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+
+        override fun onFinalResult(hypothesis: String?) {}
+        override fun onError(exception: Exception?) {
+            Log.e("ZyraService", "Vosk Error", exception)
+            isVoskActive = false
+        }
+        override fun onTimeout() {}
+    }
+
+    private fun onWakeWordDetected() {
+        Log.d("ZyraService", "Wake Word Detected via Vosk!")
+        try { 
+            voskSpeechService?.stop() 
+            voskSpeechService = null
+        } catch (e: Exception) {}
+        isVoskActive = false
+        isListening = false
+        
+        isActiveSession = true
+        
+        silenceBeep()
+        try {
+            val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+            toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+            android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
+        } catch (e: Exception) {}
+        
+        broadcastState(ZyraState.LISTENING)
+        com.zyra.app.logic.LiveKitManager.connect(this@VoiceAssistantService)
     }
 
     private fun startListening() {
@@ -684,18 +690,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun startPassiveListening() {
-        if (isListening) return // SpeechRecognizer is active, do not start Porcupine
+        if (isListening) return // SpeechRecognizer is active
 
-        Log.d("ZyraService", "Starting Passive Listening (Porcupine)...")
-        if (porcupineManager != null) {
+        Log.d("ZyraService", "Starting Passive Listening (Vosk)...")
+        if (isVoskModelReady && voskModel != null) {
             try {
-                if (!isPorcupineActive) {
-                    porcupineManager?.start()
-                    isPorcupineActive = true
+                if (!isVoskActive) {
+                    voskSpeechService = SpeechService(Recognizer(voskModel, 16000.0f), 16000.0f)
+                    voskSpeechService?.startListening(voskListener)
+                    isVoskActive = true
                 }
             } catch (e: Exception) {
-                Log.e("ZyraService", "Porcupine Start Failed", e)
-                // Fallback to active polling if Porcupine fails
+                Log.e("ZyraService", "Vosk Start Failed", e)
                 startActiveListening()
             }
         } else {
@@ -710,10 +716,10 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             return
         }
 
-        // Ensure Porcupine is stopped before starting SR
-        if (isPorcupineActive) {
-             try { porcupineManager?.stop() } catch(_: Exception) {}
-             isPorcupineActive = false
+        // Ensure Vosk is stopped before starting SR
+        if (isVoskActive) {
+             try { voskSpeechService?.stop(); voskSpeechService = null } catch(_: Exception) {}
+             isVoskActive = false
         }
 
         if (!isListening) {
@@ -841,15 +847,19 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
         // GIVE UP after 3 consecutive "No Matches" to prevent infinite loops
         if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-            if (consecutiveErrorCount >= 3) {
-                 Log.w("ZyraService", "Too many errors ($consecutiveErrorCount). Giving up.")
-                 if (isActiveSession) {
+            if (isActiveSession) {
+                if (consecutiveErrorCount >= 3) {
+                     Log.w("ZyraService", "Too many errors ($consecutiveErrorCount). Giving up.")
                      speak("I'm sorry, I didn't hear anything.") 
                      isActiveSession = false
                      broadcastState(ZyraState.IDLE)
                      startListening() // Calls startPassiveListening inside
-                 }
-                 return
+                     return
+                }
+            } else {
+                // In passive mode (waiting for wake word), NO_MATCH is expected.
+                // Reset consecutive error count and do NOT give up.
+                consecutiveErrorCount = 0
             }
         }
 
@@ -1019,7 +1029,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private var activeSessionExpiryHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var consecutiveErrorCount = 0 // Track loops for backoff
-    private var isPorcupineActive = false
+    private var isVoskActive = false
     private var isActiveSession = false
     private var lastInteractionTime = 0L
     private val sessionTimeoutMs = 30000L // Increased to 30 seconds for better flow
@@ -2796,14 +2806,15 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             isLiveKitSessionActive = false // CRITICAL FIX: Reset session flag so we don't block restart 
             com.zyra.app.logic.LiveKitManager.disconnect() // CRITICAL FIX: Kill zombie session immediately 
             
-            // Clean Stop Porcupine to ensure fresh start
+            // Clean Stop Vosk to ensure fresh start
             try {
-                if (isPorcupineActive) {
-                    porcupineManager?.stop()
-                    isPorcupineActive = false
+                if (isVoskActive) {
+                    voskSpeechService?.stop()
+                    voskSpeechService = null
+                    isVoskActive = false
                 }
             } catch (e: Exception) {
-                Log.e("ZyraService", "Error stopping Porcupine during swipe cleanup", e)
+                Log.e("ZyraService", "Error stopping Vosk during swipe cleanup", e)
             }
 
             // Kill existing recognizer to be safe
@@ -2838,13 +2849,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     override fun onDestroy() {
-        // 1. Porcupine Cleanup (New)
+        // 1. Vosk Cleanup (New)
         try {
-            porcupineManager?.stop()
-            porcupineManager?.delete()
-            isPorcupineActive = false
+            voskSpeechService?.stop()
+            voskSpeechService?.shutdown()
+            voskModel?.close()
+            isVoskActive = false
         } catch (e: Exception) {
-            Log.e("ZyraService", "Porcupine Clean-up Failed", e)
+            Log.e("ZyraService", "Vosk Clean-up Failed", e)
         }
 
         // 2. Save Intelligence State (Existing)

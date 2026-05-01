@@ -72,40 +72,42 @@ object LiveKitManager {
                 // 2. Connect to Room with the dynamic token
                 room = LiveKit.create(context.applicationContext)
                 
-                room?.events?.collect { event ->
-                    when (event) {
-                        is RoomEvent.Connected -> {
-                            Log.d(TAG, "Connected to LiveKit Room!")
-                            listener?.onConnected()
-                            publishAudio()
-                        }
-                        is RoomEvent.Disconnected -> {
-                            Log.d(TAG, "Disconnected from LiveKit")
-                            listener?.onDisconnected()
-                        }
-                        is RoomEvent.FailedToConnect -> {
-                            Log.e(TAG, "Failed to connect to LiveKit: \${event.error?.message}")
-                            listener?.onError(event.error?.message ?: "Unknown Connection Error")
-                        }
-                        is RoomEvent.TrackSubscribed -> {
-                            Log.d(TAG, "Subscribed to track: \${event.track.name}")
-                        }
-                        is RoomEvent.DataReceived -> {
-                            try {
-                                val jsonStr = String(event.data)
-                                val json = JSONObject(jsonStr)
-                                if (json.optString("action") == "ACTION_CALL") {
-                                    val phone = json.optString("phone")
-                                    val name = json.optString("name")
-                                    listener?.onCallCommandReceived(phone, name)
-                                } else if (json.optString("action") == "ACTION_HANGUP") {
-                                    listener?.onEndCallCommandReceived()
-                                }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing data channel message", e)
+                launch {
+                    room?.events?.collect { event ->
+                        when (event) {
+                            is RoomEvent.Connected -> {
+                                Log.d(TAG, "Connected to LiveKit Room!")
+                                listener?.onConnected()
+                                publishAudio()
                             }
+                            is RoomEvent.Disconnected -> {
+                                Log.d(TAG, "Disconnected from LiveKit")
+                                listener?.onDisconnected()
+                            }
+                            is RoomEvent.FailedToConnect -> {
+                                Log.e(TAG, "Failed to connect to LiveKit: ${event.error?.message}")
+                                listener?.onError(event.error?.message ?: "Unknown Connection Error")
+                            }
+                            is RoomEvent.TrackSubscribed -> {
+                                Log.d(TAG, "Subscribed to track: ${event.track.name}")
+                            }
+                            is RoomEvent.DataReceived -> {
+                                try {
+                                    val jsonStr = String(event.data)
+                                    val json = JSONObject(jsonStr)
+                                    if (json.optString("action") == "ACTION_CALL") {
+                                        val phone = json.optString("phone")
+                                        val name = json.optString("name")
+                                        listener?.onCallCommandReceived(phone, name)
+                                    } else if (json.optString("action") == "ACTION_HANGUP") {
+                                        listener?.onEndCallCommandReceived()
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error parsing data channel message", e)
+                                }
+                            }
+                            else -> {}
                         }
-                        else -> {}
                     }
                 }
 
