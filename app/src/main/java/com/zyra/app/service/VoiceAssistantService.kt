@@ -2797,14 +2797,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     override fun onDestroy() {
-        // 1. Vosk Cleanup (New)
+        // 1. Porcupine Cleanup
         try {
-            voskSpeechService?.stop()
-            voskSpeechService?.shutdown()
-            voskModel?.close()
-            isVoskActive = false
+            porcupineManager?.stop()
+            porcupineManager?.delete()
         } catch (e: Exception) {
-            Log.e("ZyraService", "Vosk Clean-up Failed", e)
+            Log.e("ZyraService", "Porcupine Clean-up Failed", e)
         }
 
         // 2. Save Intelligence State (Existing)
