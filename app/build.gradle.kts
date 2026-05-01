@@ -99,9 +99,8 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Wake Word Detection (Vosk)
-    implementation("net.java.dev.jna:jna:5.13.0@aar")
-    implementation("com.alphacephei:vosk-android:0.3.38@aar")
+    // Wake Word Detection (Picovoice Porcupine)
+    implementation("ai.picovoice:porcupine-android:3.0.0")
     
     // Media Session for Music Control
     implementation("androidx.media:media:1.7.0")
