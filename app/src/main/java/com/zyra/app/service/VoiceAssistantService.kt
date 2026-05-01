@@ -605,7 +605,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             porcupineManager = PorcupineManager.Builder()
                 .setAccessKey(accessKey)
-                .setKeywords(arrayOf("zyra", "terminator"))
+                .setKeywordPath("zyra.ppn") // Fixed: Using the custom .ppn file from assets
                 .setSensitivity(0.7f)
                 .build(this, object : PorcupineManagerCallback {
                     override fun invoke(keywordIndex: Int) {
