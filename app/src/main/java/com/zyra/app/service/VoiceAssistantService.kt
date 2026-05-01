@@ -671,11 +671,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             return
         }
 
-        // Ensure Vosk is stopped before starting SR
-        if (isVoskActive) {
-             try { voskSpeechService?.stop(); voskSpeechService = null } catch(_: Exception) {}
-             isVoskActive = false
-        }
+        // Ensure Porcupine is stopped before starting SR
+        try { porcupineManager?.stop() } catch(_: Exception) {}
 
         if (!isListening) {
              // AUDIO FOCUS MANAGEMENT - FIXED FOR CONCURRENT ACCESS
