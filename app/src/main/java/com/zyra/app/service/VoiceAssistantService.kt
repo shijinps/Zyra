@@ -2758,15 +2758,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             isLiveKitSessionActive = false // CRITICAL FIX: Reset session flag so we don't block restart 
             com.zyra.app.logic.LiveKitManager.disconnect() // CRITICAL FIX: Kill zombie session immediately 
             
-            // Clean Stop Vosk to ensure fresh start
+            // Clean Stop Porcupine to ensure fresh start
             try {
-                if (isVoskActive) {
-                    voskSpeechService?.stop()
-                    voskSpeechService = null
-                    isVoskActive = false
-                }
+                porcupineManager?.stop()
             } catch (e: Exception) {
-                Log.e("ZyraService", "Error stopping Vosk during swipe cleanup", e)
+                Log.e("ZyraService", "Error stopping Porcupine during swipe cleanup", e)
             }
 
             // Kill existing recognizer to be safe
