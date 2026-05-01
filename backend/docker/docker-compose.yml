@@ -4,7 +4,7 @@ services:
     image: redroid/redroid:11.0.0-latest
     privileged: true
     ports:
-      - "5555:5555" # ADB port for Zyra Python Bridge
+      - "5555:5555" # ADB port for Zyra Python Bridge and local Scrcpy
     volumes:
       - ./data:/data # Persistent storage for apps and logins
     command:
@@ -14,15 +14,3 @@ services:
     restart: unless-stopped
     # Note for Oracle VPS: Ensure binder/ashmem modules are loaded on the host Ubuntu.
     # You can install them via: `apt install linux-modules-extra-`uname -r`` if missing.
-
-  # Web Interface to view the Android screen and log in manually
-  scrcpy-web:
-    image: emptysuns/scrcpy-web:latest
-    ports:
-      - "8000:8000" # Access this port in your browser to see the screen
-    environment:
-      - ADB_SERVER_ADDR=redroid
-      - ADB_SERVER_PORT=5555
-    depends_on:
-      - redroid
-    restart: unless-stopped
