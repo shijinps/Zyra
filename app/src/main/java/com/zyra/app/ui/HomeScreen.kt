@@ -60,6 +60,27 @@ fun HomeScreen(
     var showDiagnostics by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val hasOverlay = remember(context) { android.provider.Settings.canDrawOverlays(context) }
+    var backendHealthy by remember { mutableStateOf<Boolean?>(null) }
+    val wakeWordHealthy = zyraState != ZyraState.ERROR && errorMessage == null
+    val livekitActive = zyraState == ZyraState.LISTENING || zyraState == ZyraState.PROCESSING || zyraState == ZyraState.SPEAKING
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            backendHealthy = try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val url = java.net.URL("https://apizyra.shijin.in/health")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.connectTimeout = 3000
+                    conn.readTimeout = 3000
+                    conn.requestMethod = "GET"
+                    conn.responseCode == 200
+                }
+            } catch (_: Exception) {
+                false
+            }
+            kotlinx.coroutines.delay(30000L)
+        }
+    }
 
     // Fake Neural Logs for demo (In real use, these would come from an Observation system)
     val neuralLogs = remember {
@@ -249,16 +270,27 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 3. Compact System Integrity Bar
+                // 3. System Status Indicator Chips (Backend, Wake Word, LiveKit)
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        IntegrityItem(Icons.Default.Layers, "OVERLAY", hasOverlay)
-                        IntegrityItem(Icons.Default.Mic, "BRAIN", true)
-                        IntegrityItem(Icons.Default.CloudQueue, "LIVEKIT", true)
-                        IntegrityItem(Icons.Default.Bolt, "SERVICE", true)
+                        IntegrityItem(
+                            icon = Icons.Default.Dns,
+                            label = if (backendHealthy == true) "BACKEND: OK" else if (backendHealthy == false) "BACKEND: ERR" else "BACKEND: ...",
+                            isActive = backendHealthy == true
+                        )
+                        IntegrityItem(
+                            icon = Icons.Default.RecordVoiceOver,
+                            label = if (wakeWordHealthy) "WAKE WORD: ON" else "WAKE WORD: ERR",
+                            isActive = wakeWordHealthy
+                        )
+                        IntegrityItem(
+                            icon = Icons.Default.CloudQueue,
+                            label = if (livekitActive) "LIVEKIT: LIVE" else "LIVEKIT: READY",
+                            isActive = livekitActive || backendHealthy == true
+                        )
                     }
                 }
 
