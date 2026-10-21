@@ -70,6 +70,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private lateinit var audioManager: AudioManager
     private var wakeLock: PowerManager.WakeLock? = null
     private var wakeWordEngine: WakeWordEngine? = null
+    private var mediaSession: android.media.session.MediaSession? = null
 
     enum class ServiceLifecycleState {
         STARTING,
@@ -177,6 +178,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
         // Initialize Wake Word Engine
         initWakeWordEngine()
+        setupMediaSession()
 
         // Initialize Brain
         val app = applicationContext as com.zyra.app.ZyraApp
@@ -439,29 +441,8 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         
         if (intent?.action == "com.zyra.app.ACTION_WAKE") {
-            Log.d("ZyraService", "Manual Wake Triggered")
-            lifecycleState = ServiceLifecycleState.CONNECTING // Guard watchdog from interrupting connection
-            isActiveSession = true
-            resetSessionTimeout()
-            
-            // Show Overlay and Beep IMMEDIATELY
-             if (Settings.canDrawOverlays(this)) {
-                 overlayManager.show()
-                 overlayManager.updateState(ZyraState.LISTENING)
-             }
-             
-             // Immediate Feedback Beep
-             try {
-                 val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-                 toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
-                 android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
-             } catch (e: Exception) {
-                 Log.e("ZyraService", "Failed to play instant wake beep", e)
-             }
-             
-             // Start LiveKit Session
-             com.zyra.app.logic.LiveKitManager.connect(this)
-             return START_STICKY
+            triggerManualWake()
+            return START_STICKY
         }
 
         if (!isListening) {
@@ -469,6 +450,63 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         return START_STICKY
     }
+    private fun triggerManualWake() {
+        Log.d("ZyraService", "Manual Wake (PTT) Triggered")
+        lifecycleState = ServiceLifecycleState.CONNECTING // Guard watchdog from interrupting connection
+        isActiveSession = true
+        resetSessionTimeout()
+        
+        // Show Overlay and Beep IMMEDIATELY
+        if (Settings.canDrawOverlays(this)) {
+            overlayManager.show()
+            overlayManager.updateState(ZyraState.LISTENING)
+        }
+        
+        // Immediate Feedback Beep
+        try {
+            val toneGen = android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+            toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP)
+            android.os.Handler(mainLooper).postDelayed({ toneGen.release() }, 150)
+        } catch (e: Exception) {
+            Log.e("ZyraService", "Failed to play instant wake beep", e)
+        }
+        
+        // Start LiveKit Session
+        com.zyra.app.logic.LiveKitManager.connect(this)
+    }
+
+    private fun setupMediaSession() {
+        try {
+            mediaSession = android.media.session.MediaSession(this, "ZyraMediaSession").apply {
+                setCallback(object : android.media.session.MediaSession.Callback() {
+                    override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                        val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                        }
+                        if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
+                            when (keyEvent.keyCode) {
+                                KeyEvent.KEYCODE_HEADSETHOOK,
+                                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                                KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                                    Log.d("ZyraService", "Headset media button triggered PTT")
+                                    triggerManualWake()
+                                    return true
+                                }
+                            }
+                        }
+                        return super.onMediaButtonEvent(mediaButtonIntent)
+                    }
+                })
+                isActive = true
+            }
+        } catch (e: Exception) {
+            Log.w("ZyraService", "Could not initialize MediaSession for headset PTT", e)
+        }
+    }
+
     private fun broadcastState(state: ZyraState, message: String? = null) {
         // 1. Update Overlay
         if (state == ZyraState.IDLE) {
@@ -2801,6 +2839,15 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     override fun onDestroy() {
+        // MediaSession Cleanup
+        try {
+            mediaSession?.isActive = false
+            mediaSession?.release()
+            mediaSession = null
+        } catch (e: Exception) {
+            Log.w("ZyraService", "Error releasing MediaSession", e)
+        }
+
         // 1. WakeWordEngine Cleanup
         try {
             wakeWordEngine?.destroy()

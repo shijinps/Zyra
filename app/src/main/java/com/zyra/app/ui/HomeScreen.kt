@@ -222,7 +222,32 @@ fun HomeScreen(
                     modifier = Modifier.padding(top = 16.dp)
                 )
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // On-Screen Push-to-Talk (PTT) Trigger Button
+                Button(
+                    onClick = onManualWake,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (zyraState == ZyraState.ERROR) Color(0xFFEF5350).copy(alpha = 0.2f) else CyberCyan.copy(alpha = 0.15f),
+                        contentColor = if (zyraState == ZyraState.ERROR) Color(0xFFEF5350) else CyberCyan
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, if (zyraState == ZyraState.ERROR) Color(0xFFEF5350).copy(alpha = 0.5f) else CyberCyan.copy(alpha = 0.4f))
+                ) {
+                    Icon(Icons.Default.Mic, contentDescription = "Push to Talk", modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (zyraState == ZyraState.LISTENING || zyraState == ZyraState.PROCESSING || zyraState == ZyraState.SPEAKING) "SESSION ACTIVE (TAP TO RE-TALK)" else "PUSH TO TALK",
+                        letterSpacing = 2.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // 3. Compact System Integrity Bar
                 GlassCard(modifier = Modifier.fillMaxWidth()) {

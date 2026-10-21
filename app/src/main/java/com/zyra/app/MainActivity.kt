@@ -47,6 +47,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var lastVolumeDownTime = 0L
+
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN) {
+            val now = System.currentTimeMillis()
+            if (now - lastVolumeDownTime < 600) {
+                android.util.Log.d("MainActivity", "Double volume-down detected -> triggering PTT")
+                val intent = Intent(this, VoiceAssistantService::class.java).apply {
+                    action = "com.zyra.app.ACTION_WAKE"
+                }
+                startService(intent)
+                return true
+            }
+            lastVolumeDownTime = now
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
