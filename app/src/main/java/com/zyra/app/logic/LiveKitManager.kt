@@ -117,7 +117,7 @@ object LiveKitManager {
                                 publishAudio()
                             }
                             is RoomEvent.Disconnected -> {
-                                Log.d(TAG, "Disconnected from LiveKit. Reason: ${event.reason}, Error: ${event.error.message}")
+                                Log.d(TAG, "Disconnected from LiveKit. Reason: ${event.reason}, Error: ${event.error?.message}")
                                 listener?.onDisconnected()
                             }
                             is RoomEvent.FailedToConnect -> {
