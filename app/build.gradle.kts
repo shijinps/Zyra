@@ -31,8 +31,6 @@ android {
         }
         
         buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"${properties.getProperty("GOOGLE_MAPS_API_KEY", "")}\"")
-        buildConfigField("String", "IBM_QUANTUM_API_KEY", "\"${properties.getProperty("IBM_QUANTUM_API_KEY", "snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo")}\"")
-        buildConfigField("String", "CISCO_QUANTUM_API_KEY", "\"${properties.getProperty("CISCO_QUANTUM_API_KEY", "gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G")}\"")
         buildConfigField("String", "PICOVOICE_ACCESS_KEY", "\"${properties.getProperty("PICOVOICE_ACCESS_KEY", "")}\"")
         buildConfigField("String", "OPENWEATHER_API_KEY", "\"${properties.getProperty("OPENWEATHER_API_KEY", "")}\"")
         buildConfigField("String", "NEWS_API_KEY", "\"${properties.getProperty("NEWS_API_KEY", "")}\"")
@@ -100,7 +98,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Wake Word Detection (Picovoice Porcupine)
-    implementation("ai.picovoice:porcupine-android:3.0.0")
+    implementation("ai.picovoice:porcupine-android:4.0.2")
     
     // Media Session for Music Control
     implementation("androidx.media:media:1.7.0")

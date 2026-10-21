@@ -71,6 +71,18 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var wakeLock: PowerManager.WakeLock? = null
     private var porcupineManager: PorcupineManager? = null
 
+    enum class ServiceLifecycleState {
+        STARTING,
+        WAKEWORD_ACTIVE,
+        CONNECTING,
+        SESSION_ACTIVE,
+        ERROR
+    }
+
+    private var lifecycleState: ServiceLifecycleState = ServiceLifecycleState.STARTING
+    private var serviceErrorMessage: String? = null
+    private var isPorcupineRunning = false
+
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
     private var isLiveKitSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
 
@@ -79,8 +91,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val watchdogRunnable = object : Runnable {
         override fun run() {
-            if (isLiveKitSessionActive) {
-                // If ElevenLabs is active, we don't interfere. Check again later.
+            // CIRCUIT BREAKER: If in ERROR state (e.g. Porcupine failed to initialize), stop retrying!
+            if (lifecycleState == ServiceLifecycleState.ERROR) {
+                Log.w("ZyraService", "Watchdog Circuit Breaker active: Service in ERROR state ($serviceErrorMessage). Halting restart loop.")
+                return // HALT WATCHDOG
+            }
+
+            // Do not interrupt while LiveKit is connecting or actively speaking
+            if (lifecycleState == ServiceLifecycleState.CONNECTING || lifecycleState == ServiceLifecycleState.SESSION_ACTIVE || isLiveKitSessionActive) {
                 watchdogHandler.postDelayed(this, 2000)
                 return
             }
@@ -88,23 +106,16 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             val timeSinceLastActivity = System.currentTimeMillis() - lastVoiceActivityTime
             
             // SERVICE HEALTH CHECK
-            // The service is "Alive" if:
-            // 1. isListening = true (SpeechRecognizer active)
-            // 2. isVoskActive = true (Wake Word active)
-            
             if (isListening) {
-                // If listening but no RMS/Partial updates for 8s -> FROZEN or SILENT
                 if (timeSinceLastActivity > 8000) {
-                    Log.d("ZyraService", "Watchdog: Silence/Freeze detected (${timeSinceLastActivity}ms). Restarting...")
+                    Log.d("ZyraService", "Watchdog: Silence/Freeze detected (${timeSinceLastActivity}ms). Restarting listener...")
                     restartListening()
-                    lastVoiceActivityTime = System.currentTimeMillis() // Reset to avoid loop
+                    lastVoiceActivityTime = System.currentTimeMillis()
                 }
-            } else if (isVoskActive) {
-                // Vosk is Healthy. Do nothing.
-                 // Log.v("ZyraService", "Watchdog: Vosk is active and healthy.")
+            } else if (isPorcupineRunning && lifecycleState == ServiceLifecycleState.WAKEWORD_ACTIVE) {
+                // Porcupine wake word engine is healthy. Do nothing.
             } else {
-                // If NOT listening AND NOT Vosk AND NOT ElevenLabs -> DEAD
-                Log.w("ZyraService", "Watchdog: Service dead. Restarting...")
+                Log.w("ZyraService", "Watchdog: Inactive state detected (state=$lifecycleState). Starting listener...")
                 startListening()
                 lastVoiceActivityTime = System.currentTimeMillis()
             }
@@ -350,6 +361,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 routingRunnable.run() // Run immediately
 
                 isLiveKitSessionActive = true // LOCK local listener
+                lifecycleState = ServiceLifecycleState.SESSION_ACTIVE
                 isListening = false
                 
                 // Explicitly cancel to ensure no trailing errors trigger restarts
@@ -374,6 +386,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
                     isLiveKitSessionActive = false // UNLOCK
                     isActiveSession = false
+                    if (lifecycleState != ServiceLifecycleState.ERROR) {
+                        lifecycleState = ServiceLifecycleState.WAKEWORD_ACTIVE
+                    }
                     startListening() // Resume local wake word listening
                     broadcastState(ZyraState.IDLE)
                 }
@@ -449,6 +464,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         
         if (intent?.action == "com.zyra.app.ACTION_WAKE") {
             Log.d("ZyraService", "Manual Wake Triggered")
+            lifecycleState = ServiceLifecycleState.CONNECTING // Guard watchdog from interrupting connection
             isActiveSession = true
             resetSessionTimeout()
             
@@ -603,9 +619,14 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun initPorcupine() {
         val accessKey = BuildConfig.PICOVOICE_ACCESS_KEY
         try {
+            val ppnFile = com.zyra.app.logic.AssetModelManager.syncWakeWordModels(this)
+            if (ppnFile == null || !ppnFile.exists()) {
+                throw java.io.FileNotFoundException("zyra.ppn model file could not be extracted to filesDir")
+            }
+
             porcupineManager = PorcupineManager.Builder()
                 .setAccessKey(accessKey)
-                .setKeywordPath("zyra.ppn") // Fixed: Using the custom .ppn file from assets
+                .setKeywordPath(ppnFile.absolutePath)
                 .setSensitivity(0.7f)
                 .build(this, object : PorcupineManagerCallback {
                     override fun invoke(keywordIndex: Int) {
@@ -613,9 +634,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                         onWakeWordDetected()
                     }
                 })
-            Log.d("ZyraService", "Porcupine initialized successfully.")
+            lifecycleState = ServiceLifecycleState.WAKEWORD_ACTIVE
+            serviceErrorMessage = null
+            Log.d("ZyraService", "Porcupine 4.x initialized successfully with model: ${ppnFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e("ZyraService", "Failed to initialize Porcupine", e)
+            lifecycleState = ServiceLifecycleState.ERROR
+            serviceErrorMessage = e.message ?: "Porcupine initialization failed"
+            Log.e("ZyraService", "Failed to initialize Porcupine: $serviceErrorMessage", e)
         }
     }
 
@@ -623,10 +648,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         Log.d("ZyraService", "Wake Word Detected!")
         try { 
             porcupineManager?.stop() 
+            isPorcupineRunning = false
         } catch (e: Exception) {}
         
         isListening = false
         isActiveSession = true
+        lifecycleState = ServiceLifecycleState.CONNECTING
         
         // Immediate Feedback
         try {
@@ -644,7 +671,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun startListening() {
-        if (isLiveKitSessionActive) return
+        if (isLiveKitSessionActive || lifecycleState == ServiceLifecycleState.CONNECTING) return
 
         // Dispatcher: Active vs Passive
         if (isActiveSession) {
@@ -656,11 +683,24 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun startPassiveListening() {
         if (isListening) return // SpeechRecognizer is active
+        if (lifecycleState == ServiceLifecycleState.ERROR) {
+            Log.w("ZyraService", "startPassiveListening: Skipped because service is in ERROR state")
+            return
+        }
+        if (isPorcupineRunning) {
+            Log.v("ZyraService", "startPassiveListening: Porcupine already running, idempotent skip")
+            return
+        }
 
-        Log.d("ZyraService", "Starting Passive Listening (Porcupine)...")
+        Log.d("ZyraService", "Starting Passive Listening (Porcupine 4.x)...")
         try {
             porcupineManager?.start()
+            isPorcupineRunning = true
+            lifecycleState = ServiceLifecycleState.WAKEWORD_ACTIVE
         } catch (e: Exception) {
+            isPorcupineRunning = false
+            lifecycleState = ServiceLifecycleState.ERROR
+            serviceErrorMessage = e.message
             Log.e("ZyraService", "Porcupine Start Failed", e)
         }
     }
@@ -2793,6 +2833,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             porcupineManager?.stop()
             porcupineManager?.delete()
+            isPorcupineRunning = false
         } catch (e: Exception) {
             Log.e("ZyraService", "Porcupine Clean-up Failed", e)
         }
