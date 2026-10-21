@@ -450,8 +450,24 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         return START_STICKY
     }
+    private var lastPttTriggerTime: Long = 0L
+
     private fun triggerManualWake() {
-        Log.d("ZyraService", "Manual Wake (PTT) Triggered")
+        val now = System.currentTimeMillis()
+        if (now - lastPttTriggerTime < 500L) {
+            Log.d("ZyraService", "PTT debounced (${now - lastPttTriggerTime}ms < 500ms)")
+            return
+        }
+        lastPttTriggerTime = now
+
+        // Single-flight toggle: if already connecting or active, end the session
+        if (isLiveKitSessionActive || lifecycleState == ServiceLifecycleState.CONNECTING || lifecycleState == ServiceLifecycleState.SESSION_ACTIVE) {
+            Log.d("ZyraService", "PTT Toggle: Active session detected (state=$lifecycleState). Ending session...")
+            com.zyra.app.logic.LiveKitManager.disconnect()
+            return
+        }
+
+        Log.d("ZyraService", "Manual Wake (PTT) Triggered -> Starting LiveKit session")
         lifecycleState = ServiceLifecycleState.CONNECTING // Guard watchdog from interrupting connection
         isActiveSession = true
         resetSessionTimeout()

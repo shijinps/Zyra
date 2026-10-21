@@ -240,7 +240,7 @@ fun HomeScreen(
                     Icon(Icons.Default.Mic, contentDescription = "Push to Talk", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (zyraState == ZyraState.LISTENING || zyraState == ZyraState.PROCESSING || zyraState == ZyraState.SPEAKING) "SESSION ACTIVE (TAP TO RE-TALK)" else "PUSH TO TALK",
+                        text = if (zyraState == ZyraState.LISTENING || zyraState == ZyraState.PROCESSING || zyraState == ZyraState.SPEAKING) "SESSION ACTIVE (TAP TO END)" else "PUSH TO TALK",
                         letterSpacing = 2.sp,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelLarge

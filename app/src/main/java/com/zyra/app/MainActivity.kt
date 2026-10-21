@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
     private var lastVolumeDownTime = 0L
 
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
-        if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN) {
+        if (keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN && event?.repeatCount == 0) {
             val now = System.currentTimeMillis()
             if (now - lastVolumeDownTime < 600) {
                 android.util.Log.d("MainActivity", "Double volume-down detected -> triggering PTT")
