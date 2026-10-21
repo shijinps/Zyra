@@ -173,8 +173,7 @@ fun OverlayContent(state: ZyraState) {
             modifier = Modifier
                 .size(300.dp)
                 .clickable {
-                    android.widget.Toast.makeText(context, "Waking Zyra...", android.widget.Toast.LENGTH_SHORT).show()
-                    val intent = android.content.Intent(context, VoiceAssistantService::class.java).apply {
+                                        val intent = android.content.Intent(context, VoiceAssistantService::class.java).apply {
                         action = "com.zyra.app.ACTION_WAKE"
                     }
                     context.startService(intent)

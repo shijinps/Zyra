@@ -385,10 +385,20 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     
                     isLiveKitSessionActive = false // UNLOCK on error
                     
-                    if (message.contains("unauthorized") || message.contains("401")) {
-                        speak("My authentication failed. Please check my settings.")
+                    val isCancelledJob = message.contains("cancel", ignoreCase = true) ||
+                            message.contains("socket closed", ignoreCase = true) ||
+                            message.contains("disconnect", ignoreCase = true) ||
+                            message.contains("interrupted", ignoreCase = true) ||
+                            message.contains("closed", ignoreCase = true)
+
+                    if (!isCancelledJob) {
+                        if (message.contains("unauthorized", ignoreCase = true) || message.contains("401")) {
+                            speak("My authentication failed. Please check my settings.")
+                        } else {
+                            speak("I lost the connection. $message")
+                        }
                     } else {
-                        speak("I lost the connection. $message")
+                        Log.d("ZyraService", "LiveKit error is a normal cancellation/disconnect ($message), skipping TTS alert.")
                     }
                     // Resume local listener
                     Log.d("ZyraService", "Resume local listener after error.")
@@ -2405,9 +2415,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun cutCall() {
-        android.os.Handler(mainLooper).post {
-             android.widget.Toast.makeText(this, "Ending Call...", android.widget.Toast.LENGTH_SHORT).show()
-        }
+        Log.d("ZyraService", "Ending Call...")
         
         // Reset state tracker
         isCallInProgress = false
