@@ -11,6 +11,7 @@ from typing import Optional, List
 from livekit import api
 from google import genai
 import time
+import uuid
 
 # ... (Existing code)
 
@@ -247,8 +248,9 @@ def get_livekit_token(token: str = Security(verify_token)):
         )
 
     # Token lasts for 1 hour by default
+    participant_id = f"zyra-android-{uuid.uuid4().hex[:8]}"
     token_gen = api.AccessToken(api_key, api_secret) \
-        .with_identity("zyra-android-user") \
+        .with_identity(participant_id) \
         .with_name("Sir") \
         .with_grants(api.VideoGrants(
             room_join=True,
@@ -260,25 +262,6 @@ def get_livekit_token(token: str = Security(verify_token)):
     
     return {"token": token_gen.to_jwt()}
 
-
-# --- Quantum Integration ---
-from quantum import CiscoQRNG, IBMQuantumBrain
-
-@app.get("/quantum/mood")
-async def get_quantum_mood(token: str = Security(verify_token)):
-    """
-    Returns a daily 'Mood' for Zyra based on True Quantum Randomness.
-    """
-    mood = await CiscoQRNG.get_mood()
-    return {"mood": mood, "source": "Cisco Outshift QRNG"}
-
-@app.post("/quantum/decision")
-def get_quantum_decision(token: str = Security(verify_token)):
-    """
-    Uses IBM Quantum to make a binary decision (Superposition collapse).
-    """
-    result = IBMQuantumBrain.run_superposition_check()
-    return result
 
 # --- Contacts Sync ---
 from typing import List
