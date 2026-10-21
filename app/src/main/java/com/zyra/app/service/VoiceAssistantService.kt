@@ -155,33 +155,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private var lastMusicAppPackage: String? = null
 
     private fun syncContactsInBackground() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val contacts = contactRepository.getContacts()
-                if (contacts.isNotEmpty()) {
-                    Log.d("ZyraService", "Syncing ${contacts.size} contacts to Zyra Brain...")
-                    // TODO: Replace with Real VPS IP
-                    val retrofit = Retrofit.Builder()
-                        .baseUrl("http://192.168.1.5:8000") 
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .build()
-                    val apiService = retrofit.create(ZyraApiService::class.java)
-                    val request = ZyraApiService.SyncContactsRequest(contacts)
-                    
-                    val call = apiService.syncContacts("zyra-secret-key-123", request)
-                    call.enqueue(object : retrofit2.Callback<Any> {
-                        override fun onResponse(call: retrofit2.Call<Any>, response: retrofit2.Response<Any>) {
-                            Log.d("ZyraService", "Contacts synced successfully: ${response.code()}")
-                        }
-                        override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
-                            Log.e("ZyraService", "Failed to sync contacts", t)
-                        }
-                    })
-                }
-            } catch (e: Exception) {
-                Log.e("ZyraService", "Contact sync Error", e)
-            }
-        }
+        // Disabled until endpoint is HTTPS with per-device authentication.
+        // Cleartext HTTP to LAN IP (192.168.1.5) is prohibited.
+        Log.i("ZyraService", "Contact sync is disabled pending HTTPS endpoint and per-device auth.")
     }
 
     override fun onCreate() {
