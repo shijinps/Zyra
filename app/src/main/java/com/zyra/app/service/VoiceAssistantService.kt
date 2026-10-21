@@ -174,11 +174,11 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     override fun onCreate() {
         super.onCreate()
-        syncContactsInBackground()
+        contactRepository = ContactRepository(this)
         commandManager = CommandManager(this)
         nlp = NaturalLanguageProcessor(this)
         brain = OfflineBrain()
-        contactRepository = ContactRepository(this)
+        syncContactsInBackground()
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         
         // Configure audio for concurrent access (allows listening while media plays)
@@ -1111,17 +1111,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              return
         }
 
-        // 0.6 QUANTUM STATUS CHECK
-        if (lowerText.contains("quantum") && (lowerText.contains("status") || lowerText.contains("check"))) {
-             speak("Querying Quantum Subsystems...")
-             val mood = com.zyra.app.logic.PersonaManager.currentMood
-             speak("Cisco Quantum Entropy is active. My current mood is $mood. IBM Quantum circuits are online.")
-             return
-        }
-
-        // 0.7 QUANTUM DECISIONS (Using DecisionEngine)
+        // 0.6 DECISIONS (Using DecisionEngine)
         if (lowerText.contains("should i") || lowerText.contains("decide") || lowerText.contains("pick for me") || lowerText.contains("make a choice")) {
-             speak("Consulting Quantum Matrix...")
+             speak("Consulting Decision Matrix...")
              val decision = com.zyra.app.logic.DecisionEngine.analyzeDecision(lowerText)
              if (decision != null) {
                  speak(decision)
