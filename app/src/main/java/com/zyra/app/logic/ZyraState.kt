@@ -5,5 +5,6 @@ enum class ZyraState {
     LISTENING,
     PROCESSING,
     SPEAKING,
-    CALLING
+    CALLING,
+    ERROR
 }

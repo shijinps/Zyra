@@ -37,6 +37,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextOverflow
 
 // Professional HUD Palette
 val ObsidianDeep = Color(0xFF030305)
@@ -55,6 +56,7 @@ fun HomeScreen(
     onNavigateToBrain: () -> Unit
 ) {
     var zyraState by remember { mutableStateOf(ZyraState.IDLE) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     var showDiagnostics by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val hasOverlay = remember(context) { android.provider.Settings.canDrawOverlays(context) }
@@ -74,9 +76,16 @@ fun HomeScreen(
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val stateName = intent?.getStringExtra(VoiceAssistantService.EXTRA_STATE)
+                val errorMsg = intent?.getStringExtra(VoiceAssistantService.EXTRA_ERROR_MESSAGE)
+                if (errorMsg != null) {
+                    errorMessage = errorMsg
+                }
                 if (stateName != null) {
                     try { 
                         zyraState = ZyraState.valueOf(stateName)
+                        if (zyraState != ZyraState.ERROR && errorMsg == null) {
+                            errorMessage = null
+                        }
                         neuralLogs.add(0, "STATE_CHANGE: -> ${stateName}")
                     } catch (e: Exception) { }
                 }
@@ -153,7 +162,39 @@ fun HomeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Error Banner if in ERROR state or errorMessage is present
+                if (zyraState == ZyraState.ERROR || errorMessage != null) {
+                    val displayMsg = errorMessage ?: "Wake word key refused"
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF3E1015))
+                            .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = "Error",
+                                tint = Color(0xFFEF5350),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "⚠️ $displayMsg",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
 
                 // 2. The Quantum Core (Interactive)
                 Box(
@@ -166,8 +207,16 @@ fun HomeScreen(
                 }
                 
                 Text(
-                    text = if (zyraState == ZyraState.IDLE) "SYSTEM IDLE" else "ACTIVE: ${zyraState}",
-                    color = if (zyraState == ZyraState.IDLE) Color.White.copy(0.5f) else NeuralGreen,
+                    text = when (zyraState) {
+                        ZyraState.IDLE -> "SYSTEM IDLE"
+                        ZyraState.ERROR -> "SYSTEM ERROR"
+                        else -> "ACTIVE: $zyraState"
+                    },
+                    color = when (zyraState) {
+                        ZyraState.IDLE -> Color.White.copy(0.5f)
+                        ZyraState.ERROR -> Color(0xFFEF5350)
+                        else -> NeuralGreen
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     letterSpacing = 4.sp,
                     modifier = Modifier.padding(top = 16.dp)

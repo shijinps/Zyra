@@ -81,7 +81,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private var lifecycleState: ServiceLifecycleState = ServiceLifecycleState.STARTING
     private var serviceErrorMessage: String? = null
-    private var isPorcupineRunning = false
+    private var isPorcupineActive = false
 
     private lateinit var overlayManager: com.zyra.app.ui.OverlayManager
     private var isLiveKitSessionActive = false // FLAG to prevent SpeechRecognizer from fighting LiveKit
@@ -112,7 +112,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                     restartListening()
                     lastVoiceActivityTime = System.currentTimeMillis()
                 }
-            } else if (isPorcupineRunning && lifecycleState == ServiceLifecycleState.WAKEWORD_ACTIVE) {
+            } else if (isPorcupineActive && porcupineManager != null && lifecycleState == ServiceLifecycleState.WAKEWORD_ACTIVE) {
                 // Porcupine wake word engine is healthy. Do nothing.
             } else {
                 Log.w("ZyraService", "Watchdog: Inactive state detected (state=$lifecycleState). Starting listener...")
@@ -143,6 +143,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     companion object {
         const val BROADCAST_STATE = "com.zyra.app.STATE_UPDATE"
         const val EXTRA_STATE = "state"
+        const val EXTRA_ERROR_MESSAGE = "error_message"
     }
 
     private lateinit var brainRepository: com.zyra.app.data.brain.BrainRepository
@@ -618,6 +619,12 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
     private fun initPorcupine() {
         val accessKey = BuildConfig.PICOVOICE_ACCESS_KEY
+        val keyInfo = if (accessKey.isNotEmpty()) {
+            "non-empty, length=${accessKey.length}, suffix=...${accessKey.takeLast(4)}"
+        } else {
+            "empty"
+        }
+
         try {
             val ppnFile = com.zyra.app.logic.AssetModelManager.syncWakeWordModels(this)
             if (ppnFile == null || !ppnFile.exists()) {
@@ -638,9 +645,17 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
             serviceErrorMessage = null
             Log.d("ZyraService", "Porcupine 4.x initialized successfully with model: ${ppnFile.absolutePath}")
         } catch (e: Exception) {
+            porcupineManager = null
+            isPorcupineActive = false
             lifecycleState = ServiceLifecycleState.ERROR
-            serviceErrorMessage = e.message ?: "Porcupine initialization failed"
-            Log.e("ZyraService", "Failed to initialize Porcupine: $serviceErrorMessage", e)
+            val readableMsg = if (e.javaClass.simpleName.contains("ActivationRefused")) {
+                "Wake word key refused"
+            } else {
+                e.message ?: "Porcupine initialization failed"
+            }
+            serviceErrorMessage = readableMsg
+            Log.e("ZyraService", "Porcupine init exception: class=${e.javaClass.name}, message=${e.message}, AccessKey=[$keyInfo]")
+            broadcastState(ZyraState.ERROR, readableMsg)
         }
     }
 
@@ -648,7 +663,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         Log.d("ZyraService", "Wake Word Detected!")
         try { 
             porcupineManager?.stop() 
-            isPorcupineRunning = false
+            isPorcupineActive = false
         } catch (e: Exception) {}
         
         isListening = false
@@ -671,7 +686,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun startListening() {
-        if (isLiveKitSessionActive || lifecycleState == ServiceLifecycleState.CONNECTING) return
+        if (isLiveKitSessionActive || lifecycleState == ServiceLifecycleState.CONNECTING || lifecycleState == ServiceLifecycleState.ERROR) return
 
         // Dispatcher: Active vs Passive
         if (isActiveSession) {
@@ -684,24 +699,37 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun startPassiveListening() {
         if (isListening) return // SpeechRecognizer is active
         if (lifecycleState == ServiceLifecycleState.ERROR) {
-            Log.w("ZyraService", "startPassiveListening: Skipped because service is in ERROR state")
+            Log.w("ZyraService", "startPassiveListening: Skipped due to ERROR state ($serviceErrorMessage)")
             return
         }
-        if (isPorcupineRunning) {
-            Log.v("ZyraService", "startPassiveListening: Porcupine already running, idempotent skip")
+
+        val manager = porcupineManager
+        if (manager == null) {
+            Log.w("ZyraService", "startPassiveListening: porcupineManager is null. Cannot start.")
+            return
+        }
+        if (isPorcupineActive) {
+            Log.v("ZyraService", "startPassiveListening: Porcupine already running, skipping redundant start.")
             return
         }
 
         Log.d("ZyraService", "Starting Passive Listening (Porcupine 4.x)...")
         try {
-            porcupineManager?.start()
-            isPorcupineRunning = true
+            manager.start()
+            isPorcupineActive = true
             lifecycleState = ServiceLifecycleState.WAKEWORD_ACTIVE
         } catch (e: Exception) {
-            isPorcupineRunning = false
+            isPorcupineActive = false
+            porcupineManager = null
             lifecycleState = ServiceLifecycleState.ERROR
-            serviceErrorMessage = e.message
-            Log.e("ZyraService", "Porcupine Start Failed", e)
+            val readableMsg = if (e.javaClass.simpleName.contains("ActivationRefused")) {
+                "Wake word key refused"
+            } else {
+                e.message ?: "Porcupine start failed"
+            }
+            serviceErrorMessage = readableMsg
+            Log.e("ZyraService", "Porcupine start exception: class=${e.javaClass.name}, message=${e.message}", e)
+            broadcastState(ZyraState.ERROR, readableMsg)
         }
     }
 
@@ -2833,7 +2861,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         try {
             porcupineManager?.stop()
             porcupineManager?.delete()
-            isPorcupineRunning = false
+            isPorcupineActive = false
         } catch (e: Exception) {
             Log.e("ZyraService", "Porcupine Clean-up Failed", e)
         }
