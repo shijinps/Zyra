@@ -470,7 +470,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
         return START_STICKY
     }
-    private fun broadcastState(state: ZyraState) {
+    private fun broadcastState(state: ZyraState, message: String? = null) {
         // 1. Update Overlay
         if (state == ZyraState.IDLE) {
              // Keep overlay hidden to prevent blocking touch
@@ -499,6 +499,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // 2. Broadcast to App
         val intent = Intent(BROADCAST_STATE).apply {
             putExtra(EXTRA_STATE, state.name)
+            if (message != null) {
+                putExtra(EXTRA_ERROR_MESSAGE, message)
+            }
             setPackage(packageName)
         }
         sendBroadcast(intent)

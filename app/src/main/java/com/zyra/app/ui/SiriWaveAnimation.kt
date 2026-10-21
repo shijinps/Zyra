@@ -56,6 +56,7 @@ fun SiriWaveAnimation(
         ZyraState.PROCESSING -> Color(0xFF00B0FF) // Deep Blue
         ZyraState.SPEAKING -> Color(0xFFA200FF) // Purple
         ZyraState.CALLING -> Color(0xFFFF3D00) // Red Alert
+        ZyraState.ERROR -> Color(0xFFEF5350) // Crimson Red Error
     }
 
     Box(
