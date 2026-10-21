@@ -20,6 +20,7 @@ object LiveKitManager {
     private const val TAG = "LiveKitManager"
     private var room: Room? = null
     private var eventJob: Job? = null
+    private var healthMonitorJob: Job? = null
     
     // URL to your LiveKit Cloud or Self-hosted Instance
     private const val LIVEKIT_URL = "wss://zyra-sbn0wnp2.livekit.cloud" 
@@ -32,6 +33,7 @@ object LiveKitManager {
         fun onConnected()
         fun onDisconnected()
         fun onError(error: String)
+        fun onAgentUnavailable()
         fun onCallCommandReceived(phone: String, name: String)
         fun onEndCallCommandReceived()
     }
@@ -47,6 +49,8 @@ object LiveKitManager {
     }
 
     suspend fun disconnectRoom(timeoutMs: Long = 1000L) {
+        healthMonitorJob?.cancel()
+        healthMonitorJob = null
         eventJob?.cancel()
         eventJob = null
         val oldRoom = room ?: return
@@ -112,9 +116,10 @@ object LiveKitManager {
                         }
                         when (event) {
                             is RoomEvent.Connected -> {
-                                Log.d(TAG, "Connected to LiveKit Room: ${currentRoom.name}, SID: ${currentRoom.sid}")
+                                Log.d(TAG, "Connected to LiveKit Room: ${currentRoom.name}, SID: ${currentRoom.sid}. remoteParticipants at connect=${currentRoom.remoteParticipants.size}")
                                 listener?.onConnected()
                                 publishAudio()
+                                startAgentHealthMonitor(currentRoom)
                             }
                             is RoomEvent.Disconnected -> {
                                 Log.d(TAG, "Disconnected from LiveKit. Reason: ${event.reason}, Error: ${event.error?.message}")
@@ -167,6 +172,31 @@ object LiveKitManager {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to connect to LiveKit", e)
                 listener?.onError(e.message ?: "Exception during connect")
+            }
+        }
+    }
+
+    private fun startAgentHealthMonitor(monitoredRoom: Room) {
+        healthMonitorJob?.cancel()
+        healthMonitorJob = CoroutineScope(Dispatchers.Main).launch {
+            // 5s check
+            kotlinx.coroutines.delay(5000L)
+            if (room !== monitoredRoom) return@launch
+            val count5s = monitoredRoom.remoteParticipants.size
+            Log.d(TAG, "Room health check [5s]: remoteParticipants=$count5s")
+
+            // 10s check
+            kotlinx.coroutines.delay(5000L)
+            if (room !== monitoredRoom) return@launch
+            val count10s = monitoredRoom.remoteParticipants.size
+            val hasRemoteAudio = monitoredRoom.remoteParticipants.values.any { p ->
+                p.audioTrackPublications.isNotEmpty()
+            }
+            Log.d(TAG, "Room health check [10s]: remoteParticipants=$count10s, hasRemoteAudioTrack=$hasRemoteAudio")
+
+            if (count10s == 0 || !hasRemoteAudio) {
+                Log.w(TAG, "Voice agent not available after 10s (count=$count10s, hasRemoteAudio=$hasRemoteAudio)")
+                listener?.onAgentUnavailable()
             }
         }
     }

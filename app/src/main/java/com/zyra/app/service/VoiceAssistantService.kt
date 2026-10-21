@@ -372,6 +372,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 }
             }
 
+            override fun onAgentUnavailable() {
+                android.os.Handler(mainLooper).post {
+                    Log.w("ZyraService", "Voice agent not available after 10s. Showing HUD banner.")
+                    broadcastState(ZyraState.ERROR, "Voice agent not available")
+                }
+            }
+
             override fun onError(message: String) {
                 android.os.Handler(mainLooper).post {
                     connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
