@@ -18,6 +18,37 @@ import uuid
 
 app = FastAPI(title="Zyra Technical Brain")
 
+@app.get("/health")
+def health_check():
+    """
+    Minimal public health check for Zyra Brain and dependencies.
+    """
+    db_ok = False
+    try:
+        db_user = os.getenv("POSTGRES_USER", "postgres")
+        db_password = os.getenv("POSTGRES_PASSWORD", "password")
+        db_name = os.getenv("POSTGRES_DB", "postgres")
+        db_host = os.getenv("POSTGRES_HOST", "postgres")
+        if db_host.startswith("http"):
+            db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
+        conn = psycopg2.connect(
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            host=db_host,
+            connect_timeout=2
+        )
+        conn.close()
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    return {
+        "status": "healthy" if db_ok else "degraded",
+        "database": db_ok,
+        "livekit_configured": bool(os.getenv("LIVEKIT_API_KEY") and os.getenv("LIVEKIT_API_SECRET"))
+    }
+
 @app.on_event("startup")
 def startup_db_client():
     """
