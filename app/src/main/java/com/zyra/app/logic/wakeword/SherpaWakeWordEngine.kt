@@ -160,21 +160,12 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
             val readCount = record.read(shortBuffer, 0, CHUNK_SIZE)
             if (readCount <= 0) continue
 
-            // 1. Calculate RMS energy & normalize samples to [-1.0, 1.0]
-            var sumSq = 0.0
+            // 1. Normalize samples to [-1.0, 1.0]
             for (i in 0 until readCount) {
-                val sample = shortBuffer[i] / 32768.0f
-                floatBuffer[i] = sample
-                sumSq += sample * sample
-            }
-            val rms = Math.sqrt(sumSq / readCount)
-
-            // 2. Battery saver: skip inference if silent or background hum below threshold
-            if (rms < ENERGY_THRESHOLD) {
-                continue
+                floatBuffer[i] = shortBuffer[i] / 32768.0f
             }
 
-            // 3. Human speech detected -> feed to Sherpa-ONNX KeywordSpotter
+            // 2. Feed continuous audio stream to Sherpa-ONNX KeywordSpotter
             s.acceptWaveform(floatBuffer, SAMPLE_RATE)
 
             while (kws.isReady(s)) {

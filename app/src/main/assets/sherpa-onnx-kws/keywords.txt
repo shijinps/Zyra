@@ -1,4 +1,8 @@
-▁HE Y ▁Z Y RA :2.0 #0.30
-▁HE Y ▁Z Y R A :2.0 #0.30
-▁Z Y RA :2.0 #0.35
-▁Z Y R A :2.0 #0.35
+▁HE Y ▁ Z Y RA :2.0 #0.30
+▁HE Y ▁ Z Y R A :2.0 #0.30
+HE Y ▁ Z Y RA :2.0 #0.30
+HE Y ▁ Z Y R A :2.0 #0.30
+▁ Z Y RA :2.0 #0.35
+▁ Z Y R A :2.0 #0.35
+Z Y RA :2.0 #0.35
+Z Y R A :2.0 #0.35
