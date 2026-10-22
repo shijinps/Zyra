@@ -29,9 +29,9 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 
 # Copy logic
 COPY main.py .
-COPY quantum.py .
 COPY voice_agent.py .
 COPY start.sh .
+COPY my_contacts.vcf* .
 RUN chmod +x start.sh
 
 # Expose port

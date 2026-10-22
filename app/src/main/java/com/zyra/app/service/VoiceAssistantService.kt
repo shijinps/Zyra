@@ -707,11 +707,13 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         
         broadcastState(ZyraState.LISTENING)
         
-        // Connect to the NEW Ultra-Cheap Voice Gateway
-        com.zyra.app.logic.VoiceGatewayManager.init(this)
-        com.zyra.app.logic.VoiceGatewayManager.connect {
-            Log.d("ZyraService", "Connected to Gemini Flash-Lite Gateway")
+        // Start LiveKit Voice Assistant Session
+        resetSessionTimeout()
+        if (android.provider.Settings.canDrawOverlays(this)) {
+            overlayManager.show()
+            overlayManager.updateState(com.zyra.app.logic.ZyraState.LISTENING)
         }
+        com.zyra.app.logic.LiveKitManager.connect(this)
     }
 
     private fun startListening() {
