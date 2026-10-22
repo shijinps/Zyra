@@ -99,6 +99,7 @@ dependencies {
 
     // Wake Word Detection (Picovoice Porcupine)
     implementation("ai.picovoice:porcupine-android:4.0.2")
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8")
     
     // Media Session for Music Control
     implementation("androidx.media:media:1.7.0")

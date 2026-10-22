@@ -52,6 +52,7 @@ import com.google.android.gms.location.Priority
 import com.zyra.app.logic.ZyraState
 import com.zyra.app.logic.wakeword.WakeWordEngine
 import com.zyra.app.logic.wakeword.PorcupineWakeWordEngine
+import com.zyra.app.logic.wakeword.SherpaWakeWordEngine
 import com.zyra.app.logic.wakeword.WakeWordListener
 import com.zyra.app.BuildConfig
 
@@ -667,7 +668,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     }
 
     private fun initWakeWordEngine() {
-        val engine = PorcupineWakeWordEngine(this)
+        val engine = SherpaWakeWordEngine(this)
         wakeWordEngine = engine
         engine.initialize(object : WakeWordListener {
             override fun onWakeWordDetected(keywordIndex: Int) {
