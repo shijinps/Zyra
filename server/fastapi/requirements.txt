@@ -10,6 +10,7 @@ livekit-agents
 livekit-plugins-groq
 livekit-plugins-google
 livekit-plugins-silero
+livekit-plugins-elevenlabs
 groq>=0.11.0
 rapidfuzz
 mcp

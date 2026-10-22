@@ -1,5 +1,8 @@
 import asyncio
 import os
+import sys
+import types
+import typing
 import json
 import logging
 import requests
@@ -14,7 +17,43 @@ from mcp.client.sse import sse_client
 if not os.getenv("LIVEKIT_URL"):
     os.environ["LIVEKIT_URL"] = "wss://zyra-sbn0wnp2.livekit.cloud"
 
+# Compatibility shim: LiveKit Plugins compatibility with livekit-agents 1.x
+try:
+    import livekit.agents.llm as _lk_llm
+    if not hasattr(_lk_llm, "function_context"):
+        _fc_mod = types.ModuleType("livekit.agents.llm.function_context")
+        def _is_optional_type(annotation):
+            origin = typing.get_origin(annotation)
+            args = typing.get_args(annotation)
+            return origin is typing.Union and type(None) in args
+        _fc_mod._is_optional_type = _is_optional_type
+        sys.modules["livekit.agents.llm.function_context"] = _fc_mod
+        _lk_llm.function_context = _fc_mod
+except Exception:
+    pass
+
 from livekit.agents import JobContext, WorkerOptions, cli, llm
+
+# Ensure legacy FunctionContext and ai_callable compatibility for tool calling
+if not hasattr(llm, "FunctionContext"):
+    class _FunctionContextFallback:
+        pass
+    llm.FunctionContext = _FunctionContextFallback
+
+if not hasattr(llm, "ai_callable"):
+    try:
+        from livekit.agents import function_tool as _f_tool
+        def _ai_callable_wrapper(desc=None, description=None, **kwargs):
+            d = desc or description or ""
+            return _f_tool(description=d, **kwargs)
+        llm.ai_callable = _ai_callable_wrapper
+    except Exception:
+        def _noop_callable(desc=None, description=None, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+        llm.ai_callable = _noop_callable
+
 try:
     from livekit.agents.pipeline import VoicePipelineAgent
     HAS_PIPELINE = True
@@ -34,13 +73,40 @@ except (ImportError, ModuleNotFoundError):
     except (ImportError, ModuleNotFoundError):
         AgentSession = None
 
-from livekit.plugins import google, silero
+try:
+    from livekit.agents import inference
+    HAS_INFERENCE = True
+except Exception:
+    inference = None
+    HAS_INFERENCE = False
+
+try:
+    from livekit.plugins import silero
+    HAS_SILERO_PLUGIN = True
+except Exception as e:
+    silero = None
+    HAS_SILERO_PLUGIN = False
+
+try:
+    from livekit.plugins import google
+    HAS_GOOGLE_PLUGIN = True
+except Exception as e:
+    google = None
+    HAS_GOOGLE_PLUGIN = False
 
 try:
     from livekit.plugins import groq
     HAS_GROQ_PLUGIN = True
-except ImportError:
+except Exception as e:
+    groq = None
     HAS_GROQ_PLUGIN = False
+
+try:
+    from livekit.plugins import elevenlabs
+    HAS_ELEVENLABS_PLUGIN = True
+except Exception:
+    elevenlabs = None
+    HAS_ELEVENLABS_PLUGIN = False
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ZyraVoiceAgent")
@@ -385,12 +451,38 @@ async def entrypoint(ctx: JobContext):
 
         selected_llm = llm.FallbackAdapter(llm_list) if len(llm_list) > 1 else (llm_list[0] if llm_list else None)
 
+        # TTS Selection: Google TTS -> ElevenLabs TTS -> LiveKit Cloud Inference
+        selected_tts = None
+        if HAS_GOOGLE_PLUGIN and google is not None and gemini_api_key:
+            try:
+                selected_tts = google.TTS(gender="male")
+            except Exception as e:
+                logger.warning(f"Google TTS init error: {e}")
+
+        if selected_tts is None and HAS_ELEVENLABS_PLUGIN and elevenlabs is not None:
+            el_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY") or "sk_836b76037c9c1699dba27e70dfb33eb8d63014ec7c99b478"
+            if el_key:
+                try:
+                    selected_tts = elevenlabs.TTS(api_key=el_key, voice_id="CwhRBWXzGAHq8TQ4Fs17")
+                    logger.info("Using ElevenLabs TTS.")
+                except Exception as e:
+                    logger.warning(f"ElevenLabs TTS init error: {e}")
+
+        if selected_tts is None and HAS_INFERENCE and inference is not None:
+            try:
+                selected_tts = inference.TTS(model="cartesia/sonic-3")
+                logger.info("Using LiveKit Cloud Cartesia inference TTS.")
+            except Exception as e:
+                logger.warning(f"LiveKit Cloud inference TTS init error: {e}")
+
+        selected_vad = silero.VAD.load() if (HAS_SILERO_PLUGIN and silero is not None) else None
+
         if HAS_PIPELINE and VoicePipelineAgent is not None:
             agent = VoicePipelineAgent(
-                vad=silero.VAD.load(),
+                vad=selected_vad,
                 stt=primary_stt,
                 llm=selected_llm,
-                tts=google.TTS(gender="male") if gemini_api_key else None,
+                tts=selected_tts,
                 fnc_ctx=fnc_ctx,
                 instructions=create_system_prompt(history_str, update_mcp_session())
             )
@@ -399,10 +491,10 @@ async def entrypoint(ctx: JobContext):
             await agent.say("Systems online. At your service, Sir.")
         elif AgentSession is not None:
             session = AgentSession(
-                vad=silero.VAD.load(),
+                vad=selected_vad,
                 stt=primary_stt,
                 llm=selected_llm,
-                tts=google.TTS(gender="male") if gemini_api_key else None,
+                tts=selected_tts,
                 fnc_ctx=fnc_ctx,
             )
             await session.start(room=ctx.room)
