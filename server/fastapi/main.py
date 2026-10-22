@@ -341,6 +341,7 @@ async def get_livekit_token(token: str = Security(verify_token)):
         ))
     
     # Try room configuration dispatch via token
+    has_room_config = False
     try:
         if hasattr(api, "RoomConfiguration") and hasattr(api, "RoomAgentDispatch"):
             token_builder = token_builder.with_room_config(
@@ -348,13 +349,31 @@ async def get_livekit_token(token: str = Security(verify_token)):
                     agents=[api.RoomAgentDispatch(agent_name=agent_name)]
                 )
             )
+            has_room_config = True
     except Exception as e:
         print(f"Notice: RoomConfiguration dispatch setup: {e}")
 
-    # Also trigger explicit agent dispatch via LiveKit server API
-    asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
+    # Prevent duplicate worker dispatches: only call server API dispatch if token config is not supported
+    if not has_room_config:
+        asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
 
     return {"token": token_builder.to_jwt()}
+
+@app.get("/system/groq-models")
+async def get_groq_models():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return {"error": "GROQ_API_KEY not set"}
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                "https://api.groq.com/openai/v1/models",
+                headers={"Authorization": f"Bearer {api_key}", "User-Agent": "Mozilla/5.0"}
+            )
+            return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/system/status")
 def get_system_status():

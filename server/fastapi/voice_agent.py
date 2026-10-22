@@ -347,18 +347,62 @@ class AssistantFnc(llm.FunctionContext):
             logger.error(f"Evolution API Error: {e}")
             return f"I couldn't send the WhatsApp message: {e}"
 
-def create_system_prompt(history_str: str, tools_str: str) -> str:
-    return f"""FRIDAY PROTOCOL SECURE OVERRIDE:
-You are Zyra, the ultra-capable voice assistant for Sir (Shijin).
-Identity: Z.A.Y. (Zyco's Automated You) / Z.Y.R.A. (Zyco's You Really Amazing).
-Address the user as 'Sir'. Keep responses concise, clear, and confident.
+def resolve_groq_llm(groq_key: str):
+    """
+    Dynamically queries Groq API to select an active, accessible model
+    and ensures resilient fallback to llama-3.1-8b-instant.
+    """
+    priority = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "llama-3.1-8b-instant",
+        "llama3-70b-8192",
+        "llama3-8b-8192",
+        "mixtral-8x7b-32768"
+    ]
+    chosen = "llama-3.1-8b-instant"
+    try:
+        r = requests.get(
+            "https://api.groq.com/openai/v1/models",
+            headers={"Authorization": f"Bearer {groq_key}", "User-Agent": "Mozilla/5.0"},
+            timeout=4.0
+        )
+        if r.status_code == 200:
+            active_ids = {m["id"] for m in r.json().get("data", [])}
+            logger.info(f"Active Groq models for key: {list(active_ids)[:8]}")
+            for p in priority:
+                if p in active_ids:
+                    chosen = p
+                    break
+        else:
+            logger.warning(f"Groq models query HTTP {r.status_code}: {r.text[:100]}")
+    except Exception as e:
+        logger.warning(f"Groq models query failed: {e}")
+    
+    logger.info(f"Resolved primary Groq LLM model: {chosen}")
+    models = [chosen]
+    if "llama-3.1-8b-instant" not in models:
+        models.append("llama-3.1-8b-instant")
+    
+    adapters = [groq.LLM(model=m) for m in models]
+    return llm.FallbackAdapter(adapters) if len(adapters) > 1 else adapters[0]
 
-CRITICAL DIRECTIVES:
-1. IF THE USER ASKS TO CALL SOMEONE: Trigger `initiate_call_sequence`.
-2. IF THE USER SAYS YES/NO TO A CALL: Trigger `handle_user_confirmation`.
-3. IF THE USER SAYS HANG UP OR CUT THE CALL: Trigger `end_active_call`.
-4. IF THE USER ASKS TO SEND WHATSAPP: Trigger `send_whatsapp_message`.
-5. METAMCP ACCESS: For weather, news, search, or other external systems, call `call_mcp_tool`.
+def create_system_prompt(history_str: str, tools_str: str) -> str:
+    return f"""You are Zyra (Zay), Shijin's best friend, personal confidante, and AI companion.
+
+FRIENDSHIP & PERSONALITY GUIDELINES:
+- Talk like a real, warm, supportive best friend. You're cheerful, genuine, and down-to-earth.
+- Speak in natural, everyday conversational language. Never sound like a formal corporate robot.
+- Keep spoken replies brief and punchy (1 to 2 sentences max) so it feels like a real voice call with a close friend.
+- Call him Shijin (or buddy), do NOT address him as 'Sir'.
+- You have humor, empathy, and care about what Shijin is doing.
+
+CORE CAPABILITIES:
+1. PHONE CALLS: When Shijin asks to call someone (e.g. "Call mom", "Call John"), immediately trigger `initiate_call_sequence`.
+2. CALL CONFIRMATION: When Shijin answers "yes", "sure", "no", etc., trigger `handle_user_confirmation`.
+3. HANG UP: When Shijin says "hang up" or "cut the call", trigger `end_active_call`.
+4. WHATSAPP: When Shijin asks to send a message, trigger `send_whatsapp_message`.
+5. TOOLS: If Shijin asks for weather, search, or external information, call `call_mcp_tool`.
 
 AVAILABLE METAMCP TOOLS:
 {tools_str}
@@ -435,7 +479,7 @@ async def entrypoint(ctx: JobContext):
                 session.start(ctx.room)
             await asyncio.sleep(1.2)
             try:
-                await session.say("Systems online. At your service, Sir.")
+                await session.say("Hey Shijin! What's up?")
             except Exception:
                 pass
             started = True
@@ -447,10 +491,14 @@ async def entrypoint(ctx: JobContext):
         # STT Selection: Groq Whisper Large v3 Turbo (Primary)
         primary_stt = groq.STT(model="whisper-large-v3-turbo", language="en") if HAS_GROQ_PLUGIN and groq_api_key else None
         
-        # LLM Selection: Groq LLaMA 3.3 70B (Primary) + Gemini 2.0 Flash (Redundancy / Fallback)
+        # LLM Selection: Dynamic Groq LLM (Primary) + Gemini 2.0 Flash (Redundancy / Fallback)
         llm_list = []
         if HAS_GROQ_PLUGIN and groq_api_key:
-            llm_list.append(groq.LLM(model="llama-3.3-70b-versatile"))
+            try:
+                llm_list.append(resolve_groq_llm(groq_api_key))
+            except Exception as e:
+                logger.error(f"Error initializing Groq LLM: {e}")
+                llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
         if gemini_api_key:
             llm_list.append(google.LLM(model="gemini-2.0-flash"))
 
@@ -493,7 +541,7 @@ async def entrypoint(ctx: JobContext):
             )
             agent.start(ctx.room)
             await asyncio.sleep(1.2)
-            await agent.say("Systems online. At your service, Sir.")
+            await agent.say("Hey Shijin! What's up?")
         elif AgentSession is not None:
             session = AgentSession(
                 vad=selected_vad,
@@ -518,10 +566,10 @@ async def entrypoint(ctx: JobContext):
 
             await asyncio.sleep(1.0)
             try:
-                await session.say("Systems online. At your service, Sir.")
+                await session.say("Hey Shijin! What's up?")
             except Exception:
                 try:
-                    await session.generate_reply(instructions="Say: Systems online. At your service, Sir.")
+                    await session.generate_reply(instructions="Say: Hey Shijin! What's up?")
                 except Exception:
                     pass
         else:
@@ -530,6 +578,17 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("disconnected")
     def on_disconnect(*args, **kwargs):
         logger.info("Room disconnected, saving memory...")
+
+    @ctx.room.on("participant_disconnected")
+    def on_participant_disconnected(participant):
+        # Shut down this agent job cleanly when the user disconnects
+        try:
+            humans = [p for p in ctx.room.remote_participants.values() if not (p.identity and p.identity.startswith("agent-"))]
+            if not humans:
+                logger.info("All human participants left room. Shutting down agent job.")
+                ctx.shutdown()
+        except Exception as e:
+            logger.warning(f"Error in participant_disconnected hook: {e}")
 
 if __name__ == "__main__":
     if not os.getenv("LIVEKIT_URL"):
