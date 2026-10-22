@@ -353,9 +353,8 @@ async def get_livekit_token(token: str = Security(verify_token)):
     except Exception as e:
         print(f"Notice: RoomConfiguration dispatch setup: {e}")
 
-    # Prevent duplicate worker dispatches: only call server API dispatch if token config is not supported
-    if not has_room_config:
-        asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
+    # Always ensure agent dispatch is triggered so that returning to an existing room immediately summons the agent
+    asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
 
     return {"token": token_builder.to_jwt()}
 
