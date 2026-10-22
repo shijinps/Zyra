@@ -24,11 +24,13 @@ def health_check():
     Minimal public health check for Zyra Brain and dependencies.
     """
     db_ok = False
+    db_err = None
     try:
         db_user = os.getenv("POSTGRES_USER", "postgres")
         db_password = os.getenv("POSTGRES_PASSWORD", "password")
         db_name = os.getenv("POSTGRES_DB", "postgres")
         db_host = os.getenv("POSTGRES_HOST", "postgres")
+        db_port = int(os.getenv("POSTGRES_PORT", "5432"))
         if db_host.startswith("http"):
             db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
         conn = psycopg2.connect(
@@ -36,18 +38,23 @@ def health_check():
             user=db_user,
             password=db_password,
             host=db_host,
+            port=db_port,
             connect_timeout=2
         )
         conn.close()
         db_ok = True
-    except Exception:
+    except Exception as e:
         db_ok = False
+        db_err = str(e).strip()
 
-    return {
+    res = {
         "status": "healthy" if db_ok else "degraded",
         "database": db_ok,
         "livekit_configured": bool(os.getenv("LIVEKIT_API_KEY") and os.getenv("LIVEKIT_API_SECRET"))
     }
+    if not db_ok and db_err:
+        res["database_error"] = db_err
+    return res
 
 @app.on_event("startup")
 def startup_db_client():
@@ -61,6 +68,7 @@ def startup_db_client():
         db_password = os.getenv("POSTGRES_PASSWORD", "password")
         db_name = os.getenv("POSTGRES_DB", "postgres")
         db_host = os.getenv("POSTGRES_HOST", "postgres")
+        db_port = int(os.getenv("POSTGRES_PORT", "5432"))
         
         # SANITIZATION: Remove protocol if user accidentally pasted a URL
         if db_host.startswith("http"):
@@ -70,7 +78,8 @@ def startup_db_client():
             dbname=db_name,
             user=db_user,
             password=db_password,
-            host=db_host
+            host=db_host,
+            port=db_port
         )
         conn.autocommit = True
         
@@ -327,6 +336,7 @@ def sync_contacts(request: SyncContactsRequest, token: str = Security(verify_tok
     db_password = os.getenv("POSTGRES_PASSWORD", "password")
     db_name = os.getenv("POSTGRES_DB", "postgres")
     db_host = os.getenv("POSTGRES_HOST", "postgres")
+    db_port = int(os.getenv("POSTGRES_PORT", "5432"))
     
     if db_host.startswith("http"):
         db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
@@ -336,7 +346,8 @@ def sync_contacts(request: SyncContactsRequest, token: str = Security(verify_tok
             dbname=db_name,
             user=db_user,
             password=db_password,
-            host=db_host
+            host=db_host,
+            port=db_port
         )
         conn.autocommit = True
         
