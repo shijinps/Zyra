@@ -152,30 +152,33 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
     }
 
     private fun processAudioLoop(record: AudioRecord, kws: KeywordSpotter) {
-        val shortBuffer = ShortArray(CHUNK_SIZE)
-        val floatBuffer = FloatArray(CHUNK_SIZE)
+        val interval = 0.1 // 100 ms chunks
+        val bufferSize = (interval * SAMPLE_RATE).toInt() // 1600 samples
+        val buffer = ShortArray(bufferSize)
         val s = stream ?: kws.createStream().also { stream = it }
 
         while (_isRunning.get()) {
-            val readCount = record.read(shortBuffer, 0, CHUNK_SIZE)
-            if (readCount <= 0) continue
+            try {
+                val readCount = record.read(buffer, 0, buffer.size)
+                if (readCount > 0) {
+                    val samples = FloatArray(readCount) { buffer[it] / 32768.0f }
+                    s.acceptWaveform(samples, sampleRate = SAMPLE_RATE)
 
-            // 1. Normalize samples to [-1.0, 1.0]
-            for (i in 0 until readCount) {
-                floatBuffer[i] = shortBuffer[i] / 32768.0f
-            }
-
-            // 2. Feed continuous audio stream to Sherpa-ONNX KeywordSpotter
-            s.acceptWaveform(floatBuffer, SAMPLE_RATE)
-
-            while (kws.isReady(s)) {
-                kws.decode(s)
-                val result = kws.getResult(s)
-                if (result.keyword.isNotEmpty()) {
-                    Log.d(TAG, "Sherpa-ONNX matched keyword: [${result.keyword}]")
-                    kws.reset(s)
-                    currentListener?.onWakeWordDetected(0)
+                    while (kws.isReady(s)) {
+                        kws.decode(s)
+                        val result = kws.getResult(s)
+                        if (result.keyword.isNotEmpty()) {
+                            Log.d(TAG, "Sherpa-ONNX matched keyword: [${result.keyword}]")
+                            kws.reset(s)
+                            currentListener?.onWakeWordDetected(0)
+                        }
+                    }
                 }
+            } catch (e: Throwable) {
+                Log.e(TAG, "Error in Sherpa-ONNX audio decode loop: ${e.message}", e)
+                try {
+                    kws.reset(s)
+                } catch (_: Throwable) {}
             }
         }
     }
