@@ -69,7 +69,6 @@ class LocationPulseService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, createNotification())
         startLocationUpdates()
-        fetchQuantumMood() // <--- Trigger Quantum Mood Check
         return START_STICKY
     }
 
@@ -141,34 +140,13 @@ class LocationPulseService : Service() {
         }
     }
 
-    private fun createNotification(mood: String = "Initializing..."): Notification {
+    private fun createNotification(status: String = "Monitoring Safety"): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Zyra is Active")
-            .setContentText("Status: $mood | Monitoring Safety")
+            .setContentText("Status: $status")
             .setSmallIcon(R.drawable.ic_launcher)
             .setOngoing(true)
             .build()
-    }
-
-    private fun fetchQuantumMood() {
-        apiService.getQuantumMood(API_KEY).enqueue(object : retrofit2.Callback<com.zyra.app.data.model.QuantumMoodResponse> {
-            override fun onResponse(
-                call: retrofit2.Call<com.zyra.app.data.model.QuantumMoodResponse>,
-                response: retrofit2.Response<com.zyra.app.data.model.QuantumMoodResponse>
-            ) {
-                if (response.isSuccessful) {
-                    val mood = response.body()?.mood ?: "Neutral"
-                    Log.d("ZyraPulse", "Quantum Mood: $mood")
-                    com.zyra.app.logic.PersonaManager.currentMood = mood // Update Brain
-                    val notificationManager = getSystemService(NotificationManager::class.java)
-                    notificationManager.notify(NOTIFICATION_ID, createNotification("Mood: $mood"))
-                }
-            }
-
-            override fun onFailure(call: retrofit2.Call<com.zyra.app.data.model.QuantumMoodResponse>, t: Throwable) {
-                Log.e("ZyraPulse", "Failed to fetch mood: ${t.message}")
-            }
-        })
     }
 
     override fun onBind(intent: Intent): IBinder? {

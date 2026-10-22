@@ -65,3 +65,6 @@ intent_training_data.json
 zyra_brain_data.json
 
 .env
+
+__pycache__/
+*.pyc

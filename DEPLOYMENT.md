@@ -9,13 +9,6 @@
   - Free tier: $200/month credit (~40,000 requests)
   - Add to `local.properties`: `GOOGLE_MAPS_API_KEY=your-key-here`
   
-- [x] **IBM Quantum API Key**
-  - Already configured in `server/fastapi/quantum.py`
-  - Token: `snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo`
-  
-- [ ] **Cisco Quantum API Key** (Optional)
-  - Get from Cisco Quantum Network
-  - Add to `local.properties`: `CISCO_QUANTUM_API_KEY=your-key-here`
 
 ### Build Configuration
 
@@ -71,8 +64,6 @@ See [google_maps_api_setup.md](google_maps_api_setup.md) for detailed instructio
 Add these lines to `local.properties`:
 ```properties
 GOOGLE_MAPS_API_KEY=AIzaSyD...your-key-here
-IBM_QUANTUM_API_KEY=snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo
-CISCO_QUANTUM_API_KEY=your-cisco-key-here
 ```
 
 ### Step 3: Update build.gradle.kts
@@ -90,7 +81,7 @@ git add app/src/main/java/com/zyra/app/integration/
 git add server/n8n/*.json
 
 # Commit
-git commit -m "feat: Add 16 intelligence modules + spatial intelligence + quantum optimization"
+git commit -m "feat: Add 16 intelligence modules + spatial intelligence"
 
 # Push
 git push origin main
@@ -138,13 +129,6 @@ git push origin main
 // Should return places with detour times
 ```
 
-**Test 3: Quantum Optimization** (Optional)
-```
-"Zyra, optimize my route with 3 stops"
-// Should use IBM Quantum for TSP
-```
-
----
 
 ## 📊 Verification
 
@@ -235,7 +219,6 @@ git push origin main
 Once all checkboxes are complete, Zyra will have:
 - ✅ 16 intelligence modules
 - ✅ Spatial intelligence with Google Maps
-- ✅ Quantum optimization with IBM/Cisco
 - ✅ Voice-first interface
 - ✅ Production-ready deployment
 

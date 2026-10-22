@@ -1,39 +1,12 @@
 # API Keys Summary
 
-## ✅ Existing API Keys (Already Configured)
-
-### IBM Quantum API
-- **Status:** ✅ Configured
-- **Location:** `server/fastapi/quantum.py`
-- **Token:** `snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo`
-- **Usage:** Quantum circuits, superposition checks, TSP optimization
-
-### Cisco Quantum QRNG API
-- **Status:** ✅ Configured
-- **Location:** `server/fastapi/quantum.py`
-- **Key:** `gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G`
-- **Usage:** True random number generation, mood determination
-
----
-
-## 🔑 Required API Keys (Need to Add)
+## 🔑 API Keys
 
 ### Google Maps API
-- **Status:** ⏳ Pending
+- **Status:** ✅ Configured
 - **Cost:** FREE ($200/month credit = ~40,000 requests)
 - **Required For:** Spatial intelligence, route calculation, places search
 - **Setup Guide:** See `google_maps_api_setup.md`
-
-**Quick Steps:**
-1. Go to https://console.cloud.google.com/
-2. Create project: "Zyra Spatial Intelligence"
-3. Enable APIs: Directions, Places, Geocoding
-4. Create API key
-5. Restrict by IP (your VPS IP)
-6. Add to `local.properties`:
-   ```properties
-   GOOGLE_MAPS_API_KEY=AIzaSyD...your-key-here
-   ```
 
 ---
 
@@ -45,23 +18,24 @@ Create or update `local.properties` in project root:
 # Android SDK (already exists)
 sdk.dir=C:\\Users\\SHIJIN P S\\AppData\\Local\\Android\\Sdk
 
-# API Keys (add these)
+# API Keys
 GOOGLE_MAPS_API_KEY=YOUR_KEY_HERE
-IBM_QUANTUM_API_KEY=snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo
-CISCO_QUANTUM_API_KEY=gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G
+PICOVOICE_ACCESS_KEY=YOUR_KEY_HERE
+OPENWEATHER_API_KEY=YOUR_KEY_HERE
+NEWS_API_KEY=YOUR_KEY_HERE
+ALPHA_VANTAGE_API_KEY=YOUR_KEY_HERE
+GOOGLE_TRANSLATE_API_KEY=YOUR_KEY_HERE
 ```
 
 ---
 
 ## 🔧 Update build.gradle.kts
 
-Add BuildConfig fields to `app/build.gradle.kts`:
+BuildConfig fields in `app/build.gradle.kts`:
 
 ```kotlin
 android {
     defaultConfig {
-        // ... existing config ...
-        
         // Read API keys from local.properties
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
@@ -70,18 +44,6 @@ android {
             "String",
             "GOOGLE_MAPS_API_KEY",
             "\"${properties.getProperty("GOOGLE_MAPS_API_KEY", "")}\""
-        )
-        
-        buildConfigField(
-            "String",
-            "IBM_QUANTUM_API_KEY",
-            "\"${properties.getProperty("IBM_QUANTUM_API_KEY", "snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo")}\""
-        )
-        
-        buildConfigField(
-            "String",
-            "CISCO_QUANTUM_API_KEY",
-            "\"${properties.getProperty("CISCO_QUANTUM_API_KEY", "gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G")}\""
         )
     }
     
@@ -99,27 +61,12 @@ Add to your n8n instance (via Coolify):
 
 ```bash
 GOOGLE_MAPS_API_KEY=YOUR_KEY_HERE
-IBM_QUANTUM_API_KEY=snU2VhbBd7gt5hel4PNve1iQiySBzI8XqciIvpTB_6uo
-CISCO_QUANTUM_API_KEY=gBNe17S1s!-,o,(UWQn;IJ:2@5{9+0p1n3W(yE@mY6J67!0d{qfxr90Dh@H{hQ2G
 ```
 
 Then use in workflows:
 ```
 ={{$env.GOOGLE_MAPS_API_KEY}}
 ```
-
----
-
-## ✅ Checklist
-
-- [x] IBM Quantum API configured
-- [x] Cisco Quantum API configured
-- [ ] Google Maps API key obtained
-- [ ] `local.properties` updated
-- [ ] `build.gradle.kts` updated with BuildConfig
-- [ ] n8n environment variables set
-- [ ] Workflows updated with API keys
-- [ ] Test API calls
 
 ---
 
@@ -140,22 +87,3 @@ Then use in workflows:
 4. **Monitor usage**
    - Google Maps: https://console.cloud.google.com/apis/dashboard
    - Set budget alerts ($10/month)
-
----
-
-## 📊 API Usage Estimates
-
-| API | Monthly Requests | Cost |
-|-----|-----------------|------|
-| Google Maps (Directions) | ~3,000 | $0 (free tier) |
-| Google Maps (Places) | ~3,000 | $0 (free tier) |
-| IBM Quantum | ~100 circuits | Free tier |
-| Cisco Quantum QRNG | ~1,000 | Free tier |
-
-**Total Monthly Cost: $0** (within free tiers)
-
----
-
-## 🎉 Ready to Deploy!
-
-Once Google Maps API key is added, all APIs will be configured and ready for production use.
