@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import retrofit2.Retrofit
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object LiveKitManager {
@@ -82,25 +84,57 @@ object LiveKitManager {
             try {
                 Log.d(TAG, "Requesting fresh LiveKit token from Brain...")
                 
-                // 1. Fetch fresh token from FastAPI server (identity is generated server-side)
+                // 1. Fetch fresh token from FastAPI server with resilient retry & timeout
+                val okHttpClient = OkHttpClient.Builder()
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(15, TimeUnit.SECONDS)
+                    .writeTimeout(15, TimeUnit.SECONDS)
+                    .addInterceptor { chain ->
+                        val req = chain.request().newBuilder()
+                            .header("User-Agent", "Zyra-Android/1.0")
+                            .build()
+                        chain.proceed(req)
+                    }
+                    .build()
+
                 val retrofit = Retrofit.Builder()
                     .baseUrl(BRAIN_BASE_URL)
+                    .client(okHttpClient)
                     .addConverterFactory(GsonConverterFactory.create())
                     .build()
                 
                 val apiService = retrofit.create(com.zyra.app.network.ZyraApiService::class.java)
-                val response = withContext(Dispatchers.IO) {
-                    apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                
+                var token: String? = null
+                var lastErr = ""
+                for (attempt in 1..3) {
+                    try {
+                        val response = withContext(Dispatchers.IO) {
+                            apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                        }
+                        if (response.isSuccessful && response.body() != null) {
+                            token = response.body()!!.token
+                            break
+                        } else {
+                            val code = response.code()
+                            lastErr = "HTTP $code"
+                            Log.w(TAG, "Token attempt $attempt failed with $lastErr")
+                        }
+                    } catch (e: Exception) {
+                        lastErr = e.message ?: "Network error"
+                        Log.w(TAG, "Token attempt $attempt exception: $lastErr")
+                    }
+                    if (attempt < 3) {
+                        kotlinx.coroutines.delay(1200L)
+                    }
                 }
 
-                if (!response.isSuccessful || response.body() == null) {
-                    val errorMsg = "Server failed to grant token: ${response.code()}"
+                if (token == null) {
+                    val errorMsg = "Server failed to grant token: $lastErr"
                     Log.e(TAG, errorMsg)
                     listener?.onError(errorMsg)
                     return@launch
                 }
-
-                val token = response.body()!!.token
                 Log.d(TAG, "Token acquired. Connecting to LiveKit...")
 
                 // 2. Connect to Room with the dynamic token
