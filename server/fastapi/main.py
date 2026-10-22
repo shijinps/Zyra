@@ -74,40 +74,53 @@ def startup_db_client():
         )
         conn.autocommit = True
         
-        # Hardcoded init SQL for automation (matches init_memory.sql)
-        init_sql = """
-        CREATE EXTENSION IF NOT EXISTS vector;
-        CREATE EXTENSION IF NOT EXISTS postgis;
-        
-        CREATE TABLE IF NOT EXISTS n8n_chat_histories (
-            id SERIAL PRIMARY KEY,
-            session_id TEXT NOT NULL,
-            message JSONB NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        
-        CREATE TABLE IF NOT EXISTS kochi_incidents (
-            id SERIAL PRIMARY KEY,
-            description TEXT NOT NULL,
-            severity VARCHAR(50),
-            geom GEOMETRY(Point, 4326),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE INDEX IF NOT EXISTS incidents_geom_idx ON kochi_incidents USING GIST (geom);
-        
-        CREATE TABLE IF NOT EXISTS zyra_contacts (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            phone TEXT NOT NULL,
-            alias TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(name, phone)
-        );
-        """
-        
         with conn.cursor() as cursor:
-            cursor.execute(init_sql)
+            # 1. Base tables that do not require extensions
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS n8n_chat_histories (
+                    id SERIAL PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    message JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS zyra_contacts (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    alias TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(name, phone)
+                );
+                """
+            )
+            
+            # 2. Extensions (safe fail if standard postgres:16-alpine is used)
+            for ext in ["vector", "postgis"]:
+                try:
+                    cursor.execute(f"CREATE EXTENSION IF NOT EXISTS {ext};")
+                except Exception as ext_err:
+                    print(f"ZYRA BRAIN INFO: Extension '{ext}' not available in postgres image: {ext_err}")
+            
+            # 3. Spatial tables (only if postgis is loaded)
+            try:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS kochi_incidents (
+                        id SERIAL PRIMARY KEY,
+                        description TEXT NOT NULL,
+                        severity VARCHAR(50),
+                        geom GEOMETRY(Point, 4326),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS incidents_geom_idx ON kochi_incidents USING GIST (geom);
+                    """
+                )
+            except Exception:
+                pass
+            
             print("ZYRA BRAIN: Database Memory Initialized Successfully.")
             
         conn.close()
@@ -328,6 +341,19 @@ def sync_contacts(request: SyncContactsRequest, token: str = Security(verify_tok
         conn.autocommit = True
         
         with conn.cursor() as cursor:
+            # Ensure table exists
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS zyra_contacts (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    alias TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(name, phone)
+                );
+                """
+            )
             # Batch upsert contacts
             for contact in request.contacts:
                 cursor.execute(
