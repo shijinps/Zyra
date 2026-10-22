@@ -10,8 +10,26 @@ from rapidfuzz import process, fuzz
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
-from livekit.agents import JobContext, WorkerOptions, cli, voice, llm
-from livekit.agents.pipeline import VoicePipelineAgent
+from livekit.agents import JobContext, WorkerOptions, cli, llm
+try:
+    from livekit.agents.pipeline import VoicePipelineAgent
+    HAS_PIPELINE = True
+except (ImportError, ModuleNotFoundError):
+    try:
+        from livekit.agents.voice import VoicePipelineAgent
+        HAS_PIPELINE = True
+    except (ImportError, ModuleNotFoundError):
+        VoicePipelineAgent = None
+        HAS_PIPELINE = False
+
+try:
+    from livekit.agents.voice import AgentSession
+except (ImportError, ModuleNotFoundError):
+    try:
+        from livekit.agents import AgentSession
+    except (ImportError, ModuleNotFoundError):
+        AgentSession = None
+
 from livekit.plugins import google, silero
 
 try:
@@ -333,8 +351,8 @@ async def entrypoint(ctx: JobContext):
                 silence_duration_ms=800
             )
         )
-        chat_ctx = voice.ChatContext().append(role="system", text=create_system_prompt(history_str, update_mcp_session()))
-        session = voice.AgentSession(
+        chat_ctx = llm.ChatContext().append(role="system", text=create_system_prompt(history_str, update_mcp_session()))
+        session = AgentSession(
             model=model,
             fnc_ctx=fnc_ctx,
             chat_ctx=chat_ctx,
@@ -357,17 +375,31 @@ async def entrypoint(ctx: JobContext):
 
         selected_llm = llm.FallbackAdapter(llm_list) if len(llm_list) > 1 else (llm_list[0] if llm_list else None)
 
-        agent = VoicePipelineAgent(
-            vad=silero.VAD.load(),
-            stt=primary_stt,
-            llm=selected_llm,
-            tts=google.TTS(gender="male") if gemini_api_key else None,
-            fnc_ctx=fnc_ctx,
-            instructions=create_system_prompt(history_str, update_mcp_session())
-        )
-        agent.start(ctx.room)
-        await asyncio.sleep(1.2)
-        await agent.say("Systems online. At your service, Sir.")
+        if HAS_PIPELINE and VoicePipelineAgent is not None:
+            agent = VoicePipelineAgent(
+                vad=silero.VAD.load(),
+                stt=primary_stt,
+                llm=selected_llm,
+                tts=google.TTS(gender="male") if gemini_api_key else None,
+                fnc_ctx=fnc_ctx,
+                instructions=create_system_prompt(history_str, update_mcp_session())
+            )
+            agent.start(ctx.room)
+            await asyncio.sleep(1.2)
+            await agent.say("Systems online. At your service, Sir.")
+        elif AgentSession is not None:
+            session = AgentSession(
+                vad=silero.VAD.load(),
+                stt=primary_stt,
+                llm=selected_llm,
+                tts=google.TTS(gender="male") if gemini_api_key else None,
+                fnc_ctx=fnc_ctx,
+            )
+            await session.start(room=ctx.room)
+            await asyncio.sleep(1.2)
+            await session.say("Systems online. At your service, Sir.")
+        else:
+            logger.error("No valid LiveKit agent session class found.")
 
     @ctx.room.on("disconnected")
     def on_disconnect(*args, **kwargs):

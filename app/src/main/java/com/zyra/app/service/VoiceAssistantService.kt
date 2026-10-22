@@ -605,36 +605,52 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
 
         // Android 14 requirements: "microphone" type requires RECORD_AUDIO permission at runtime.
         // It also requires start from "while-in-use" state unless exempt.
+        // Android 14+ requirements:
+        // FOREGROUND_SERVICE_TYPE_MICROPHONE requires app to be in foreground or have hotword exemption.
+        // FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK only requires install-time permission and keeps service alive permanently.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            try {
-                // PRIMARY: Try to start with MICROPHONE capability (best for Assistant)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val hasMicPermission = checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                var started = false
+
                 if (hasMicPermission) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-                    } else {
-                        startForeground(1, notification) 
+                    try {
+                        startForeground(
+                            1,
+                            notification,
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
+                                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                        )
+                        started = true
+                    } catch (e: Exception) {
+                        Log.w("ZyraService", "Could not start FGS with MICROPHONE type: ${e.message}. Falling back.")
                     }
-                } else {
-                    throw SecurityException("Mic permission missing")
                 }
-            } catch (e: Exception) {
-                Log.w("ZyraService", "Failed to start as Microphone FGS: ${e.message}. Attempting fallback.")
-                try {
-                     // FALLBACK: Use Location + Media Playback (TTS) to keep service alive.
-                     // This prevents "ForegroundServiceDidNotStartInTimeException" crash.
-                     var fallbackType: Int
-                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                         fallbackType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION or 
-                                      android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-                         startForeground(1, notification, fallbackType)
-                     } else {
-                         startForeground(1, notification)
-                     }
-                } catch (e2: Exception) {
-                    Log.e("ZyraService", "Critical: Failed to start FGS fallback.", e2)
-                    stopSelf()
+
+                if (!started) {
+                    try {
+                        val hasLocationPermission = checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                                checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+                        val fallbackType = if (hasLocationPermission) {
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or
+                                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                        } else {
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                        }
+                        startForeground(1, notification, fallbackType)
+                    } catch (e2: Exception) {
+                        Log.w("ZyraService", "FGS type fallback: ${e2.message}, using MEDIA_PLAYBACK alone.")
+                        try {
+                            startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                        } catch (e3: Exception) {
+                            Log.e("ZyraService", "FGS generic start: ${e3.message}")
+                            startForeground(1, notification)
+                        }
+                    }
                 }
+            } else {
+                startForeground(1, notification)
             }
         } else {
             startForeground(1, notification)
