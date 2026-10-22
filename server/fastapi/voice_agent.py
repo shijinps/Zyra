@@ -426,13 +426,18 @@ async def entrypoint(ctx: JobContext):
             chat_ctx = llm.ChatContext().append(role="system", text=create_system_prompt(history_str, update_mcp_session()))
             session = AgentSession(
                 model=model,
-                fnc_ctx=fnc_ctx,
                 chat_ctx=chat_ctx,
-                vad=silero.VAD.load()
+                vad=silero.VAD.load() if (HAS_SILERO_PLUGIN and silero is not None) else None
             )
-            session.start(ctx.room)
+            try:
+                await session.start(room=ctx.room)
+            except (TypeError, AttributeError):
+                session.start(ctx.room)
             await asyncio.sleep(1.2)
-            await session.say("Systems online. At your service, Sir.")
+            try:
+                await session.say("Systems online. At your service, Sir.")
+            except Exception:
+                pass
             started = True
         except Exception as e:
             logger.warning(f"Realtime engine failed to start: {e}. Falling back to Groq Pipeline...")
@@ -495,11 +500,30 @@ async def entrypoint(ctx: JobContext):
                 stt=primary_stt,
                 llm=selected_llm,
                 tts=selected_tts,
-                fnc_ctx=fnc_ctx,
             )
-            await session.start(room=ctx.room)
-            await asyncio.sleep(1.2)
-            await session.say("Systems online. At your service, Sir.")
+            instructions = create_system_prompt(history_str, update_mcp_session())
+            started_session = False
+            try:
+                from livekit.agents.voice import Agent as VoiceAgent
+                await session.start(room=ctx.room, agent=VoiceAgent(instructions=instructions))
+                started_session = True
+            except Exception as e:
+                logger.info(f"session.start with VoiceAgent not applicable: {e}. Trying simple start...")
+
+            if not started_session:
+                try:
+                    await session.start(room=ctx.room)
+                except (TypeError, AttributeError):
+                    session.start(ctx.room)
+
+            await asyncio.sleep(1.0)
+            try:
+                await session.say("Systems online. At your service, Sir.")
+            except Exception:
+                try:
+                    await session.generate_reply(instructions="Say: Systems online. At your service, Sir.")
+                except Exception:
+                    pass
         else:
             logger.error("No valid LiveKit agent session class found.")
 
