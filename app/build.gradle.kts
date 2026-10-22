@@ -99,7 +99,15 @@ dependencies {
 
     // Wake Word Detection (Picovoice Porcupine)
     implementation("ai.picovoice:porcupine-android:4.0.2")
-    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8")
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.8") {
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-jvm")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-linux-aarch64")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-linux-x64")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-osx-aarch64")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-osx-x64")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-win-arm64")
+        exclude(group = "com.github.k2-fsa.sherpa-onnx", module = "sherpa-onnx-native-lib-win-x64")
+    }
     
     // Media Session for Music Control
     implementation("androidx.media:media:1.7.0")
