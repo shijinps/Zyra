@@ -285,11 +285,36 @@ def send_notification(notification: Notification, token: str = Security(verify_t
     print(f"🚨 ZYRA ALERT: {notification.title} - {notification.message} [{notification.priority}]")
     return {"status": "Alert Logged", "data": notification.dict()}
 
+async def trigger_livekit_agent_dispatch(room_name: str = "zyra-room", agent_name: str = "zyra-agent"):
+    livekit_url = os.getenv("LIVEKIT_URL", "wss://zyra-sbn0wnp2.livekit.cloud")
+    api_key = os.getenv("LIVEKIT_API_KEY")
+    api_secret = os.getenv("LIVEKIT_API_SECRET")
+    if not (api_key and api_secret):
+        return
+    try:
+        lkapi = api.LiveKitAPI(livekit_url, api_key, api_secret)
+        if hasattr(lkapi, "agent_dispatch") and hasattr(api, "CreateAgentDispatchRequest"):
+            await lkapi.agent_dispatch.create_dispatch(
+                api.CreateAgentDispatchRequest(
+                    agent_name=agent_name,
+                    room=room_name
+                )
+            )
+            print(f"🎙️ ZYRA: Dispatched agent '{agent_name}' to room '{room_name}'.")
+        await lkapi.aclose()
+    except Exception as e:
+        print(f"🎙️ ZYRA: Agent dispatch attempt: {e}")
+        try:
+            await lkapi.aclose()
+        except Exception:
+            pass
+
 @app.get("/livekit/token")
-def get_livekit_token(token: str = Security(verify_token)):
+async def get_livekit_token(token: str = Security(verify_token)):
     """
     Generates a fresh LiveKit Access Token for the Android client.
     Requires LIVEKIT_API_KEY and LIVEKIT_API_SECRET to be set in env.
+    Also dispatches the voice agent into the room.
     """
     api_key = os.getenv("LIVEKIT_API_KEY")
     api_secret = os.getenv("LIVEKIT_API_SECRET")
@@ -302,7 +327,9 @@ def get_livekit_token(token: str = Security(verify_token)):
 
     # Token lasts for 1 hour by default
     participant_id = f"zyra-android-{uuid.uuid4().hex[:8]}"
-    token_gen = api.AccessToken(api_key, api_secret) \
+    agent_name = os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent")
+
+    token_builder = api.AccessToken(api_key, api_secret) \
         .with_identity(participant_id) \
         .with_name("Sir") \
         .with_grants(api.VideoGrants(
@@ -313,7 +340,77 @@ def get_livekit_token(token: str = Security(verify_token)):
             can_publish_data=True
         ))
     
-    return {"token": token_gen.to_jwt()}
+    # Try room configuration dispatch via token
+    try:
+        if hasattr(api, "RoomConfiguration") and hasattr(api, "RoomAgentDispatch"):
+            token_builder = token_builder.with_room_config(
+                api.RoomConfiguration(
+                    agents=[api.RoomAgentDispatch(agent_name=agent_name)]
+                )
+            )
+    except Exception as e:
+        print(f"Notice: RoomConfiguration dispatch setup: {e}")
+
+    # Also trigger explicit agent dispatch via LiveKit server API
+    asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
+
+    return {"token": token_builder.to_jwt()}
+
+@app.get("/system/status")
+def get_system_status():
+    """
+    Returns diagnostic health for the server, running processes, env configs, and recent agent logs.
+    """
+    ps_lines = []
+    agent_running = False
+    try:
+        ps_out = subprocess.check_output(["ps", "aux"], text=True)
+        ps_lines = [l for l in ps_out.splitlines() if "python" in l or "uvicorn" in l]
+        agent_running = any("voice_agent.py" in l for l in ps_lines)
+    except Exception as e:
+        ps_lines = [f"Error running ps: {e}"]
+
+    log_tail = ""
+    log_file = "/app/voice_agent.log"
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
+                log_tail = "".join(lines[-40:])
+        except Exception as e:
+            log_tail = f"Error reading log file: {e}"
+    else:
+        log_tail = "Log file /app/voice_agent.log does not exist yet."
+
+    return {
+        "version": "2026.10.22-v3-dispatch",
+        "voice_agent_process_running": agent_running,
+        "env": {
+            "LIVEKIT_URL": bool(os.getenv("LIVEKIT_URL")),
+            "LIVEKIT_API_KEY": bool(os.getenv("LIVEKIT_API_KEY")),
+            "LIVEKIT_API_SECRET": bool(os.getenv("LIVEKIT_API_SECRET")),
+            "LIVEKIT_AGENT_NAME": os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent"),
+            "GROQ_API_KEY": bool(os.getenv("GROQ_API_KEY")),
+            "GEMINI_API_KEY": bool(os.getenv("GEMINI_API_KEY")),
+            "VOICE_ENGINE_MODE": os.getenv("VOICE_ENGINE_MODE", "pipeline")
+        },
+        "processes": ps_lines,
+        "recent_agent_logs": log_tail
+    }
+
+@app.get("/system/logs")
+def get_system_logs():
+    """
+    Returns the full voice agent log output.
+    """
+    log_file = "/app/voice_agent.log"
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                return {"logs": f.read()}
+        except Exception as e:
+            return {"error": f"Failed reading log: {e}"}
+    return {"logs": "No log file found."}
 
 
 # --- Contacts Sync ---

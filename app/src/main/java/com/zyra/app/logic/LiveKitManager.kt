@@ -137,6 +137,10 @@ object LiveKitManager {
                             }
                             is RoomEvent.TrackSubscribed -> {
                                 Log.d(TAG, "Subscribed to track: kind=${event.track.kind}, name=${event.track.name}")
+                                if (event.track is io.livekit.android.room.track.RemoteAudioTrack || event.track.kind == io.livekit.android.room.track.Track.Kind.AUDIO) {
+                                    Log.i(TAG, "Voice Agent audio track received. Cancelling health monitor timeout.")
+                                    healthMonitorJob?.cancel()
+                                }
                             }
                             is RoomEvent.TrackUnsubscribed -> {
                                 Log.d(TAG, "Unsubscribed from track: kind=${event.track.kind}, name=${event.track.name}")
@@ -189,13 +193,19 @@ object LiveKitManager {
             kotlinx.coroutines.delay(5000L)
             if (room !== monitoredRoom) return@launch
             val count10s = monitoredRoom.remoteParticipants.size
+            Log.d(TAG, "Room health check [10s]: remoteParticipants=$count10s")
+
+            // 15s check - give worker sufficient grace to dispatch and establish audio
+            kotlinx.coroutines.delay(5000L)
+            if (room !== monitoredRoom) return@launch
+            val count15s = monitoredRoom.remoteParticipants.size
             val hasRemoteAudio = monitoredRoom.remoteParticipants.values.any { p ->
                 p.audioTrackPublications.isNotEmpty()
             }
-            Log.d(TAG, "Room health check [10s]: remoteParticipants=$count10s, hasRemoteAudioTrack=$hasRemoteAudio")
+            Log.d(TAG, "Room health check [15s]: remoteParticipants=$count15s, hasRemoteAudioTrack=$hasRemoteAudio")
 
-            if (count10s == 0 || !hasRemoteAudio) {
-                Log.w(TAG, "Voice agent not available after 10s (count=$count10s, hasRemoteAudio=$hasRemoteAudio)")
+            if (count15s == 0 || !hasRemoteAudio) {
+                Log.w(TAG, "Voice agent not available after 15s (count=$count15s, hasRemoteAudio=$hasRemoteAudio)")
                 listener?.onAgentUnavailable()
             }
         }

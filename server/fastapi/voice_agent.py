@@ -10,6 +10,10 @@ from rapidfuzz import process, fuzz
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
+# Ensure LIVEKIT_URL fallback
+if not os.getenv("LIVEKIT_URL"):
+    os.environ["LIVEKIT_URL"] = "wss://zyra-sbn0wnp2.livekit.cloud"
+
 from livekit.agents import JobContext, WorkerOptions, cli, llm
 try:
     from livekit.agents.pipeline import VoicePipelineAgent
@@ -333,40 +337,46 @@ async def entrypoint(ctx: JobContext):
     recent_history = load_memory()
     history_str = "\n".join([f"[{m['role'].upper()}]: {m['content']}" for m in recent_history]) if recent_history else "No prior history."
 
-    # Decide Architecture Mode:
-    # Mode A: Gemini 2.0 Multimodal Live API (Direct Realtime Speech-to-Speech)
-    # Mode B: Resilient Fallback Pipeline (Groq Whisper Large v3 Turbo + Groq LLM -> Gemini 2.0 Fallback)
-    mode = os.getenv("VOICE_ENGINE_MODE", "realtime") # default to realtime live model, with fallback
+    # Engine Architecture Mode:
+    # Mode A: Resilient Fallback Pipeline (Groq Whisper Large v3 Turbo + Groq LLM -> Gemini 2.0 Fallback) [PRIMARY]
+    # Mode B: Gemini 2.0 Multimodal Live API (Direct Realtime Speech-to-Speech)
+    mode = os.getenv("VOICE_ENGINE_MODE", "pipeline")
 
+    started = False
     if mode == "realtime" and gemini_api_key:
-        logger.info("Initializing Zyra with Gemini 2.0 Multimodal Live Engine...")
-        model = google.beta.realtime.RealtimeModel(
-            model="gemini-2.0-flash-exp",
-            voice="Aoede",
-            instructions="You are Zyra. Act like Jarvis or Friday. Address user as Sir.",
-            modalities=["audio"],
-            turn_detection=google.beta.realtime.ServerVADOptions(
-                threshold=0.5,
-                prefix_padding_ms=300,
-                silence_duration_ms=800
+        try:
+            logger.info("Initializing Zyra with Gemini 2.0 Multimodal Live Engine...")
+            model = google.beta.realtime.RealtimeModel(
+                model="gemini-2.0-flash-exp",
+                voice="Aoede",
+                instructions="You are Zyra. Act like Jarvis or Friday. Address user as Sir.",
+                modalities=["audio"],
+                turn_detection=google.beta.realtime.ServerVADOptions(
+                    threshold=0.5,
+                    prefix_padding_ms=300,
+                    silence_duration_ms=800
+                )
             )
-        )
-        chat_ctx = llm.ChatContext().append(role="system", text=create_system_prompt(history_str, update_mcp_session()))
-        session = AgentSession(
-            model=model,
-            fnc_ctx=fnc_ctx,
-            chat_ctx=chat_ctx,
-            vad=silero.VAD.load()
-        )
-        session.start(ctx.room)
-        await asyncio.sleep(1.2)
-        await session.say("Systems online. At your service, Sir.")
-    else:
+            chat_ctx = llm.ChatContext().append(role="system", text=create_system_prompt(history_str, update_mcp_session()))
+            session = AgentSession(
+                model=model,
+                fnc_ctx=fnc_ctx,
+                chat_ctx=chat_ctx,
+                vad=silero.VAD.load()
+            )
+            session.start(ctx.room)
+            await asyncio.sleep(1.2)
+            await session.say("Systems online. At your service, Sir.")
+            started = True
+        except Exception as e:
+            logger.warning(f"Realtime engine failed to start: {e}. Falling back to Groq Pipeline...")
+
+    if not started:
         logger.info("Initializing Zyra with Groq Whisper Large v3 Turbo + Groq LLM Pipeline...")
-        # STT Selection
+        # STT Selection: Groq Whisper Large v3 Turbo (Primary)
         primary_stt = groq.STT(model="whisper-large-v3-turbo", language="en") if HAS_GROQ_PLUGIN and groq_api_key else None
         
-        # LLM Selection with Fallback
+        # LLM Selection: Groq LLaMA 3.3 70B (Primary) + Gemini 2.0 Flash (Redundancy / Fallback)
         llm_list = []
         if HAS_GROQ_PLUGIN and groq_api_key:
             llm_list.append(groq.LLM(model="llama-3.3-70b-versatile"))
@@ -406,4 +416,8 @@ async def entrypoint(ctx: JobContext):
         logger.info("Room disconnected, saving memory...")
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    if not os.getenv("LIVEKIT_URL"):
+        os.environ["LIVEKIT_URL"] = "wss://zyra-sbn0wnp2.livekit.cloud"
+    agent_name = os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent")
+    logger.info(f"Starting Zyra Voice Agent Worker with agent_name='{agent_name}' on {os.environ['LIVEKIT_URL']}...")
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name=agent_name))
