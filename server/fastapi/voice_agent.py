@@ -349,42 +349,49 @@ class AssistantFnc(llm.FunctionContext):
 
 def resolve_groq_llm(groq_key: str):
     """
-    Dynamically queries Groq API to select an active, accessible model
-    and ensures resilient fallback to llama-3.1-8b-instant.
+    Dynamically queries Groq API to select an active, accessible model.
+    Groq currently features: openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.8-27b.
     """
     priority = [
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.8-27b",
         "llama-3.3-70b-versatile",
         "llama-3.1-70b-versatile",
         "llama-3.1-8b-instant",
-        "llama3-70b-8192",
-        "llama3-8b-8192",
-        "mixtral-8x7b-32768"
+        "allam-2-7b"
     ]
-    chosen = "llama-3.1-8b-instant"
+    chosen = "openai/gpt-oss-20b"
+    available_models = []
     try:
         r = requests.get(
             "https://api.groq.com/openai/v1/models",
             headers={"Authorization": f"Bearer {groq_key}", "User-Agent": "Mozilla/5.0"},
-            timeout=4.0
+            timeout=5.0
         )
         if r.status_code == 200:
-            active_ids = {m["id"] for m in r.json().get("data", [])}
-            logger.info(f"Active Groq models for key: {list(active_ids)[:8]}")
+            data = r.json().get("data", [])
+            # Filter text-to-text models only
+            active_chat_ids = {
+                m["id"] for m in data 
+                if "text" in m.get("input_modalities", ["text"]) and "text" in m.get("output_modalities", ["text"])
+            }
+            logger.info(f"Active Groq Chat LLMs for key: {list(active_chat_ids)}")
             for p in priority:
-                if p in active_ids:
-                    chosen = p
-                    break
+                if p in active_chat_ids:
+                    available_models.append(p)
+            if available_models:
+                chosen = available_models[0]
         else:
             logger.warning(f"Groq models query HTTP {r.status_code}: {r.text[:100]}")
     except Exception as e:
         logger.warning(f"Groq models query failed: {e}")
     
-    logger.info(f"Resolved primary Groq LLM model: {chosen}")
-    models = [chosen]
-    if "llama-3.1-8b-instant" not in models:
-        models.append("llama-3.1-8b-instant")
+    if not available_models:
+        available_models = [chosen, "openai/gpt-oss-120b"]
     
-    adapters = [groq.LLM(model=m) for m in models]
+    logger.info(f"Resolved Groq LLMs with fallback: {available_models}")
+    adapters = [groq.LLM(model=m) for m in available_models]
     return llm.FallbackAdapter(adapters) if len(adapters) > 1 else adapters[0]
 
 def create_system_prompt(history_str: str, tools_str: str) -> str:

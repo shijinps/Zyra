@@ -375,6 +375,27 @@ async def get_groq_models():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/system/test-llm")
+async def test_llm(model: str = "openai/gpt-oss-20b"):
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return {"error": "GROQ_API_KEY not set"}
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "User-Agent": "Mozilla/5.0"},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": "Say hello to Shijin in 5 words."}],
+                    "max_tokens": 50
+                }
+            )
+            return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/system/status")
 def get_system_status():
     """
