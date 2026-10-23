@@ -611,6 +611,8 @@ async def entrypoint(ctx: JobContext):
 
         selected_vad = silero.VAD.load() if (HAS_SILERO_PLUGIN and silero is not None) else None
 
+        session_id = ctx.room.name or "zyra-room"
+
         if HAS_PIPELINE and VoicePipelineAgent is not None:
             agent = VoicePipelineAgent(
                 vad=selected_vad,
@@ -621,6 +623,26 @@ async def entrypoint(ctx: JobContext):
                 instructions=create_system_prompt(history_str, update_mcp_session())
             )
             active_agent = agent
+
+            # Real-time event hooks: auto-save every spoken utterance immediately to permanent DB
+            @agent.on("user_speech_committed")
+            def on_user_speech(msg):
+                try:
+                    text = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    logger.info(f"🎤 Real-time User Speech Committed: {text}")
+                    rag_engine.auto_ingest_turn(text, role="user", session_id=session_id)
+                except Exception as e:
+                    logger.warning(f"Real-time user speech ingest notice: {e}")
+
+            @agent.on("agent_speech_committed")
+            def on_agent_speech(msg):
+                try:
+                    text = msg.content if isinstance(msg.content, str) else str(msg.content)
+                    logger.info(f"🤖 Real-time Zyra Speech Committed: {text}")
+                    rag_engine.auto_ingest_turn(text, role="assistant", session_id=session_id)
+                except Exception as e:
+                    logger.warning(f"Real-time agent speech ingest notice: {e}")
+
             agent.start(ctx.room)
             await asyncio.sleep(1.2)
             await agent.say("Hey Shijin! What's up?")
@@ -682,12 +704,14 @@ async def entrypoint(ctx: JobContext):
                 full_memory = load_memory() + new_turns
                 save_memory(full_memory)
                 logger.info(f"Successfully saved {len(new_turns)} new conversation turns to memory.json")
+                session_id = ctx.room.name or "zyra-room"
                 for turn in new_turns:
-                    if turn.get("role") == "user":
-                        try:
-                            rag_engine.auto_ingest_turn(turn.get("content", ""), role="user")
-                        except Exception as e:
-                            logger.warning(f"RAG auto-ingest error: {e}")
+                    role = turn.get("role", "user")
+                    content = turn.get("content", "")
+                    try:
+                        rag_engine.auto_ingest_turn(content, role=role, session_id=session_id)
+                    except Exception as e:
+                        logger.warning(f"RAG auto-ingest error: {e}")
             else:
                 logger.info("No new conversation turns to save.")
         except Exception as e:
