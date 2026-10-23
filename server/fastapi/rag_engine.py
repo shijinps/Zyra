@@ -87,6 +87,7 @@ class RAGEngine:
     def __init__(self):
         self.local_memories: List[Dict] = []
         self._recent_hashes: set = set()
+        self._last_mtime: float = 0.0
         self._load_local_store()
         self._init_defaults()
         self._init_postgres()
@@ -157,21 +158,27 @@ class RAGEngine:
     def _load_local_store(self):
         if os.path.exists(LOCAL_STORE_PATH):
             try:
-                with open(LOCAL_STORE_PATH, "r", encoding="utf-8") as f:
-                    self.local_memories = json.load(f)
-                    # Cache recent turn hashes to prevent duplicates
-                    for m in self.local_memories[-200:]:
-                        h = hashlib.md5(m.get("content", "").strip().lower().encode("utf-8")).hexdigest()
-                        self._recent_hashes.add(h)
+                mtime = os.path.getmtime(LOCAL_STORE_PATH)
+                if mtime > self._last_mtime:
+                    with open(LOCAL_STORE_PATH, "r", encoding="utf-8") as f:
+                        loaded = json.load(f)
+                        if isinstance(loaded, list):
+                            self.local_memories = loaded
+                            self._last_mtime = mtime
+                            # Cache recent turn hashes to prevent duplicates
+                            for m in self.local_memories[-300:]:
+                                h = hashlib.md5(m.get("content", "").strip().lower().encode("utf-8")).hexdigest()
+                                self._recent_hashes.add(h)
             except Exception as e:
                 logger.warning(f"Failed to read {LOCAL_STORE_PATH}: {e}")
-                self.local_memories = []
 
     def _save_local_store(self):
         try:
             # Permanent store: NO TRUNCATION, NO EXPIRY
             with open(LOCAL_STORE_PATH, "w", encoding="utf-8") as f:
                 json.dump(self.local_memories, f, ensure_ascii=False, indent=2)
+            if os.path.exists(LOCAL_STORE_PATH):
+                self._last_mtime = os.path.getmtime(LOCAL_STORE_PATH)
         except Exception as e:
             logger.warning(f"Failed to persist {LOCAL_STORE_PATH}: {e}")
 
@@ -199,6 +206,7 @@ class RAGEngine:
         Embeds and permanently stores a conversation turn, thought, or fact into DB and local store.
         No deletion, no expiry.
         """
+        self._load_local_store()
         cleaned = content.strip()
         if not cleaned:
             return {"error": "Content cannot be empty"}
@@ -257,6 +265,7 @@ class RAGEngine:
         """
         Semantic vector search across all lifetime conversations and facts.
         """
+        self._load_local_store()
         cleaned_query = query.strip()
         if not cleaned_query:
             return []

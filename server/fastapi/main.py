@@ -496,6 +496,7 @@ def rag_get_all(token: str = Security(verify_token)):
     """
     Returns all stored memories and facts in Zyra's knowledge base.
     """
+    rag_engine._load_local_store()
     return {
         "total": len(rag_engine.local_memories),
         "memories": [
