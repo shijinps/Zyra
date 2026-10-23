@@ -32,6 +32,11 @@ try:
 except ImportError:
     from server.fastapi.rag_engine import rag_engine
 
+try:
+    from spotify_controller import spotify_controller
+except ImportError:
+    from server.fastapi.spotify_controller import spotify_controller
+
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or ""
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 
@@ -156,6 +161,27 @@ async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error in ask_cmd: {e}")
         await thinking_msg.edit_text(f"❌ Search error: `{e}`")
 
+async def play_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    song = " ".join(context.args).strip() if context.args else ""
+    res = spotify_controller.play_query(song)
+    await update.message.reply_text(f"🎵 {res}")
+
+async def pause_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    res = spotify_controller.pause()
+    await update.message.reply_text(f"⏸️ {res}")
+
+async def resume_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    res = spotify_controller.resume()
+    await update.message.reply_text(f"▶️ {res}")
+
+async def next_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    res = spotify_controller.next_track()
+    await update.message.reply_text(f"⏭️ {res}")
+
+async def nowplaying_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    res = spotify_controller.get_currently_playing()
+    await update.message.reply_text(f"🎧 {res}")
+
 def main():
     token = (os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or "").strip()
     if not token:
@@ -168,6 +194,11 @@ def main():
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(CommandHandler("ask", ask_cmd))
+    app.add_handler(CommandHandler("play", play_cmd))
+    app.add_handler(CommandHandler("pause", pause_cmd))
+    app.add_handler(CommandHandler("resume", resume_cmd))
+    app.add_handler(CommandHandler("next", next_cmd))
+    app.add_handler(CommandHandler("nowplaying", nowplaying_cmd))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
 
     app.run_polling()

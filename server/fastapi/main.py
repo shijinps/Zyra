@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi.responses import RedirectResponse, HTMLResponse
 import io
 from pydantic import BaseModel
 import subprocess
@@ -14,6 +15,11 @@ try:
     from rag_engine import rag_engine
 except ImportError:
     from server.fastapi.rag_engine import rag_engine
+
+try:
+    from spotify_controller import spotify_controller
+except ImportError:
+    from server.fastapi.spotify_controller import spotify_controller
 from google import genai
 import time
 import uuid
@@ -509,6 +515,48 @@ def rag_get_all(token: str = Security(verify_token)):
             }
             for m in rag_engine.local_memories
         ]
+    }
+
+@app.get("/spotify/login")
+def spotify_login():
+    """Redirects user to Spotify to link their account."""
+    url = spotify_controller.get_login_url()
+    return RedirectResponse(url)
+
+@app.get("/spotify/callback")
+def spotify_callback(code: Optional[str] = None, error: Optional[str] = None):
+    """Handles Spotify OAuth callback and saves tokens."""
+    if error:
+        return HTMLResponse(f"<h3>Spotify Authorization Failed: {error}</h3>", status_code=400)
+    if not code:
+        return HTMLResponse("<h3>Missing authorization code.</h3>", status_code=400)
+
+    res = spotify_controller.exchange_code(code)
+    if res.get("status") == "success":
+        html = """
+        <html>
+            <head><title>Spotify Connected | Zyra</title></head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; margin: 0;">
+                <div style="background: #1e1e1e; padding: 40px; border-radius: 16px; text-align: center; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
+                    <div style="font-size: 64px; margin-bottom: 16px;">🎵</div>
+                    <h2 style="color: #1DB954; margin: 0 0 12px 0;">Spotify Connected to Zyra!</h2>
+                    <p style="color: #b3b3b3; line-height: 1.5; font-size: 15px;">Zyra now has full voice control over your music playback across your phone, laptop, and speakers.</p>
+                    <p style="margin-top: 24px; font-size: 14px; color: #1DB954; background: rgba(29, 185, 84, 0.12); padding: 12px 18px; border-radius: 8px;">Try saying: <b>"Hey Zyra, play Starboy by The Weeknd"</b></p>
+                </div>
+            </body>
+        </html>
+        """
+        return HTMLResponse(html)
+    return HTMLResponse(f"<h3>Error linking Spotify: {res.get('error')}</h3>", status_code=500)
+
+@app.get("/spotify/status")
+def spotify_status():
+    """Checks whether Spotify is currently connected and active."""
+    authorized = spotify_controller._ensure_access_token()
+    current = spotify_controller.get_currently_playing() if authorized else "Not connected"
+    return {
+        "authorized": authorized,
+        "status": current
     }
 
 @app.get("/livekit/token")

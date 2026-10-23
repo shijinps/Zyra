@@ -38,6 +38,11 @@ try:
 except ImportError:
     from server.fastapi.rag_engine import rag_engine
 
+try:
+    from spotify_controller import spotify_controller
+except ImportError:
+    from server.fastapi.spotify_controller import spotify_controller
+
 # Ensure legacy FunctionContext and ai_callable compatibility for tool calling
 if not hasattr(llm, "FunctionContext"):
     class _FunctionContextFallback:
@@ -288,6 +293,39 @@ class AssistantFnc(llm.FunctionContext):
         except Exception as e:
             logger.error(f"Weather fetch error: {e}")
             return f"I couldn't fetch the weather for {city} right now: {e}"
+
+    @llm.ai_callable(desc="Searches Spotify and starts playing the requested song, artist, album, or playlist.")
+    async def play_music(self, query: str = "") -> str:
+        logger.info(f"Agent commanding Spotify play: {query}")
+        return spotify_controller.play_query(query)
+
+    @llm.ai_callable(desc="Pauses currently playing music on Spotify.")
+    async def pause_music(self) -> str:
+        logger.info("Agent commanding Spotify pause")
+        return spotify_controller.pause()
+
+    @llm.ai_callable(desc="Resumes music playback on Spotify.")
+    async def resume_music(self) -> str:
+        logger.info("Agent commanding Spotify resume")
+        return spotify_controller.resume()
+
+    @llm.ai_callable(desc="Skips to the next track on Spotify.")
+    async def next_song(self) -> str:
+        logger.info("Agent commanding Spotify skip next")
+        return spotify_controller.next_track()
+
+    @llm.ai_callable(desc="Goes back to the previous track on Spotify.")
+    async def previous_song(self) -> str:
+        logger.info("Agent commanding Spotify skip previous")
+        return spotify_controller.previous_track()
+
+    @llm.ai_callable(desc="Checks what track is currently playing on Spotify.")
+    async def what_is_playing(self) -> str:
+        return spotify_controller.get_currently_playing()
+
+    @llm.ai_callable(desc="Sets music playback volume from 0 to 100 percent.")
+    async def set_music_volume(self, volume_percent: int) -> str:
+        return spotify_controller.set_volume(volume_percent)
 
     @llm.ai_callable(desc="Searches contacts and asks for confirmation before initiating a call.")
     async def initiate_call_sequence(self, name_query: str):

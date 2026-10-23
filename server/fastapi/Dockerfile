@@ -31,6 +31,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 COPY main.py .
 COPY voice_agent.py .
 COPY rag_engine.py .
+COPY spotify_controller.py* .
+COPY spotify_token.json* .
 COPY telegram_knowledge_bot.py* .
 COPY rag_store.json* .
 COPY start.sh .
