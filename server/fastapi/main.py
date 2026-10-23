@@ -23,6 +23,14 @@ import uuid
 
 app = FastAPI(title="Zyra Technical Brain")
 
+# Security
+API_KEY_NAME = "X-Zyra-Token"
+EXPECTED_API_KEY = os.getenv("ZYRA_API_KEY", "zyra-secret-key-123")
+
+def verify_token(x_zyra_token: str = Header(...)):
+    if x_zyra_token != EXPECTED_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid Trust Token")
+
 @app.get("/health")
 def health_check():
     """
@@ -154,21 +162,12 @@ def startup_db_client():
 # ... (Rest of file)
 
 
-# Security
-API_KEY_NAME = "X-Zyra-Token"
-# In production, load this from environment variables
-EXPECTED_API_KEY = "zyra-secret-key-123" 
-
 class Target(BaseModel):
     host: str
 
 @app.get("/")
 def read_root():
     return {"status": "Zyra Brain Online"}
-
-def verify_token(x_zyra_token: str = Header(...)):
-    if x_zyra_token != EXPECTED_API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid Trust Token")
 
 @app.post("/tools/ping")
 def run_ping(target: Target, token: str = Security(verify_token)):
