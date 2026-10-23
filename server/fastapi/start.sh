@@ -15,6 +15,20 @@ echo "Starting Zyra Voice Agent Worker with auto-restart supervisor..."
   done
 ) &
 
+# 2. Start Telegram Knowledge Hub & PDF Bot (if TELEGRAM_BOT_TOKEN is set)
+if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+  echo "Starting Telegram Knowledge Hub Bot with auto-restart supervisor..."
+  (
+    while true; do
+      echo "[$(date)] Starting Telegram Knowledge Hub Bot..." >> /app/telegram_bot.log
+      python -u telegram_knowledge_bot.py >> /app/telegram_bot.log 2>&1
+      EXIT_CODE=$?
+      echo "[$(date)] Telegram Bot process exited with code $EXIT_CODE. Restarting in 5s..." >> /app/telegram_bot.log
+      sleep 5
+    done
+  ) &
+fi
+
 # 2. Start FastAPI Server in foreground
 echo "Starting FastAPI Brain Server..."
 exec uvicorn main:app --host 0.0.0.0 --port 8000

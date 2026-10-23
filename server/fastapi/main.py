@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+import io
 from pydantic import BaseModel
 import subprocess
 import shutil
@@ -381,6 +382,93 @@ def rag_ingest_document(request: RAGDocumentIngestRequest, token: str = Security
         chunk_size=request.chunk_size,
         overlap=request.overlap
     )
+
+@app.post("/rag/upload-pdf")
+async def rag_upload_pdf(
+    file: UploadFile = File(...),
+    category: Optional[str] = Form("pdf_knowledge"),
+    source: Optional[str] = Form("direct_upload"),
+    token: str = Security(verify_token)
+):
+    """
+    Directly uploads a PDF file, extracts all text page-by-page,
+    chunks and permanently stores into Zyra's vector database.
+    """
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+    content = await file.read()
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(content))
+        total_pages = len(reader.pages)
+        pages_text = []
+        for idx, page in enumerate(reader.pages):
+            txt = page.extract_text()
+            if txt and txt.strip():
+                pages_text.append(f"--- [Page {idx+1}/{total_pages}] ---\n{txt.strip()}")
+        full_text = "\n\n".join(pages_text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract PDF text: {e}")
+
+    if not full_text.strip():
+        raise HTTPException(status_code=400, detail="Could not extract any text from PDF (it might be scanned images).")
+
+    result = rag_engine.chunk_and_ingest_document(
+        title=file.filename,
+        text=full_text,
+        category=category,
+        source=source
+    )
+    result["pages_processed"] = total_pages
+    return result
+
+class SystemAlertRequest(BaseModel):
+    title: str
+    message: str
+    source: Optional[str] = "monitoring"
+    severity: Optional[str] = "warning"
+
+@app.post("/alerts/incoming")
+def handle_incoming_alert(alert: SystemAlertRequest, token: str = Security(verify_token)):
+    """
+    Receives alerts from Beszel, Datadog, or OCI VPS, records them in RAG,
+    and optionally broadcasts to Discord/Telegram.
+    """
+    alert_summary = f"[SYSTEM ALERT | {alert.source.upper()} | {alert.severity.upper()}]: {alert.title} - {alert.message}"
+    
+    # 1. Store in RAG so Zyra knows about server health
+    res = rag_engine.store_memory(
+        content=alert_summary,
+        category="system_alert",
+        source=alert.source,
+        role="system"
+    )
+
+    # 2. Forward to Discord if configured
+    discord_webhook = os.getenv("DISCORD_WEBHOOK_URL", "")
+    if discord_webhook:
+        try:
+            import requests
+            requests.post(discord_webhook, json={"content": f"🚨 **Zyra Alert [{alert.severity.upper()}]**: {alert.title}\n{alert.message}"}, timeout=3)
+        except Exception:
+            pass
+
+    # 3. Forward to Telegram if configured
+    tg_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    tg_chat = os.getenv("TELEGRAM_ALERT_CHAT_ID", "")
+    if tg_token and tg_chat:
+        try:
+            import requests
+            requests.post(
+                f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                json={"chat_id": tg_chat, "text": f"🚨 *Zyra Alert [{alert.severity.upper()}]*\n*{alert.title}*\n{alert.message}", "parse_mode": "Markdown"},
+                timeout=3
+            )
+        except Exception:
+            pass
+
+    return {"status": "recorded", "alert": alert_summary, "rag_result": res}
 
 @app.post("/rag/query")
 def rag_query(request: RAGQueryRequest, token: str = Security(verify_token)):
