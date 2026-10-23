@@ -177,6 +177,18 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
         while (_isRunning.get()) {
             try {
                 val readCount = record.read(buffer, 0, buffer.size)
+                if (readCount < 0) {
+                    Log.w(TAG, "AudioRecord read returned error: $readCount. Pausing briefly...")
+                    Thread.sleep(100)
+                    if (record.recordingState != AudioRecord.RECORDSTATE_RECORDING && _isRunning.get()) {
+                        try {
+                            record.startRecording()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to re-start recording: ${e.message}")
+                        }
+                    }
+                    continue
+                }
                 if (readCount > 0) {
                     var sumSq = 0.0
                     val samples = FloatArray(readCount) { idx ->

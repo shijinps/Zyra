@@ -7,6 +7,7 @@ import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.GET
+import retrofit2.http.Query
 
 interface ZyraApiService {
     
@@ -14,7 +15,8 @@ interface ZyraApiService {
 
     @GET("/livekit/token")
     fun getLiveKitToken(
-        @Header("X-Zyra-Token") token: String
+        @Header("X-Zyra-Token") token: String,
+        @Query("dispatch") dispatch: Boolean = true
     ): Call<TokenResponse>
     
     data class SyncContactsRequest(val contacts: List<Contact>)

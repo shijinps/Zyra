@@ -1,15 +1,23 @@
-▁HE Y ▁ Z Y RA :2.8 #0.15
-▁HE Y ▁ Z Y R A :2.8 #0.15
-HE Y ▁ Z Y RA :2.8 #0.15
-HE Y ▁ Z Y R A :2.8 #0.15
-▁HE Y ▁ S A RA :2.5 #0.15
-▁HE Y ▁ S I RA :2.5 #0.15
-▁HE Y ▁ Z A RA :2.5 #0.15
-▁ Z Y RA :3.0 #0.18
-▁ Z Y R A :3.0 #0.18
-Z Y RA :3.0 #0.18
-Z Y R A :3.0 #0.18
-▁ S A RA :2.5 #0.18
-▁ Z A RA :2.5 #0.18
-▁JA R V I S :2.5 #0.18
-▁HE Y ▁JA R V I S :2.5 #0.18
+▁HE Y ▁ Z Y RA :3.5 #0.07
+▁HE Y ▁ Z Y R A :3.5 #0.07
+HE Y ▁ Z Y RA :3.5 #0.07
+HE Y ▁ Z Y R A :3.5 #0.07
+▁HI ▁ Z Y RA :3.5 #0.07
+▁HI ▁ Z Y R A :3.5 #0.07
+▁HI ▁ Z A RA :3.5 #0.07
+▁OKAY ▁ Z Y RA :3.5 #0.07
+▁OKAY ▁ Z A RA :3.5 #0.07
+▁HE Y ▁ Z A RA :3.5 #0.07
+▁HE Y ▁ S A RA :3.2 #0.08
+▁HE Y ▁ S I RA :3.2 #0.08
+▁ Z Y RA :3.8 #0.08
+▁ Z Y R A :3.8 #0.08
+Z Y RA :3.8 #0.08
+Z Y R A :3.8 #0.08
+▁ Z A RA :3.5 #0.08
+Z A RA :3.5 #0.08
+▁ Z A I RA :3.5 #0.08
+Z A I RA :3.5 #0.08
+▁ S A RA :3.2 #0.08
+▁JA R V I S :3.5 #0.08
+▁HE Y ▁JA R V I S :3.5 #0.07

@@ -23,6 +23,7 @@ object LiveKitManager {
     private var room: Room? = null
     private var eventJob: Job? = null
     private var healthMonitorJob: Job? = null
+    private var activeAudioTrackSid: String? = null
     
     // URL to your LiveKit Cloud or Self-hosted Instance
     private const val LIVEKIT_URL = "wss://zyra-sbn0wnp2.livekit.cloud" 
@@ -63,7 +64,8 @@ object LiveKitManager {
     fun prefetchToken() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                // Pre-warming token ONLY (dispatch = false) to prevent spawning premature agent workers
+                val response = apiService.getLiveKitToken(BRAIN_SECRET, dispatch = false).execute()
                 if (response.isSuccessful && response.body() != null) {
                     cachedToken = response.body()!!.token
                     cachedTokenTime = System.currentTimeMillis()
@@ -99,6 +101,7 @@ object LiveKitManager {
         healthMonitorJob = null
         eventJob?.cancel()
         eventJob = null
+        activeAudioTrackSid = null
         val oldRoom = room ?: return
         room = null
         withContext(Dispatchers.IO) {
@@ -129,6 +132,7 @@ object LiveKitManager {
             healthMonitorJob = null
             eventJob?.cancel()
             eventJob = null
+            activeAudioTrackSid = null
             if (oldRoom != null) {
                 CoroutineScope(Dispatchers.IO).launch {
                     try { oldRoom.disconnect() } catch (_: Exception) {}
@@ -148,7 +152,7 @@ object LiveKitManager {
                     for (attempt in 1..2) {
                         try {
                             val response = withContext(Dispatchers.IO) {
-                                apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                                apiService.getLiveKitToken(BRAIN_SECRET, dispatch = true).execute()
                             }
                             if (response.isSuccessful && response.body() != null) {
                                 token = response.body()!!.token
@@ -193,10 +197,12 @@ object LiveKitManager {
                             }
                             is RoomEvent.Disconnected -> {
                                 Log.d(TAG, "Disconnected from LiveKit. Reason: ${event.reason}, Error: ${event.error?.message}")
+                                activeAudioTrackSid = null
                                 listener?.onDisconnected()
                             }
                             is RoomEvent.FailedToConnect -> {
                                 Log.e(TAG, "Failed to connect to LiveKit: ${event.error.message}")
+                                activeAudioTrackSid = null
                                 listener?.onError(event.error.message ?: "Unknown Connection Error")
                             }
                             is RoomEvent.ParticipantConnected -> {
@@ -206,14 +212,29 @@ object LiveKitManager {
                                 Log.d(TAG, "Participant left: identity=${event.participant.identity?.value}")
                             }
                             is RoomEvent.TrackSubscribed -> {
-                                Log.d(TAG, "Subscribed to track: kind=${event.track.kind}, name=${event.track.name}")
+                                Log.d(TAG, "Subscribed to track: kind=${event.track.kind}, name=${event.track.name}, sid=${event.track.sid}")
                                 if (event.track is io.livekit.android.room.track.RemoteAudioTrack || event.track.kind == io.livekit.android.room.track.Track.Kind.AUDIO) {
-                                    Log.i(TAG, "Voice Agent audio track received. Cancelling health monitor timeout.")
-                                    healthMonitorJob?.cancel()
+                                    val remoteAudio = event.track as? io.livekit.android.room.track.RemoteAudioTrack
+                                    if (activeAudioTrackSid == null) {
+                                        activeAudioTrackSid = event.track.sid
+                                        Log.i(TAG, "Primary Voice Agent audio track assigned: ${event.track.sid}. Cancelling health monitor timeout.")
+                                        healthMonitorJob?.cancel()
+                                    } else if (activeAudioTrackSid != event.track.sid) {
+                                        // Extra agent track detected: mute it to prevent phase echo
+                                        Log.w(TAG, "Duplicate remote audio track detected (${event.track.sid}), disabling to prevent echo!")
+                                        try {
+                                            remoteAudio?.enabled = false
+                                        } catch (e: Exception) {
+                                            Log.w(TAG, "Could not disable duplicate audio track: ${e.message}")
+                                        }
+                                    }
                                 }
                             }
                             is RoomEvent.TrackUnsubscribed -> {
                                 Log.d(TAG, "Unsubscribed from track: kind=${event.track.kind}, name=${event.track.name}")
+                                if (event.track.sid == activeAudioTrackSid) {
+                                    activeAudioTrackSid = null
+                                }
                             }
                             is RoomEvent.Reconnecting -> {
                                 Log.w(TAG, "LiveKit room reconnecting...")
@@ -284,17 +305,17 @@ object LiveKitManager {
     private fun publishAudio() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // SENSITIVITY TUNE: Lowering noise suppression so ZAY hears the raw voice better
+                // Enable hardware Acoustic Echo Cancellation (AEC) and Noise Suppression (NS)
                 val audioOptions = io.livekit.android.room.track.LocalAudioTrackOptions(
-                    noiseSuppression = false, 
+                    noiseSuppression = true, 
                     echoCancellation = true,
                     autoGainControl = true,
-                    highPassFilter = false
+                    highPassFilter = true
                 )
                 val localTrack = room?.localParticipant?.createAudioTrack("microphone", audioOptions)
                 localTrack?.start()
                 room?.localParticipant?.publishAudioTrack(localTrack!!)
-                Log.d(TAG, "Microphone published with Noise Cancellation")
+                Log.d(TAG, "Microphone published with Echo Cancellation and Noise Suppression enabled")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to publish audio", e)
             }
