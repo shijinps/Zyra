@@ -20,6 +20,16 @@ try:
     from spotify_controller import spotify_controller
 except ImportError:
     from server.fastapi.spotify_controller import spotify_controller
+
+try:
+    import apprise_client
+except ImportError:
+    from server.fastapi import apprise_client
+
+try:
+    import browser_engine
+except ImportError:
+    from server.fastapi import browser_engine
 from google import genai
 import time
 import uuid
@@ -483,7 +493,21 @@ def handle_incoming_alert(alert: SystemAlertRequest, token: str = Security(verif
         except Exception:
             pass
 
+    # 4. Forward via Apprise Universal Gateway
+    apprise_client.send_notification(alert.title, alert.message, notify_type=alert.severity)
+
     return {"status": "recorded", "alert": alert_summary, "rag_result": res}
+
+class BrowseRequest(BaseModel):
+    url: str
+    wait_for_selector: Optional[str] = None
+
+@app.post("/tools/browse")
+def browse_page(request: BrowseRequest, token: str = Security(verify_token)):
+    """
+    Renders dynamic web pages using Browserless and returns extracted text.
+    """
+    return {"result": browser_engine.get_page_content(request.url, request.wait_for_selector)}
 
 @app.post("/rag/query")
 def rag_query(request: RAGQueryRequest, token: str = Security(verify_token)):

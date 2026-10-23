@@ -33,6 +33,8 @@ COPY voice_agent.py .
 COPY rag_engine.py .
 COPY spotify_controller.py* .
 COPY spotify_token.json* .
+COPY browser_engine.py* .
+COPY apprise_client.py* .
 COPY telegram_knowledge_bot.py* .
 COPY rag_store.json* .
 COPY start.sh .

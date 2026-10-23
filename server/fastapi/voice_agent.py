@@ -43,6 +43,16 @@ try:
 except ImportError:
     from server.fastapi.spotify_controller import spotify_controller
 
+try:
+    import browser_engine
+except ImportError:
+    from server.fastapi import browser_engine
+
+try:
+    import apprise_client
+except ImportError:
+    from server.fastapi import apprise_client
+
 # Ensure legacy FunctionContext and ai_callable compatibility for tool calling
 if not hasattr(llm, "FunctionContext"):
     class _FunctionContextFallback:
@@ -326,6 +336,17 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Sets music playback volume from 0 to 100 percent.")
     async def set_music_volume(self, volume_percent: int) -> str:
         return spotify_controller.set_volume(volume_percent)
+
+    @llm.ai_callable(desc="Visits and reads the live text content of any website using headless browser.")
+    async def browse_website(self, url: str) -> str:
+        logger.info(f"Agent browsing website: {url}")
+        return browser_engine.get_page_content(url)
+
+    @llm.ai_callable(desc="Dispatches an urgent notification to Shijin across Discord and Telegram.")
+    async def dispatch_notification(self, title: str, message: str) -> str:
+        logger.info(f"Agent dispatching alert via Apprise: {title}")
+        res = apprise_client.send_notification(title, message, notify_type="warning")
+        return f"Notification dispatched: {title}"
 
     @llm.ai_callable(desc="Searches contacts and asks for confirmation before initiating a call.")
     async def initiate_call_sequence(self, name_query: str):

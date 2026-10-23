@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  # 1. Beszel Hub (Modern Server Resource & Container Dashboard)
+  beszel:
+    image: henrygd/beszel:latest
+    container_name: beszel_hub
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./beszel_data:/beszel_data
+    environment:
+      - PORT=8090
+    networks:
+      - zyra_infra_net
+
+  # 2. Beszel Agent (Collects VPS & Docker Container Telemetry)
+  beszel-agent:
+    image: henrygd/beszel-agent:latest
+    container_name: beszel_agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /proc:/proc:ro
+      - /:/host:ro
+    environment:
+      - PORT=4560
+      - KEY=${BESZEL_PUBLIC_KEY:-""}
+      - LISTEN=/host
+
+  # 3. Apprise API (Universal Multi-Platform Notifications: Discord, Telegram, Email, Slack)
+  apprise:
+    image: caronc/apprise:latest
+    container_name: apprise_api
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./apprise_config:/config
+    networks:
+      - zyra_infra_net
+
+  # 4. Browserless (Headless Chromium for Dynamic Web Scraping & Rendering)
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    container_name: browserless_chrome
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - CONCURRENT=5
+      - QUEUE_LENGTH=10
+      - TOKEN=${BROWSERLESS_TOKEN:-""}
+      - TIMEOUT=30000
+    networks:
+      - zyra_infra_net
+
+  # 5. Cloudflared (Cloudflare Tunnel - Zero Open Ports, Global SSL)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared_tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - zyra_infra_net
+
+networks:
+  zyra_infra_net:
+    driver: bridge
