@@ -105,8 +105,8 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
             )
             val bufferSize = maxOf(minBufSize, CHUNK_SIZE * 2)
 
-            // VOICE_RECOGNITION enables hardware tuning for speech, with fallback to MIC
-            val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
+            // Use MIC as primary: Android foreground services have reliable continuous background access to MIC without VOICE_RECOGNITION policy silencer
+            val audioSource = MediaRecorder.AudioSource.MIC
             var record = AudioRecord(
                 audioSource,
                 SAMPLE_RATE,
@@ -116,9 +116,9 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
             )
 
             if (record.state != AudioRecord.STATE_INITIALIZED) {
-                Log.w(TAG, "VOICE_RECOGNITION failed to initialize, falling back to MIC")
+                Log.w(TAG, "MIC failed to initialize, falling back to VOICE_RECOGNITION")
                 record = AudioRecord(
-                    MediaRecorder.AudioSource.MIC,
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
                     SAMPLE_RATE,
                     AudioFormat.CHANNEL_IN_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
