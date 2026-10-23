@@ -61,6 +61,16 @@ def health_check():
         res["database_error"] = db_err
     return res
 
+@app.get("/diag/telegram-log")
+def get_telegram_log(token: str = Security(verify_token)):
+    """Diagnostic endpoint to inspect Telegram bot worker logs."""
+    log_path = "/app/telegram_bot.log"
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+        return {"exists": True, "total_lines": len(lines), "tail": lines[-100:]}
+    return {"exists": False, "message": "Log file not found"}
+
 @app.on_event("startup")
 def startup_db_client():
     """
