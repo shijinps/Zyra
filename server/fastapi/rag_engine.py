@@ -311,21 +311,28 @@ class RAGEngine:
                 except Exception:
                     pass
 
-        # 2. Fallback to local cosine similarity
+        # 2. Fallback to local cosine similarity with hybrid keyword matching
         scored_memories = []
+        query_words = set(w.lower() for w in cleaned_query.split() if len(w) > 2)
         for m in self.local_memories:
             vec = m.get("embedding")
-            if vec:
-                sim = cosine_similarity(query_vec, vec)
-                if sim >= threshold:
-                    scored_memories.append({
-                        "content": m["content"],
-                        "category": m.get("category", "daily_dialogue"),
-                        "source": m.get("source", "voice"),
-                        "role": m.get("role", "user"),
-                        "created_at": m.get("created_at", ""),
-                        "score": round(sim, 3)
-                    })
+            sim = cosine_similarity(query_vec, vec) if vec else 0.0
+            
+            # Hybrid lexical boost: ensures exact channel/entity names match with high relevance
+            content_lower = m.get("content", "").lower()
+            overlap = sum(1 for w in query_words if w in content_lower)
+            if query_words and overlap > 0:
+                sim += 0.25 * (overlap / len(query_words))
+
+            if sim >= threshold or overlap > 0:
+                scored_memories.append({
+                    "content": m["content"],
+                    "category": m.get("category", "daily_dialogue"),
+                    "source": m.get("source", "voice"),
+                    "role": m.get("role", "user"),
+                    "created_at": m.get("created_at", ""),
+                    "score": round(sim, 3)
+                })
 
         scored_memories.sort(key=lambda x: x["score"], reverse=True)
         return scored_memories[:top_k]
