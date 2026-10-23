@@ -30,6 +30,10 @@ try:
     import browser_engine
 except ImportError:
     from server.fastapi import browser_engine
+try:
+    import live_stream_worker
+except ImportError:
+    from server.fastapi import live_stream_worker
 from google import genai
 import time
 import uuid
@@ -508,6 +512,17 @@ def browse_page(request: BrowseRequest, token: str = Security(verify_token)):
     Renders dynamic web pages using Browserless and returns extracted text.
     """
     return {"result": browser_engine.get_page_content(request.url, request.wait_for_selector)}
+
+@app.get("/live-news/channels")
+def get_live_channels():
+    """Returns curated list of monitored YouTube live news streams."""
+    return {"channels": live_stream_worker.LIVE_CHANNELS}
+
+@app.post("/live-news/refresh")
+def refresh_live_news():
+    """Polls monitored live news channels and ingests breaking updates into RAG."""
+    updates = live_stream_worker.poll_all_live_streams()
+    return {"status": "success", "updates_count": len(updates), "updates": updates}
 
 @app.post("/rag/query")
 def rag_query(request: RAGQueryRequest, token: str = Security(verify_token)):

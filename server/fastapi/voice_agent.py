@@ -285,6 +285,15 @@ class AssistantFnc(llm.FunctionContext):
             logger.error(f"News fetch error: {e}")
             return f"I couldn't fetch the news right now: {e}"
 
+    @llm.ai_callable(desc="Fetches real-time live breaking news from 24/7 TV channels (like Asianet, 24 News, NDTV) using RAG live stream memory.")
+    async def get_live_breaking_news(self, channel_or_topic: str = "Malayalam") -> str:
+        logger.info(f"Agent retrieving live breaking news for: {channel_or_topic}")
+        matches = rag_engine.search_memories(f"{channel_or_topic} live breaking", top_k=3, threshold=0.08)
+        if matches:
+            bullets = [f"- {m['content']}" for m in matches]
+            return f"Here is the latest live breaking update, Shijin:\n" + "\n".join(bullets)
+        return f"I checked the live broadcast streams for {channel_or_topic}, but there are no major new breaking updates in the last hour, Shijin."
+
     @llm.ai_callable(desc="Fetches current live weather for a given city.")
     async def get_weather(self, city: str = "Bangalore") -> str:
         api_key = os.getenv("OPENWEATHER_API_KEY", "b289129b097e8f846cd0809e7937ed51")
