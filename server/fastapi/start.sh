@@ -15,8 +15,10 @@ echo "Starting Zyra Voice Agent Worker with auto-restart supervisor..."
   done
 ) &
 
-# 2. Start Telegram Knowledge Hub & PDF Bot (if TELEGRAM_BOT_TOKEN is set)
-if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+# 2. Start Telegram Knowledge Hub & PDF Bot (if TELEGRAM_BOT_TOKEN or BOT_TOKEN is set)
+TG_TOKEN="${TELEGRAM_BOT_TOKEN:-$BOT_TOKEN}"
+if [ -n "$TG_TOKEN" ]; then
+  export TELEGRAM_BOT_TOKEN="$TG_TOKEN"
   echo "Starting Telegram Knowledge Hub Bot with auto-restart supervisor..."
   (
     while true; do

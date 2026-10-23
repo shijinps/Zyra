@@ -32,7 +32,8 @@ try:
 except ImportError:
     from server.fastapi.rag_engine import rag_engine
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or ""
+GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome = (
@@ -156,9 +157,9 @@ async def ask_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await thinking_msg.edit_text(f"❌ Search error: `{e}`")
 
 def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+    token = (os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or "").strip()
     if not token:
-        logger.warning("TELEGRAM_BOT_TOKEN environment variable not set. Telegram Knowledge Bot is disabled.")
+        logger.warning("Neither TELEGRAM_BOT_TOKEN nor BOT_TOKEN is set. Telegram Knowledge Bot is disabled.")
         return
 
     logger.info("Starting Zyra Telegram Knowledge Hub & PDF Bot...")

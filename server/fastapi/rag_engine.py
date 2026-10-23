@@ -48,25 +48,27 @@ def get_embedding(text: str) -> List[float]:
 
     gemini_key = os.getenv("GEMINI_API_KEY", "")
     if gemini_key:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={gemini_key}"
-            payload = {
-                "model": "models/text-embedding-004",
-                "content": {"parts": [{"text": cleaned}]}
-            }
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
-                url,
-                data=req_data,
-                headers={"Content-Type": "application/json", "User-Agent": "ZyraRAG/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=4) as response:
-                result = json.loads(response.read().decode("utf-8"))
-                values = result.get("embedding", {}).get("values")
-                if values and len(values) == EMBEDDING_DIM:
-                    return values
-        except Exception as e:
-            logger.debug(f"Gemini embedding API call skipped: {e}. Using resilient local vectorizer.")
+        for model in ["models/gemini-embedding-001", "models/text-embedding-004"]:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/{model}:embedContent?key={gemini_key}"
+                payload = {
+                    "model": model,
+                    "content": {"parts": [{"text": cleaned}]},
+                    "outputDimensionality": EMBEDDING_DIM
+                }
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(
+                    url,
+                    data=req_data,
+                    headers={"Content-Type": "application/json", "User-Agent": "ZyraRAG/1.0"}
+                )
+                with urllib.request.urlopen(req, timeout=4) as response:
+                    result = json.loads(response.read().decode("utf-8"))
+                    values = result.get("embedding", {}).get("values")
+                    if values and len(values) == EMBEDDING_DIM:
+                        return values
+            except Exception as e:
+                logger.debug(f"Gemini embedding API call ({model}) skipped: {e}.")
 
     return _hash_vector(cleaned, EMBEDDING_DIM)
 
