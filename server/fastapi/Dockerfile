@@ -30,6 +30,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Copy logic
 COPY main.py .
 COPY voice_agent.py .
+COPY rag_engine.py .
+COPY rag_store.json* .
 COPY start.sh .
 COPY my_contacts.vcf* .
 RUN chmod +x start.sh
