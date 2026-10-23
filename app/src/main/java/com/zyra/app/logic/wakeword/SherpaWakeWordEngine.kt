@@ -105,14 +105,26 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
             )
             val bufferSize = maxOf(minBufSize, CHUNK_SIZE * 2)
 
-            // VOICE_RECOGNITION enables hardware tuning for speech
-            val record = AudioRecord(
-                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            // VOICE_RECOGNITION enables hardware tuning for speech, with fallback to MIC
+            val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
+            var record = AudioRecord(
+                audioSource,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize
             )
+
+            if (record.state != AudioRecord.STATE_INITIALIZED) {
+                Log.w(TAG, "VOICE_RECOGNITION failed to initialize, falling back to MIC")
+                record = AudioRecord(
+                    MediaRecorder.AudioSource.MIC,
+                    SAMPLE_RATE,
+                    AudioFormat.CHANNEL_IN_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    bufferSize
+                )
+            }
 
             if (record.state != AudioRecord.STATE_INITIALIZED) {
                 throw IllegalStateException("AudioRecord failed to initialize")
@@ -122,14 +134,18 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
             val sessionId = record.audioSessionId
 
             // Hardware DSP filters
-            if (NoiseSuppressor.isAvailable()) {
-                noiseSuppressor = NoiseSuppressor.create(sessionId)?.apply { enabled = true }
-            }
-            if (AcousticEchoCanceler.isAvailable()) {
-                echoCanceler = AcousticEchoCanceler.create(sessionId)?.apply { enabled = true }
-            }
-            if (AutomaticGainControl.isAvailable()) {
-                gainControl = AutomaticGainControl.create(sessionId)?.apply { enabled = true }
+            try {
+                if (NoiseSuppressor.isAvailable()) {
+                    noiseSuppressor = NoiseSuppressor.create(sessionId)?.apply { enabled = true }
+                }
+                if (AcousticEchoCanceler.isAvailable()) {
+                    echoCanceler = AcousticEchoCanceler.create(sessionId)?.apply { enabled = true }
+                }
+                if (AutomaticGainControl.isAvailable()) {
+                    gainControl = AutomaticGainControl.create(sessionId)?.apply { enabled = true }
+                }
+            } catch (e: Throwable) {
+                Log.w(TAG, "DSP filters warning: ${e.message}")
             }
 
             record.startRecording()
@@ -156,22 +172,37 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
         val bufferSize = (interval * SAMPLE_RATE).toInt() // 1600 samples
         val buffer = ShortArray(bufferSize)
         val s = stream ?: kws.createStream().also { stream = it }
+        var loopIteration = 0L
 
         while (_isRunning.get()) {
             try {
                 val readCount = record.read(buffer, 0, buffer.size)
                 if (readCount > 0) {
-                    val samples = FloatArray(readCount) { buffer[it] / 32768.0f }
+                    var sumSq = 0.0
+                    val samples = FloatArray(readCount) { idx ->
+                        val v = buffer[idx] / 32768.0f
+                        sumSq += v * v
+                        v
+                    }
+                    val rms = Math.sqrt(sumSq / readCount)
+                    loopIteration++
+
+                    // Periodic health check log every ~3 seconds (30 * 100ms)
+                    if (loopIteration % 30L == 0L) {
+                        Log.d(TAG, "Wake word listening... (audio active, rms=${String.format(java.util.Locale.US, "%.4f", rms)})")
+                    }
+
                     s.acceptWaveform(samples, sampleRate = SAMPLE_RATE)
 
                     while (kws.isReady(s)) {
                         kws.decode(s)
-                        val result = kws.getResult(s)
-                        if (result.keyword.isNotEmpty()) {
-                            Log.d(TAG, "Sherpa-ONNX matched keyword: [${result.keyword}]")
-                            kws.reset(s)
-                            currentListener?.onWakeWordDetected(0)
-                        }
+                    }
+
+                    val result = kws.getResult(s)
+                    if (result.keyword.isNotEmpty()) {
+                        Log.i(TAG, "Sherpa-ONNX matched keyword: [${result.keyword}] with RMS=${String.format(java.util.Locale.US, "%.4f", rms)}")
+                        kws.reset(s)
+                        currentListener?.onWakeWordDetected(0)
                     }
                 }
             } catch (e: Throwable) {

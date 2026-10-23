@@ -233,6 +233,43 @@ class AssistantFnc(llm.FunctionContext):
             logger.error(f"MetaMCP Tool Error: {e}")
             return f"I encountered an error executing {tool_name}, Sir."
 
+    @llm.ai_callable(desc="Fetches the top latest news headlines for India or global.")
+    async def get_latest_news(self, query: str = "general") -> str:
+        api_key = os.getenv("NEWS_API_KEY", "e577e5c33c244b0e881c8bc5fd272399")
+        try:
+            import urllib.request
+            url = f"https://newsapi.org/v2/top-headlines?country=in&pageSize=5&apiKey={api_key}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Zyra/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                articles = data.get("articles", [])
+                if not articles:
+                    return "No news headlines found at the moment."
+                headlines = [f"- {a['title']}" for a in articles[:4] if a.get('title')]
+                return "Here are the top headlines:\n" + "\n".join(headlines)
+        except Exception as e:
+            logger.error(f"News fetch error: {e}")
+            return f"I couldn't fetch the news right now: {e}"
+
+    @llm.ai_callable(desc="Fetches current live weather for a given city.")
+    async def get_weather(self, city: str = "Bangalore") -> str:
+        api_key = os.getenv("OPENWEATHER_API_KEY", "b289129b097e8f846cd0809e7937ed51")
+        try:
+            import urllib.request
+            import urllib.parse
+            q = urllib.parse.quote(city)
+            url = f"https://api.openweathermap.org/data/2.5/weather?q={q}&appid={api_key}&units=metric"
+            req = urllib.request.Request(url, headers={"User-Agent": "Zyra/1.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                temp = data["main"]["temp"]
+                desc = data["weather"][0]["description"]
+                city_name = data.get("name", city)
+                return f"Currently in {city_name}, it's {temp}°C with {desc}."
+        except Exception as e:
+            logger.error(f"Weather fetch error: {e}")
+            return f"I couldn't fetch the weather for {city} right now: {e}"
+
     @llm.ai_callable(desc="Searches contacts and asks for confirmation before initiating a call.")
     async def initiate_call_sequence(self, name_query: str):
         logger.info(f"Agent asking to call: {name_query}")
@@ -457,6 +494,7 @@ async def entrypoint(ctx: JobContext):
     # Engine Architecture Mode:
     # Mode A: Resilient Fallback Pipeline (Groq Whisper Large v3 Turbo + Groq LLM -> Gemini 2.0 Fallback) [PRIMARY]
     # Mode B: Gemini 2.0 Multimodal Live API (Direct Realtime Speech-to-Speech)
+    active_agent = None
     mode = os.getenv("VOICE_ENGINE_MODE", "pipeline")
 
     started = False
@@ -480,6 +518,7 @@ async def entrypoint(ctx: JobContext):
                 chat_ctx=chat_ctx,
                 vad=silero.VAD.load() if (HAS_SILERO_PLUGIN and silero is not None) else None
             )
+            active_agent = session
             try:
                 await session.start(room=ctx.room)
             except (TypeError, AttributeError):
@@ -546,6 +585,7 @@ async def entrypoint(ctx: JobContext):
                 fnc_ctx=fnc_ctx,
                 instructions=create_system_prompt(history_str, update_mcp_session())
             )
+            active_agent = agent
             agent.start(ctx.room)
             await asyncio.sleep(1.2)
             await agent.say("Hey Shijin! What's up?")
@@ -556,6 +596,7 @@ async def entrypoint(ctx: JobContext):
                 llm=selected_llm,
                 tts=selected_tts,
             )
+            active_agent = session
             instructions = create_system_prompt(history_str, update_mcp_session())
             started_session = False
             try:
@@ -582,17 +623,47 @@ async def entrypoint(ctx: JobContext):
         else:
             logger.error("No valid LiveKit agent session class found.")
 
+    def persist_active_memory():
+        try:
+            logger.info("Persisting session memory to memory.json...")
+            target = active_agent
+            messages = []
+            if target:
+                if hasattr(target, "chat_ctx") and target.chat_ctx:
+                    messages = getattr(target.chat_ctx, "messages", [])
+                elif hasattr(target, "history"):
+                    messages = getattr(target, "history", [])
+
+            new_turns = []
+            for msg in messages:
+                role = getattr(msg, "role", "")
+                content = getattr(msg, "content", "")
+                if role in ["user", "assistant"] and content:
+                    text_str = content if isinstance(content, str) else str(content)
+                    if role != "system":
+                        new_turns.append({"role": role, "content": text_str})
+
+            if new_turns:
+                full_memory = load_memory() + new_turns
+                save_memory(full_memory)
+                logger.info(f"Successfully saved {len(new_turns)} new conversation turns to memory.json")
+            else:
+                logger.info("No new conversation turns to save.")
+        except Exception as e:
+            logger.warning(f"Error persisting session memory: {e}")
+
     @ctx.room.on("disconnected")
     def on_disconnect(*args, **kwargs):
         logger.info("Room disconnected, saving memory...")
+        persist_active_memory()
 
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant):
-        # Shut down this agent job cleanly when the user disconnects
         try:
             humans = [p for p in ctx.room.remote_participants.values() if not (p.identity and p.identity.startswith("agent-"))]
             if not humans:
-                logger.info("All human participants left room. Shutting down agent job.")
+                logger.info("All human participants left room. Persisting memory and shutting down agent job.")
+                persist_active_memory()
                 ctx.shutdown()
         except Exception as e:
             logger.warning(f"Error in participant_disconnected hook: {e}")
