@@ -9,6 +9,10 @@ import json
 import base64
 from typing import Optional, List
 from livekit import api
+try:
+    from rag_engine import rag_engine
+except ImportError:
+    from server.fastapi.rag_engine import rag_engine
 from google import genai
 import time
 import uuid
@@ -323,6 +327,55 @@ async def trigger_livekit_agent_dispatch(room_name: str = "zyra-room", agent_nam
                 await lkapi.aclose()
             except Exception:
                 pass
+
+class RAGRememberRequest(BaseModel):
+    content: str
+    category: Optional[str] = "general"
+    source: Optional[str] = "api"
+
+class RAGQueryRequest(BaseModel):
+    query: str
+    top_k: Optional[int] = 4
+    threshold: Optional[float] = 0.15
+
+@app.post("/rag/remember")
+def rag_remember(request: RAGRememberRequest, token: str = Security(verify_token)):
+    """
+    Embeds and stores new knowledge or personal fact into Zyra's long-term memory.
+    """
+    result = rag_engine.store_memory(request.content, category=request.category, source=request.source)
+    return result
+
+@app.post("/rag/query")
+def rag_query(request: RAGQueryRequest, token: str = Security(verify_token)):
+    """
+    Performs semantic vector search over Zyra's long-term memory bank.
+    """
+    matches = rag_engine.search_memories(request.query, top_k=request.top_k, threshold=request.threshold)
+    return {
+        "query": request.query,
+        "count": len(matches),
+        "matches": matches
+    }
+
+@app.get("/rag/memories")
+def rag_get_all(token: str = Security(verify_token)):
+    """
+    Returns all stored memories and facts in Zyra's knowledge base.
+    """
+    return {
+        "total": len(rag_engine.local_memories),
+        "memories": [
+            {
+                "id": m.get("id"),
+                "content": m.get("content"),
+                "category": m.get("category"),
+                "source": m.get("source"),
+                "created_at": m.get("created_at")
+            }
+            for m in rag_engine.local_memories
+        ]
+    }
 
 @app.get("/livekit/token")
 async def get_livekit_token(token: str = Security(verify_token), dispatch: bool = True):
