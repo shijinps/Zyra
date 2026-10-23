@@ -333,6 +333,17 @@ class RAGRememberRequest(BaseModel):
     category: Optional[str] = "general"
     source: Optional[str] = "api"
 
+class RAGBatchRememberRequest(BaseModel):
+    items: List[RAGRememberRequest]
+
+class RAGDocumentIngestRequest(BaseModel):
+    title: str
+    text: str
+    category: Optional[str] = "pdf_knowledge"
+    source: Optional[str] = "telegram_pdf_bot"
+    chunk_size: Optional[int] = 700
+    overlap: Optional[int] = 100
+
 class RAGQueryRequest(BaseModel):
     query: str
     top_k: Optional[int] = 4
@@ -345,6 +356,31 @@ def rag_remember(request: RAGRememberRequest, token: str = Security(verify_token
     """
     result = rag_engine.store_memory(request.content, category=request.category, source=request.source)
     return result
+
+@app.post("/rag/remember-batch")
+def rag_remember_batch(request: RAGBatchRememberRequest, token: str = Security(verify_token)):
+    """
+    Stores a batch of pre-chunked knowledge items or memories.
+    """
+    results = []
+    for item in request.items:
+        res = rag_engine.store_memory(item.content, category=item.category, source=item.source)
+        results.append(res)
+    return {"total": len(results), "results": results}
+
+@app.post("/rag/ingest-document")
+def rag_ingest_document(request: RAGDocumentIngestRequest, token: str = Security(verify_token)):
+    """
+    Chunks entire PDF or document text, embeds all parts, and stores permanently in vector DB.
+    """
+    return rag_engine.chunk_and_ingest_document(
+        title=request.title,
+        text=request.text,
+        category=request.category,
+        source=request.source,
+        chunk_size=request.chunk_size,
+        overlap=request.overlap
+    )
 
 @app.post("/rag/query")
 def rag_query(request: RAGQueryRequest, token: str = Security(verify_token)):

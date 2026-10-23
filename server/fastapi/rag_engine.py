@@ -373,4 +373,64 @@ class RAGEngine:
             session_id=session_id
         )
 
+    def chunk_and_ingest_document(
+        self, 
+        title: str, 
+        text: str, 
+        category: str = "pdf_knowledge", 
+        source: str = "telegram_pdf_bot", 
+        chunk_size: int = 700, 
+        overlap: int = 100
+    ) -> Dict:
+        """
+        Splits entire PDF / long-form document text into semantic overlapping chunks,
+        embeds every chunk, and permanently stores them into pgvector/local RAG database.
+        """
+        cleaned_text = text.strip()
+        if not cleaned_text:
+            return {"status": "error", "message": "Document text is empty"}
+
+        # Semantic paragraph-based chunking
+        raw_paragraphs = [p.strip() for p in cleaned_text.split("\n") if p.strip()]
+        chunks = []
+        current = ""
+        for p in raw_paragraphs:
+            if len(current) + len(p) + 1 <= chunk_size:
+                current = f"{current} {p}" if current else p
+            else:
+                if current:
+                    chunks.append(current)
+                current = p
+        if current:
+            chunks.append(current)
+
+        # Fallback slicing if paragraph splitting resulted in zero chunks
+        if not chunks:
+            start = 0
+            while start < len(cleaned_text):
+                end = min(start + chunk_size, len(cleaned_text))
+                chunks.append(cleaned_text[start:end])
+                start += max(1, chunk_size - overlap)
+
+        stored_count = 0
+        total = len(chunks)
+        for i, chunk in enumerate(chunks):
+            content_with_meta = f"[{title} | Page/Section {i+1}/{total}]: {chunk.strip()}"
+            res = self.store_memory(
+                content=content_with_meta, 
+                category=category, 
+                source=source, 
+                role="document"
+            )
+            if res.get("status") == "success":
+                stored_count += 1
+
+        logger.info(f"📚 Ingested document '{title}': {stored_count}/{total} chunks stored.")
+        return {
+            "status": "success",
+            "document": title,
+            "total_chunks": total,
+            "stored_chunks": stored_count
+        }
+
 rag_engine = RAGEngine()
