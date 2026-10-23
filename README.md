@@ -36,6 +36,9 @@ flowchart TD
 | **🔔 Instant Notifications** | Apprise + Webhook Receiver | `https://apizyra.shijin.in/alerts` | 🟢 Multi-channel Ready |
 | **📱 Android Native Actions** | LiveKit WebRTC + Native Calls | Android App + `my_contacts.vcf` | 🟢 Connected |
 | **📺 Live Stream Intelligence**| Audio Slicing & Ticker Poller | `https://apizyra.shijin.in/live-news` | 🟢 Active |
+| **⏱️ Uptime Monitoring** | Uptime Kuma | `https://uptime.shijin.in` (Port 3001) | 🟡 Setup Ready |
+| **🔍 Webpage Change Tracker** | Changedetection.io + Browserless | `https://change.shijin.in` (Port 5000) | 🟡 Setup Ready |
+| **🛡️ OSINT & Site Recon** | Web Check Security Analyzer | `https://webcheck.shijin.in` (Port 3000) | 🟡 Setup Ready |
 
 ---
 

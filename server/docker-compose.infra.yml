@@ -58,14 +58,41 @@ services:
     networks:
       - zyra_infra_net
 
-  # 5. Cloudflared (Cloudflare Tunnel - Zero Open Ports, Global SSL)
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared_tunnel
+  # 5. Uptime Kuma (Service Health & Real-time Uptime Monitor)
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime_kuma
     restart: unless-stopped
-    command: tunnel run
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uptime_kuma_data:/app/data
+    networks:
+      - zyra_infra_net
+
+  # 6. Changedetection.io (Webpage, Price Drop & Ticket Restock Monitor)
+  changedetection:
+    image: ghcr.io/dgtlmoon/changedetection.io:latest
+    container_name: changedetection_io
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./changedetection_data:/datastore
     environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+      - PLAYWRIGHT_DRIVER_URL=ws://browserless:3000
+    networks:
+      - zyra_infra_net
+
+  # 7. Web Check (All-in-One OSINT & Security Reconnaissance Dashboard)
+  web-check:
+    image: lissy93/web-check:latest
+    container_name: web_check
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      - PORT=3000
     networks:
       - zyra_infra_net
 
