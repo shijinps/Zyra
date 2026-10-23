@@ -31,6 +31,50 @@ object LiveKitManager {
     private const val BRAIN_BASE_URL = "https://apizyra.shijin.in" 
     private const val BRAIN_SECRET = "zyra-secret-key-123"
 
+    // High-performance pooled HTTP client for ultra-low latency token exchange
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(8, TimeUnit.SECONDS)
+            .writeTimeout(5, TimeUnit.SECONDS)
+            .connectionPool(okhttp3.ConnectionPool(5, 5, TimeUnit.MINUTES))
+            .addInterceptor { chain ->
+                val req = chain.request().newBuilder()
+                    .header("User-Agent", "Zyra-Android/1.0")
+                    .build()
+                chain.proceed(req)
+            }
+            .build()
+    }
+
+    private val apiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BRAIN_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(com.zyra.app.network.ZyraApiService::class.java)
+    }
+
+    private var cachedToken: String? = null
+    private var cachedTokenTime: Long = 0L
+    private const val TOKEN_MAX_AGE_MS = 20 * 60 * 1000L // 20 minutes
+
+    fun prefetchToken() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                if (response.isSuccessful && response.body() != null) {
+                    cachedToken = response.body()!!.token
+                    cachedTokenTime = System.currentTimeMillis()
+                    Log.d(TAG, "LiveKit token pre-warmed and ready.")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Prefetch token non-fatal error: ${e.message}")
+            }
+        }
+    }
+
     interface LiveKitListener {
         fun onConnected()
         fun onDisconnected()
@@ -78,62 +122,54 @@ object LiveKitManager {
 
     fun connect(context: Context) {
         CoroutineScope(Dispatchers.Main).launch {
-            // Await old room disconnect with timeout before connecting
-            disconnectRoom(timeoutMs = 1200L)
+            // Asynchronously disconnect old room without blocking
+            val oldRoom = room
+            room = null
+            healthMonitorJob?.cancel()
+            healthMonitorJob = null
+            eventJob?.cancel()
+            eventJob = null
+            if (oldRoom != null) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    try { oldRoom.disconnect() } catch (_: Exception) {}
+                }
+            }
 
             try {
-                Log.d(TAG, "Requesting fresh LiveKit token from Brain...")
-                
-                // 1. Fetch fresh token from FastAPI server with resilient retry & timeout
-                val okHttpClient = OkHttpClient.Builder()
-                    .connectTimeout(15, TimeUnit.SECONDS)
-                    .readTimeout(15, TimeUnit.SECONDS)
-                    .writeTimeout(15, TimeUnit.SECONDS)
-                    .addInterceptor { chain ->
-                        val req = chain.request().newBuilder()
-                            .header("User-Agent", "Zyra-Android/1.0")
-                            .build()
-                        chain.proceed(req)
-                    }
-                    .build()
-
-                val retrofit = Retrofit.Builder()
-                    .baseUrl(BRAIN_BASE_URL)
-                    .client(okHttpClient)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                
-                val apiService = retrofit.create(com.zyra.app.network.ZyraApiService::class.java)
-                
                 var token: String? = null
-                var lastErr = ""
-                for (attempt in 1..3) {
-                    try {
-                        val response = withContext(Dispatchers.IO) {
-                            apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                val now = System.currentTimeMillis()
+                if (cachedToken != null && (now - cachedTokenTime) < TOKEN_MAX_AGE_MS) {
+                    token = cachedToken
+                    Log.d(TAG, "Using cached pre-warmed LiveKit token (instant connect)")
+                    prefetchToken() // refresh for next turn
+                } else {
+                    Log.d(TAG, "Requesting fresh LiveKit token from Brain...")
+                    var lastErr = ""
+                    for (attempt in 1..2) {
+                        try {
+                            val response = withContext(Dispatchers.IO) {
+                                apiService.getLiveKitToken(BRAIN_SECRET).execute()
+                            }
+                            if (response.isSuccessful && response.body() != null) {
+                                token = response.body()!!.token
+                                cachedToken = token
+                                cachedTokenTime = System.currentTimeMillis()
+                                break
+                            } else {
+                                lastErr = "HTTP ${response.code()}"
+                            }
+                        } catch (e: Exception) {
+                            lastErr = e.message ?: "Network error"
                         }
-                        if (response.isSuccessful && response.body() != null) {
-                            token = response.body()!!.token
-                            break
-                        } else {
-                            val code = response.code()
-                            lastErr = "HTTP $code"
-                            Log.w(TAG, "Token attempt $attempt failed with $lastErr")
-                        }
-                    } catch (e: Exception) {
-                        lastErr = e.message ?: "Network error"
-                        Log.w(TAG, "Token attempt $attempt exception: $lastErr")
+                        if (attempt < 2) kotlinx.coroutines.delay(300L)
                     }
-                    if (attempt < 3) {
-                        kotlinx.coroutines.delay(1200L)
-                    }
-                }
 
-                if (token == null) {
-                    val errorMsg = "Server failed to grant token: $lastErr"
-                    Log.e(TAG, errorMsg)
-                    listener?.onError(errorMsg)
-                    return@launch
+                    if (token == null) {
+                        val errorMsg = "Server failed to grant token: $lastErr"
+                        Log.e(TAG, errorMsg)
+                        listener?.onError(errorMsg)
+                        return@launch
+                    }
                 }
                 Log.d(TAG, "Token acquired. Connecting to LiveKit...")
 
@@ -205,7 +241,7 @@ object LiveKitManager {
                     }
                 }
 
-                currentRoom.connect(LIVEKIT_URL, token)
+                currentRoom.connect(LIVEKIT_URL, token!!)
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to connect to LiveKit", e)

@@ -180,6 +180,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         // Initialize Wake Word Engine
         initWakeWordEngine()
         setupMediaSession()
+        com.zyra.app.logic.LiveKitManager.prefetchToken()
 
         // Initialize Brain
         val app = applicationContext as com.zyra.app.ZyraApp
@@ -339,6 +340,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 }
                 routingRunnable.run() // Run immediately
 
+                try { wakeWordEngine?.stop() } catch (_: Exception) {}
                 isLiveKitSessionActive = true // LOCK local listener
                 lifecycleState = ServiceLifecycleState.SESSION_ACTIVE
                 isListening = false
@@ -486,6 +488,7 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
         }
 
         Log.d("ZyraService", "Manual Wake (PTT) Triggered -> Starting LiveKit session")
+        try { wakeWordEngine?.stop() } catch (_: Exception) {}
         lifecycleState = ServiceLifecycleState.CONNECTING // Guard watchdog from interrupting connection
         isActiveSession = true
         resetSessionTimeout()
@@ -686,23 +689,34 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
     private fun initWakeWordEngine() {
         val engine = SherpaWakeWordEngine(this)
         wakeWordEngine = engine
-        engine.initialize(object : WakeWordListener {
-            override fun onWakeWordDetected(keywordIndex: Int) {
-                Log.d("ZyraService", "Wake Word Detected via ${engine.name} (index: $keywordIndex)")
-                this@VoiceAssistantService.onWakeWordDetected()
-            }
+        CoroutineScope(Dispatchers.Default).launch {
+            engine.initialize(object : WakeWordListener {
+                override fun onWakeWordDetected(keywordIndex: Int) {
+                    Log.d("ZyraService", "Wake Word Detected via ${engine.name} (index: $keywordIndex)")
+                    android.os.Handler(mainLooper).post {
+                        this@VoiceAssistantService.onWakeWordDetected()
+                    }
+                }
 
-            override fun onError(error: Throwable, isFatal: Boolean, readableMessage: String) {
-                if (isFatal) {
-                    lifecycleState = ServiceLifecycleState.ERROR
-                    serviceErrorMessage = readableMessage
-                    Log.e("ZyraService", "Fatal wake word error: $readableMessage", error)
-                    broadcastState(ZyraState.ERROR, readableMessage)
-                } else {
-                    Log.w("ZyraService", "Non-fatal wake word warning: $readableMessage", error)
+                override fun onError(error: Throwable, isFatal: Boolean, readableMessage: String) {
+                    android.os.Handler(mainLooper).post {
+                        if (isFatal) {
+                            lifecycleState = ServiceLifecycleState.ERROR
+                            serviceErrorMessage = readableMessage
+                            Log.e("ZyraService", "Fatal wake word error: $readableMessage", error)
+                            broadcastState(ZyraState.ERROR, readableMessage)
+                        } else {
+                            Log.w("ZyraService", "Non-fatal wake word warning: $readableMessage", error)
+                        }
+                    }
+                }
+            })
+            android.os.Handler(mainLooper).post {
+                if (lifecycleState == ServiceLifecycleState.WAKEWORD_ACTIVE || (!isActiveSession && !isLiveKitSessionActive)) {
+                    startPassiveListening()
                 }
             }
-        })
+        }
     }
 
     private fun onWakeWordDetected() {

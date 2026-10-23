@@ -562,7 +562,7 @@ async def entrypoint(ctx: JobContext):
             el_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY") or "sk_836b76037c9c1699dba27e70dfb33eb8d63014ec7c99b478"
             if el_key:
                 try:
-                    selected_tts = elevenlabs.TTS(api_key=el_key, voice_id="CwhRBWXzGAHq8TQ4Fs17")
+                    selected_tts = elevenlabs.TTS(api_key=el_key, voice_id="CwhRBWXzGAHq8TQ4Fs17", model="eleven_turbo_v2_5")
                     logger.info("Using ElevenLabs TTS.")
                 except Exception as e:
                     logger.warning(f"ElevenLabs TTS init error: {e}")

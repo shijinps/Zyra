@@ -80,6 +80,11 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     }
 
     fun show() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post { show() }
+            return
+        }
+
         if (overlayView == null) {
             createOverlayView()
         }
@@ -120,6 +125,11 @@ class OverlayManager(private val context: Context) : LifecycleOwner, ViewModelSt
     }
 
     fun hide() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post { hide() }
+            return
+        }
+
         if (overlayView == null || overlayView?.parent == null) return
 
         try {
