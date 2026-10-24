@@ -146,6 +146,15 @@ object LiveKitManager {
                     token = cachedToken
                     Log.d(TAG, "Using cached pre-warmed LiveKit token (instant connect)")
                     prefetchToken() // refresh for next turn
+                    // Ensure the LiveKit agent worker is dispatched to zyra-room
+                    launch(Dispatchers.IO) {
+                        try {
+                            apiService.dispatchAgent(BRAIN_SECRET, room = "zyra-room").execute()
+                            Log.d(TAG, "Dispatched agent worker to zyra-room")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Agent dispatch trigger warning: ${e.message}")
+                        }
+                    }
                 } else {
                     Log.d(TAG, "Requesting fresh LiveKit token from Brain...")
                     var lastErr = ""

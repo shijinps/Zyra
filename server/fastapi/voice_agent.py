@@ -663,7 +663,7 @@ async def entrypoint(ctx: JobContext):
         llm_list = []
         if HAS_GROQ_PLUGIN and groq is not None and groq_api_key:
             try:
-                resolved = resolve_groq_llm(groq_api_key)
+                resolved = await asyncio.to_thread(resolve_groq_llm, groq_api_key)
                 if resolved:
                     llm_list.append(resolved)
             except Exception as e:
@@ -849,5 +849,11 @@ if __name__ == "__main__":
     if not os.getenv("LIVEKIT_URL"):
         os.environ["LIVEKIT_URL"] = "wss://zyra-sbn0wnp2.livekit.cloud"
     agent_name = os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent")
+    groq_k = os.getenv("GROQ_API_KEY", "")
+    if groq_k:
+        try:
+            resolve_groq_llm(groq_k)
+        except Exception as e:
+            logger.warning(f"Initial Groq pre-warm notice: {e}")
     logger.info(f"Starting Zyra Voice Agent Worker with agent_name='{agent_name}' on {os.environ['LIVEKIT_URL']}...")
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name=agent_name))

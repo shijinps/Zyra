@@ -679,6 +679,16 @@ async def get_livekit_token(token: str = Security(verify_token), dispatch: bool 
 
     return {"token": token_builder.to_jwt()}
 
+@app.get("/livekit/dispatch")
+@app.post("/livekit/dispatch")
+async def manual_dispatch_endpoint(token: str = Security(verify_token), room: str = "zyra-room"):
+    """
+    Explicitly triggers LiveKit agent dispatch to the specified room.
+    """
+    agent_name = os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent")
+    asyncio.create_task(trigger_livekit_agent_dispatch(room, agent_name))
+    return {"status": "dispatched", "room": room, "agent": agent_name}
+
 @app.get("/system/groq-models")
 async def get_groq_models():
     api_key = os.getenv("GROQ_API_KEY")

@@ -18,6 +18,12 @@ interface ZyraApiService {
         @Header("X-Zyra-Token") token: String,
         @Query("dispatch") dispatch: Boolean = true
     ): Call<TokenResponse>
+
+    @GET("/livekit/dispatch")
+    fun dispatchAgent(
+        @Header("X-Zyra-Token") token: String,
+        @Query("room") room: String = "zyra-room"
+    ): Call<Any>
     
     data class SyncContactsRequest(val contacts: List<Contact>)
     

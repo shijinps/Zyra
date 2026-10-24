@@ -191,7 +191,7 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
                 }
                 if (readCount > 0) {
                     var sumSq = 0.0
-                    val samples = FloatArray(readCount) { idx ->
+                    val rawSamples = FloatArray(readCount) { idx ->
                         val v = buffer[idx] / 32768.0f
                         sumSq += v * v
                         v
@@ -203,6 +203,15 @@ class SherpaWakeWordEngine(private val context: Context) : WakeWordEngine {
                     if (loopIteration % 30L == 0L) {
                         Log.d(TAG, "Wake word listening... (audio active, rms=${String.format(java.util.Locale.US, "%.4f", rms)})")
                     }
+
+                    // Software AGC / digital gain: If the input volume is low (e.g. background mic on Android 14/15),
+                    // boost speech samples (gain 2.5x, clamped to [-1.0, 1.0]) so the Sherpa zipformer neural network can extract clear acoustic features
+                    val gain = if (rms < 0.05) 2.5f else 1.0f
+                    val samples = if (gain != 1.0f) {
+                        FloatArray(readCount) { idx ->
+                            (rawSamples[idx] * gain).coerceIn(-1.0f, 1.0f)
+                        }
+                    } else rawSamples
 
                     s.acceptWaveform(samples, sampleRate = SAMPLE_RATE)
 
