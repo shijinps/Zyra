@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Header, Security, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import io
 from pydantic import BaseModel
 import subprocess
@@ -11,6 +12,10 @@ import json
 import base64
 from typing import Optional, List
 from livekit import api
+try:
+    from web_client import get_web_talk_html
+except ImportError:
+    from server.fastapi.web_client import get_web_talk_html
 try:
     from rag_engine import rag_engine
 except ImportError:
@@ -50,6 +55,14 @@ import uuid
 
 app = FastAPI(title="Zyra Technical Brain")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Security
 API_KEY_NAME = "X-Zyra-Token"
 EXPECTED_API_KEY = os.getenv("ZYRA_API_KEY", "zyra-secret-key-123")
@@ -58,10 +71,26 @@ def verify_token(x_zyra_token: str = Header(...)):
     if x_zyra_token != EXPECTED_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid Trust Token")
 
-@app.get("/")
-def root():
-    """Root endpoint for Coolify healthcheck."""
-    return {"status": "ok", "service": "Zyra Technical Brain"}
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """
+    Root endpoint: serves interactive Web Voice interface when visited from a browser
+    or on domain zyra.zyco.me; returns JSON status for API / healthcheck callers.
+    """
+    host = request.headers.get("host", "").lower()
+    accept = request.headers.get("accept", "")
+    if "zyra.zyco.me" in host or ("text/html" in accept and "application/json" not in accept):
+        return HTMLResponse(get_web_talk_html())
+    return HTMLResponse(
+        content=json.dumps({"status": "ok", "service": "Zyra Technical Brain"}),
+        media_type="application/json"
+    )
+
+@app.get("/talk", response_class=HTMLResponse)
+@app.get("/web", response_class=HTMLResponse)
+async def web_talk_interface():
+    """Interactive Web Voice Talk UI for Zyra on desktop & mobile browsers."""
+    return HTMLResponse(get_web_talk_html())
 
 @app.get("/health")
 def health_check():
@@ -685,6 +714,55 @@ async def get_livekit_token(token: str = Security(verify_token), dispatch: bool 
         asyncio.create_task(trigger_livekit_agent_dispatch("zyra-room", agent_name))
 
     return {"token": token_builder.to_jwt()}
+
+@app.get("/livekit/web-token")
+async def get_livekit_web_token(
+    token: Optional[str] = None,
+    x_zyra_token: Optional[str] = Header(None),
+    room: str = "zyra-room",
+    dispatch: bool = True
+):
+    """
+    Generates a LiveKit Access Token for web browser clients (zyra.zyco.me or /talk).
+    Authenticates via query param ?token= or header X-Zyra-Token, defaulting
+    to EXPECTED_API_KEY if omitted so users can start talking immediately.
+    """
+    supplied_key = token or x_zyra_token or EXPECTED_API_KEY
+    if supplied_key != EXPECTED_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid Trust Token")
+
+    api_key = os.getenv("LIVEKIT_API_KEY")
+    api_secret = os.getenv("LIVEKIT_API_SECRET")
+    livekit_url = os.getenv("LIVEKIT_URL", "wss://zyra-sbn0wnp2.livekit.cloud")
+
+    if not api_key or not api_secret:
+        raise HTTPException(status_code=500, detail="LiveKit credentials not configured on server.")
+
+    participant_id = f"zyra-web-{uuid.uuid4().hex[:8]}"
+    agent_name = os.getenv("LIVEKIT_AGENT_NAME", "zyra-agent")
+
+    token_builder = (
+        api.AccessToken(api_key, api_secret)
+        .with_identity(participant_id)
+        .with_name("Shijin (Web)")
+        .with_grants(api.VideoGrants(
+            room_join=True,
+            room=room,
+            can_publish=True,
+            can_subscribe=True,
+            can_publish_data=True
+        ))
+    )
+
+    if dispatch:
+        asyncio.create_task(trigger_livekit_agent_dispatch(room, agent_name))
+
+    return {
+        "token": token_builder.to_jwt(),
+        "url": livekit_url,
+        "room": room,
+        "identity": participant_id
+    }
 
 @app.get("/livekit/dispatch")
 @app.post("/livekit/dispatch")
