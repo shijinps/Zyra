@@ -14,7 +14,7 @@ import java.util.Locale
 
 object VoiceGatewayManager : TextToSpeech.OnInitListener {
     private const val TAG = "VoiceGateway"
-    private const val GATEWAY_URL = "wss://apizyra.shijin.in/voice"
+    private val GATEWAY_URL get() = ZyraConfig.getVoiceGatewayUrl()
     
     private var client: OkHttpClient? = null
     private var webSocket: WebSocket? = null

@@ -25,12 +25,10 @@ object LiveKitManager {
     private var healthMonitorJob: Job? = null
     private var activeAudioTrackSid: String? = null
     
-    // URL to your LiveKit Cloud or Self-hosted Instance
-    private const val LIVEKIT_URL = "wss://zyra-sbn0wnp2.livekit.cloud" 
-    
-    // BASE URL for your FastAPI Brain (where /livekit/token endpoint lives)
-    private const val BRAIN_BASE_URL = "https://apizyra.shijin.in" 
-    private const val BRAIN_SECRET = "zyra-secret-key-123"
+    // Managed via centralized ZyraConfig (Single Source of Truth)
+    private val LIVEKIT_URL get() = ZyraConfig.DEFAULT_LIVEKIT_URL
+    private val BRAIN_BASE_URL get() = ZyraConfig.getBaseUrl()
+    private val BRAIN_SECRET get() = ZyraConfig.DEFAULT_SECRET_KEY
 
     // High-performance pooled HTTP client for ultra-low latency token exchange
     private val okHttpClient by lazy {

@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zyra • Technical Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-deep: #07090e;
+            --bg-card: rgba(18, 22, 34, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --neon-cyan: #00f0ff;
+            --neon-blue: #0070f3;
+            --neon-magenta: #f025c7;
+            --neon-purple: #8b5cf6;
+            --neon-amber: #f59e0b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glow-cyan: 0 0 35px rgba(0, 240, 255, 0.45);
+            --glow-magenta: 0 0 40px rgba(240, 37, 199, 0.5);
+            --glow-subtle: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Ambient Glow Background */
+        .ambient-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .glow-spot-1 {
+            position: absolute;
+            top: -20%;
+            left: 20%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: pulse-slow 12s ease-in-out infinite alternate;
+        }
+        .glow-spot-2 {
+            position: absolute;
+            bottom: -20%;
+            right: 15%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(240, 37, 199, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(90px);
+            animation: pulse-slow 16s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes pulse-slow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.7; }
+            100% { transform: scale(1.15) translate(20px, -20px); opacity: 1; }
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 2rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .logo-ring {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-cyan);
+            animation: ring-rotate 8s linear infinite;
+        }
+
+        .logo-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--bg-deep);
+        }
+
+        @keyframes ring-rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            background: linear-gradient(135deg, #ffffff 40%, var(--neon-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 9999px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #64748b;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.connected .status-indicator {
+            background-color: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        .status-badge.speaking .status-indicator {
+            background-color: var(--neon-magenta);
+            box-shadow: 0 0 10px var(--neon-magenta);
+        }
+        .status-badge.listening .status-indicator {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-icon {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            color: var(--text-dim);
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-icon:hover {
+            color: var(--text-main);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Center Main Stage */
+        main {
+            position: relative;
+            z-index: 5;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            gap: 2rem;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .canvas-container {
+                width: 420px;
+                height: 420px;
+            }
+        }
+
+        #visualizerCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Central Orb Button */
+        .orb-button {
+            position: relative;
+            z-index: 2;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(0, 240, 255, 0.25) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(7, 9, 14, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 25px rgba(0, 240, 255, 0.15);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .orb-button:hover {
+            transform: scale(1.05);
+            border-color: rgba(0, 240, 255, 0.4);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6), var(--glow-cyan), inset 0 0 35px rgba(0, 240, 255, 0.25);
+        }
+
+        .orb-button:active {
+            transform: scale(0.96);
+        }
+
+        .orb-button.active {
+            background: radial-gradient(circle at 35% 35%, rgba(0, 240, 255, 0.35) 0%, rgba(240, 37, 199, 0.25) 60%, rgba(7, 9, 14, 0.95) 100%);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 15px 60px rgba(0, 0, 0, 0.7), var(--glow-cyan);
+        }
+
+        .orb-button.speaking {
+            background: radial-gradient(circle at 35% 35%, rgba(240, 37, 199, 0.4) 0%, rgba(139, 92, 246, 0.3) 60%, rgba(7, 9, 14, 0.95) 100%);
+            border-color: var(--neon-magenta);
+            box-shadow: 0 15px 60px rgba(0, 0, 0, 0.7), var(--glow-magenta);
+        }
+
+        .orb-icon {
+            width: 36px;
+            height: 36px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            color: var(--neon-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .orb-button.speaking .orb-icon {
+            color: var(--neon-magenta);
+        }
+
+        .orb-label {
+            margin-top: 0.5rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            transition: all 0.3s ease;
+        }
+
+        .orb-button.active .orb-label {
+            color: var(--text-main);
+        }
+
+        /* Voice State Caption */
+        .state-caption {
+            font-size: 1.15rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            text-align: center;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .state-caption.active {
+            color: var(--text-main);
+        }
+
+        .caption-accent {
+            color: var(--neon-cyan);
+            font-weight: 600;
+        }
+
+        /* Real-time Subtitle / HUD */
+        .subtitle-box {
+            max-width: 520px;
+            min-height: 54px;
+            padding: 0.85rem 1.4rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            text-align: center;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-main);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .subtitle-box.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Bottom Controls Bar */
+        footer {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            padding: 1.5rem 2rem 2.25rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .ctrl-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            height: 50px;
+            padding: 0 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid var(--border-glass);
+            background: var(--bg-card);
+            color: var(--text-main);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.25s ease;
+        }
+
+        .ctrl-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .ctrl-btn.btn-primary {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(139, 92, 246, 0.2));
+            border-color: var(--neon-cyan);
+            color: #fff;
+            box-shadow: var(--glow-subtle);
+        }
+
+        .ctrl-btn.btn-primary:hover {
+            box-shadow: var(--glow-cyan);
+        }
+
+        .ctrl-btn.btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .ctrl-btn.btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .ctrl-btn.muted {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--neon-amber);
+            color: var(--neon-amber);
+        }
+
+        .ctrl-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Slide-over Drawer (Transcript & Chat) */
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: 440px;
+            background: #0b0e17;
+            border-left: 1px solid var(--border-glass);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: -15px 0 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .drawer-overlay.open .drawer {
+            transform: translateX(0);
+        }
+
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .drawer-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .drawer-content {
+            flex: 1;
+            padding: 1.25rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .msg-bubble {
+            max-width: 85%;
+            padding: 0.85rem 1.15rem;
+            border-radius: 16px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .msg-bubble.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(0, 112, 243, 0.2));
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-bubble.zyra {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: #f1f5f9;
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-sender {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .msg-bubble.user .msg-sender {
+            color: var(--neon-cyan);
+            text-align: right;
+        }
+        .msg-bubble.zyra .msg-sender {
+            color: var(--neon-magenta);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Settings Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 60;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #0f1322;
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 440px;
+            padding: 1.75rem;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .modal-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            letter-spacing: 0.04em;
+        }
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            header {
+                padding: 1rem 1.25rem;
+            }
+            main {
+                padding: 1rem;
+                gap: 1.5rem;
+            }
+            .orb-button {
+                width: 140px;
+                height: 140px;
+            }
+            footer {
+                padding: 1rem 1.25rem 1.75rem;
+                gap: 0.75rem;
+            }
+            .ctrl-btn {
+                padding: 0 1.1rem;
+                font-size: 0.85rem;
+            }
+            .btn-text {
+                display: none;
+            }
+            .btn-primary .btn-text, .btn-danger .btn-text {
+                display: inline;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-bg">
+        <div class="glow-spot-1"></div>
+        <div class="glow-spot-2"></div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="brand" onclick="location.reload()">
+            <div class="logo-ring">
+                <div class="logo-dot"></div>
+            </div>
+            <h1>ZYRA</h1>
+        </div>
+
+        <div class="status-badge" id="statusBadge">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">Ready</span>
+        </div>
+
+        <div class="header-actions">
+            <button class="btn-icon" id="btnTranscriptToggle" title="Open Conversation Log">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+            </button>
+            <button class="btn-icon" id="btnSettingsToggle" title="Voice & Backend Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Stage -->
+    <main>
+        <div class="canvas-container">
+            <canvas id="visualizerCanvas"></canvas>
+            <button class="orb-button" id="orbBtn" title="Click to Connect and Talk">
+                <svg class="orb-icon" id="orbIcon" viewBox="0 0 24 24">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <span class="orb-label" id="orbLabel">Tap to talk</span>
+            </button>
+        </div>
+
+        <div class="state-caption" id="stateCaption">
+            Zyra is <span class="caption-accent">standby</span>. Click to begin.
+        </div>
+
+        <div class="subtitle-box" id="subtitleBox">
+            <span id="subtitleText">Zyra: "Hey Shijin! What's up?"</span>
+        </div>
+    </main>
+
+    <!-- Bottom Controls -->
+    <footer>
+        <button class="ctrl-btn" id="btnMute" style="display: none;">
+            <svg id="micIcon" viewBox="0 0 24 24">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            </svg>
+            <span class="btn-text" id="muteText">Mute</span>
+        </button>
+
+        <button class="ctrl-btn btn-primary" id="btnConnect">
+            <svg viewBox="0 0 24 24">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <span class="btn-text" id="connectText">Start Conversation</span>
+        </button>
+    </footer>
+
+    <!-- Transcript Slide Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay">
+        <div class="drawer">
+            <div class="drawer-header">
+                <h3>Conversation History</h3>
+                <button class="btn-icon" id="btnCloseDrawer">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="drawer-content" id="drawerContent">
+                <div class="msg-bubble zyra">
+                    <div class="msg-sender">Zyra</div>
+                    <div>Hello Shijin! I'm ready. Click "Start Conversation" or tap the center orb anytime to talk.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-card">
+            <h3>Zyra Voice Settings</h3>
+            <div class="form-group">
+                <label>Backend API Base URL</label>
+                <input type="text" id="inputBackendUrl" class="form-input" placeholder="https://apizyra.shijin.in">
+            </div>
+            <div class="form-group">
+                <label>Security Trust Key</label>
+                <input type="password" id="inputPasskey" class="form-input" placeholder="zyra-secret-key-123">
+            </div>
+            <div class="form-group">
+                <label>LiveKit Cloud URL</label>
+                <input type="text" id="inputLivekitUrl" class="form-input" value="wss://zyra-sbn0wnp2.livekit.cloud">
+            </div>
+            <div class="form-group">
+                <label>Room Name</label>
+                <input type="text" id="inputRoomName" class="form-input" value="zyra-room">
+            </div>
+            <div class="modal-actions">
+                <button class="ctrl-btn" id="btnCloseSettings">Cancel</button>
+                <button class="ctrl-btn btn-primary" id="btnSaveSettings">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Intelligent Backend URL Auto-Detection:
+        // If hosted on apizyra.shijin.in, use relative origin.
+        // If hosted on Cloudflare Pages (zyra.zyco.me), default to https://apizyra.shijin.in.
+        const DEFAULT_BACKEND_URL = (location.hostname.includes('shijin.in') || location.port === '8000') 
+            ? location.origin 
+            : 'https://apizyra.shijin.in';
+
+        // State
+        let room = null;
+        let isConnected = false;
+        let isConnecting = false;
+        let isMuted = false;
+        let audioContext = null;
+        let userAnalyser = null;
+        let zyraAnalyser = null;
+        let animFrameId = null;
+        let wakeLock = null;
+        let remoteAudioEl = null;
+
+        // Elements
+        const orbBtn = document.getElementById('orbBtn');
+        const orbLabel = document.getElementById('orbLabel');
+        const orbIcon = document.getElementById('orbIcon');
+        const btnConnect = document.getElementById('btnConnect');
+        const connectText = document.getElementById('connectText');
+        const btnMute = document.getElementById('btnMute');
+        const muteText = document.getElementById('muteText');
+        const micIcon = document.getElementById('micIcon');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const stateCaption = document.getElementById('stateCaption');
+        const subtitleBox = document.getElementById('subtitleBox');
+        const subtitleText = document.getElementById('subtitleText');
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawer & Modal
+        const btnTranscriptToggle = document.getElementById('btnTranscriptToggle');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const btnCloseDrawer = document.getElementById('btnCloseDrawer');
+        const drawerContent = document.getElementById('drawerContent');
+        const btnSettingsToggle = document.getElementById('btnSettingsToggle');
+        const settingsModal = document.getElementById('settingsModal');
+        const btnCloseSettings = document.getElementById('btnCloseSettings');
+        const btnSaveSettings = document.getElementById('btnSaveSettings');
+        const inputBackendUrl = document.getElementById('inputBackendUrl');
+        const inputPasskey = document.getElementById('inputPasskey');
+        const inputLivekitUrl = document.getElementById('inputLivekitUrl');
+        const inputRoomName = document.getElementById('inputRoomName');
+
+        // Restore settings
+        inputBackendUrl.value = localStorage.getItem('zyra_backend_url') || DEFAULT_BACKEND_URL;
+        inputPasskey.value = localStorage.getItem('zyra_passkey') || 'zyra-secret-key-123';
+        inputLivekitUrl.value = localStorage.getItem('zyra_livekit_url') || 'wss://zyra-sbn0wnp2.livekit.cloud';
+        inputRoomName.value = localStorage.getItem('zyra_room') || 'zyra-room';
+
+        // High DPI Canvas resize
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Canvas Visualizer Animation
+        let phase = 0;
+        function drawVisualizer() {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const cx = width / 2;
+            const cy = height / 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            let userVol = 0;
+            let zyraVol = 0;
+
+            if (userAnalyser && !isMuted) {
+                const uData = new Uint8Array(userAnalyser.frequencyBinCount);
+                userAnalyser.getByteFrequencyData(uData);
+                let sum = 0;
+                for (let i = 0; i < uData.length; i++) sum += uData[i];
+                userVol = sum / (uData.length * 255);
+            }
+
+            if (zyraAnalyser) {
+                const zData = new Uint8Array(zyraAnalyser.frequencyBinCount);
+                zyraAnalyser.getByteFrequencyData(zData);
+                let sum = 0;
+                for (let i = 0; i < zData.length; i++) sum += zData[i];
+                zyraVol = sum / (zData.length * 255);
+            }
+
+            phase += 0.04;
+            const baseRadius = width * 0.22;
+            const activeVol = Math.max(userVol, zyraVol);
+
+            const rings = 3;
+            for (let r = 0; r < rings; r++) {
+                ctx.beginPath();
+                const ringRadius = baseRadius + (r * 18) + (activeVol * 45 * (r + 1));
+                const points = 60;
+                
+                for (let i = 0; i <= points; i++) {
+                    const theta = (i / points) * Math.PI * 2;
+                    const wave = Math.sin(theta * (4 + r) + phase + r) * (6 + activeVol * 25);
+                    const rad = ringRadius + wave;
+                    const x = cx + Math.cos(theta) * rad;
+                    const y = cy + Math.sin(theta) * rad;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+
+                if (zyraVol > 0.05) {
+                    ctx.strokeStyle = `rgba(240, 37, 199, ${0.4 - r * 0.1})`;
+                    ctx.shadowColor = '#f025c7';
+                    ctx.shadowBlur = 15;
+                } else if (userVol > 0.05) {
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${0.4 - r * 0.1})`;
+                    ctx.shadowColor = '#00f0ff';
+                    ctx.shadowBlur = 15;
+                } else if (isConnected) {
+                    ctx.strokeStyle = `rgba(139, 92, 246, ${0.25 - r * 0.06})`;
+                    ctx.shadowColor = '#8b5cf6';
+                    ctx.shadowBlur = 8;
+                } else {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 - r * 0.02})`;
+                    ctx.shadowBlur = 0;
+                }
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            animFrameId = requestAnimationFrame(drawVisualizer);
+        }
+        drawVisualizer();
+
+        // Audio Analyser Setup
+        function setupAudioAnalysis(stream, type) {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                const source = audioContext.createMediaStreamSource(stream);
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                source.connect(analyser);
+
+                if (type === 'user') {
+                    userAnalyser = analyser;
+                } else {
+                    zyraAnalyser = analyser;
+                }
+            } catch (err) {
+                console.warn('Audio analyser notice:', err);
+            }
+        }
+
+        // Subtitle Helper
+        let subTimeout = null;
+        function showSubtitle(speaker, text) {
+            subtitleText.innerHTML = `<strong>${speaker}:</strong> "${text}"`;
+            subtitleBox.classList.add('visible');
+            if (subTimeout) clearTimeout(subTimeout);
+            subTimeout = setTimeout(() => {
+                subtitleBox.classList.remove('visible');
+            }, 6000);
+
+            const msgEl = document.createElement('div');
+            msgEl.className = `msg-bubble ${speaker.toLowerCase().includes('shijin') || speaker === 'You' ? 'user' : 'zyra'}`;
+            msgEl.innerHTML = `<div class="msg-sender">${speaker}</div><div>${text}</div>`;
+            drawerContent.appendChild(msgEl);
+            drawerContent.scrollTop = drawerContent.scrollHeight;
+        }
+
+        // Connect Function
+        async function connectToZyra() {
+            if (isConnecting || isConnected) return;
+            isConnecting = true;
+            updateUIState('connecting');
+
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                if ('wakeLock' in navigator) {
+                    try {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    } catch (e) {}
+                }
+
+                const backendBase = (inputBackendUrl.value.trim() || DEFAULT_BACKEND_URL).replace(/\\/$/, '');
+                const passkey = inputPasskey.value.trim();
+                const roomName = inputRoomName.value.trim() || 'zyra-room';
+
+                const tokenUrl = `${backendBase}/livekit/web-token?token=${encodeURIComponent(passkey)}&room=${encodeURIComponent(roomName)}`;
+                const res = await fetch(tokenUrl);
+                if (!res.ok) {
+                    throw new Error(`Authentication error (${res.status}). Verify backend URL or trust key.`);
+                }
+                const data = await res.json();
+
+                const livekitUrl = data.url || inputLivekitUrl.value.trim();
+                const jwtToken = data.token;
+
+                const { Room, RoomEvent, Track } = window.LivekitClient;
+                room = new Room({
+                    adaptiveStream: true,
+                    dynacast: true,
+                    audioCaptureDefaults: {
+                        autoGainControl: true,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+                    if (track.kind === Track.Kind.Audio) {
+                        if (!remoteAudioEl) {
+                            remoteAudioEl = document.createElement('audio');
+                            remoteAudioEl.autoplay = true;
+                            remoteAudioEl.playsInline = true;
+                            document.body.appendChild(remoteAudioEl);
+                        }
+                        track.attach(remoteAudioEl);
+                        if (track.mediaStream) {
+                            setupAudioAnalysis(track.mediaStream, 'zyra');
+                        }
+                    }
+                });
+
+                room.on(RoomEvent.TrackUnsubscribed, (track) => {
+                    track.detach();
+                });
+
+                room.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+                    let zyraSpeaking = false;
+                    let userSpeaking = false;
+
+                    speakers.forEach(s => {
+                        if (s.identity && (s.identity.startsWith('agent-') || s.identity.includes('zyra-agent'))) {
+                            zyraSpeaking = true;
+                        } else if (s.isLocal) {
+                            userSpeaking = true;
+                        }
+                    });
+
+                    if (zyraSpeaking) {
+                        updateUIState('speaking');
+                    } else if (userSpeaking) {
+                        updateUIState('listening');
+                    } else if (isConnected) {
+                        updateUIState('connected');
+                    }
+                });
+
+                room.on(RoomEvent.DataReceived, (payload, participant, kind, topic) => {
+                    try {
+                        const str = new TextDecoder().decode(payload);
+                        const msg = JSON.parse(str);
+                        if (msg.action === 'transcript') {
+                            showSubtitle(msg.sender || 'Zyra', msg.text);
+                        } else if (msg.action === 'play_music') {
+                            showSubtitle('Zyra', `Playing ${msg.track || 'music'} on Spotify 🎵`);
+                        }
+                    } catch (e) {
+                        const str = new TextDecoder().decode(payload);
+                        if (str && str.length > 0) {
+                            showSubtitle('Zyra', str);
+                        }
+                    }
+                });
+
+                room.on(RoomEvent.Disconnected, () => {
+                    disconnectFromZyra();
+                });
+
+                await room.connect(livekitUrl, jwtToken);
+
+                await room.localParticipant.setMicrophoneEnabled(true);
+                const micTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone);
+                if (micTrack && micTrack.track && micTrack.track.mediaStream) {
+                    setupAudioAnalysis(micTrack.track.mediaStream, 'user');
+                }
+
+                isConnected = true;
+                isConnecting = false;
+                updateUIState('connected');
+                showSubtitle('Zyra', "Connected! Say something or ask anything.");
+
+            } catch (err) {
+                console.error('Connection failure:', err);
+                alert(`Could not connect: ${err.message}`);
+                disconnectFromZyra();
+            }
+        }
+
+        function disconnectFromZyra() {
+            if (room) {
+                try {
+                    room.disconnect();
+                } catch (e) {}
+                room = null;
+            }
+            if (wakeLock) {
+                try { wakeLock.release(); } catch (e) {}
+                wakeLock = null;
+            }
+            userAnalyser = null;
+            zyraAnalyser = null;
+            isConnected = false;
+            isConnecting = false;
+            isMuted = false;
+            updateUIState('disconnected');
+        }
+
+        async function toggleMute() {
+            if (!room || !isConnected) return;
+            isMuted = !isMuted;
+            await room.localParticipant.setMicrophoneEnabled(!isMuted);
+
+            if (isMuted) {
+                btnMute.classList.add('muted');
+                muteText.textContent = 'Unmute';
+                micIcon.innerHTML = '<line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>';
+            } else {
+                btnMute.classList.remove('muted');
+                muteText.textContent = 'Mute';
+                micIcon.innerHTML = '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>';
+            }
+        }
+
+        function updateUIState(state) {
+            statusBadge.className = 'status-badge';
+            orbBtn.className = 'orb-button';
+
+            if (state === 'connecting') {
+                statusText.textContent = 'Connecting...';
+                stateCaption.innerHTML = 'Summoning <span class="caption-accent">Zyra</span>...';
+                orbLabel.textContent = 'Connecting';
+                btnConnect.disabled = true;
+                connectText.textContent = 'Connecting...';
+            } else if (state === 'connected') {
+                statusBadge.classList.add('connected');
+                orbBtn.classList.add('active');
+                statusText.textContent = 'Zyra Online';
+                stateCaption.innerHTML = 'Zyra is <span class="caption-accent">listening</span>...';
+                orbLabel.textContent = 'Listening';
+                btnMute.style.display = 'flex';
+                btnConnect.disabled = false;
+                btnConnect.className = 'ctrl-btn btn-danger';
+                connectText.textContent = 'End Conversation';
+            } else if (state === 'speaking') {
+                statusBadge.classList.add('speaking');
+                orbBtn.classList.add('speaking');
+                statusText.textContent = 'Speaking';
+                stateCaption.innerHTML = '<span class="caption-accent" style="color:var(--neon-magenta)">Zyra</span> is speaking...';
+                orbLabel.textContent = 'Speaking';
+            } else if (state === 'listening') {
+                statusBadge.classList.add('listening');
+                orbBtn.classList.add('active');
+                statusText.textContent = 'Hearing You';
+                stateCaption.innerHTML = 'Shijin is <span class="caption-accent">talking</span>...';
+                orbLabel.textContent = 'Listening';
+            } else {
+                statusText.textContent = 'Ready';
+                stateCaption.innerHTML = 'Zyra is <span class="caption-accent">standby</span>. Click to begin.';
+                orbLabel.textContent = 'Tap to talk';
+                btnMute.style.display = 'none';
+                btnConnect.disabled = false;
+                btnConnect.className = 'ctrl-btn btn-primary';
+                connectText.textContent = 'Start Conversation';
+            }
+        }
+
+        orbBtn.addEventListener('click', () => {
+            if (isConnected) toggleMute();
+            else connectToZyra();
+        });
+
+        btnConnect.addEventListener('click', () => {
+            if (isConnected) disconnectFromZyra();
+            else connectToZyra();
+        });
+
+        btnMute.addEventListener('click', toggleMute);
+
+        btnTranscriptToggle.addEventListener('click', () => drawerOverlay.classList.add('open'));
+        btnCloseDrawer.addEventListener('click', () => drawerOverlay.classList.remove('open'));
+        drawerOverlay.addEventListener('click', (e) => {
+            if (e.target === drawerOverlay) drawerOverlay.classList.remove('open');
+        });
+
+        btnSettingsToggle.addEventListener('click', () => settingsModal.classList.add('open'));
+        btnCloseSettings.addEventListener('click', () => settingsModal.classList.remove('open'));
+        btnSaveSettings.addEventListener('click', () => {
+            localStorage.setItem('zyra_backend_url', inputBackendUrl.value.trim());
+            localStorage.setItem('zyra_passkey', inputPasskey.value.trim());
+            localStorage.setItem('zyra_livekit_url', inputLivekitUrl.value.trim());
+            localStorage.setItem('zyra_room', inputRoomName.value.trim());
+            settingsModal.classList.remove('open');
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                if (isConnected) toggleMute();
+                else connectToZyra();
+            }
+        });
+    </script>
+</body>
+</html>

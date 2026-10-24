@@ -68,7 +68,7 @@ fun HomeScreen(
         while (true) {
             backendHealthy = try {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    val url = java.net.URL("https://apizyra.shijin.in/health")
+                    val url = java.net.URL(com.zyra.app.logic.ZyraConfig.getHealthUrl())
                     val conn = url.openConnection() as java.net.HttpURLConnection
                     conn.connectTimeout = 3000
                     conn.readTimeout = 3000
