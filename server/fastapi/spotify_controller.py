@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import time
+import tempfile
 import logging
 import requests
 from typing import Optional, Dict, Any
@@ -22,32 +23,47 @@ class SpotifyController:
         self._load_token()
 
     def _load_token(self):
-        """Loads saved refresh token from disk or env."""
+        """Loads saved refresh token from disk, env, or persistent storage."""
         env_refresh = os.getenv("SPOTIFY_REFRESH_TOKEN", "")
         if env_refresh:
             self.refresh_token = env_refresh
 
-        if os.path.exists(SPOTIFY_TOKEN_PATH):
-            try:
-                with open(SPOTIFY_TOKEN_PATH, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    self.refresh_token = data.get("refresh_token") or self.refresh_token
-                    self.access_token = data.get("access_token")
-                    self.token_expiry = data.get("token_expiry", 0.0)
-            except Exception as e:
-                logger.warning(f"Failed to load spotify_token.json: {e}")
+        candidates = [
+            SPOTIFY_TOKEN_PATH,
+            os.path.join(tempfile.gettempdir(), "spotify_token.json"),
+            "/app/spotify_token.json"
+        ]
+        for p in candidates:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        self.refresh_token = data.get("refresh_token") or self.refresh_token
+                        self.access_token = data.get("access_token") or self.access_token
+                        self.token_expiry = data.get("token_expiry", 0.0) or self.token_expiry
+                        if self.refresh_token:
+                            break
+                except Exception as e:
+                    logger.warning(f"Failed to load {p}: {e}")
 
     def _save_token(self):
-        """Persists tokens to disk."""
-        try:
-            with open(SPOTIFY_TOKEN_PATH, "w", encoding="utf-8") as f:
-                json.dump({
-                    "refresh_token": self.refresh_token,
-                    "access_token": self.access_token,
-                    "token_expiry": self.token_expiry
-                }, f, indent=2)
-        except Exception as e:
-            logger.warning(f"Failed to save spotify_token.json: {e}")
+        """Persists tokens to disk and multiple fallback locations."""
+        candidates = [
+            SPOTIFY_TOKEN_PATH,
+            os.path.join(tempfile.gettempdir(), "spotify_token.json"),
+            "/app/spotify_token.json"
+        ]
+        for p in candidates:
+            try:
+                os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "refresh_token": self.refresh_token,
+                        "access_token": self.access_token,
+                        "token_expiry": self.token_expiry
+                    }, f, indent=2)
+            except Exception as e:
+                logger.warning(f"Failed to save {p}: {e}")
 
     def get_login_url(self) -> str:
         """Generates Spotify OAuth login URL."""

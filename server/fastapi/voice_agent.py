@@ -331,31 +331,36 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Searches Spotify and starts playing the requested song, artist, album, or playlist.")
     async def play_music(self, query: str = "") -> str:
         logger.info(f"Agent commanding Spotify play: {query}")
-        web_res = spotify_controller.play_query(query)
-        # If Spotify Web API is authenticated and played successfully
-        if "Couldn't search Spotify" not in web_res and "not authorized" not in web_res and "No active Spotify playback device" not in web_res:
-            return web_res
+        song_text = f"'{query}'" if query else "your music"
+        try:
+            web_res = spotify_controller.play_query(query)
+            # If Spotify Web API actually started playback successfully
+            if isinstance(web_res, str) and web_res.strip().startswith("Playing "):
+                return web_res
+            logger.info(f"Spotify Web API unavailable or failed ({web_res}), falling back to direct phone intent.")
+        except Exception as e:
+            logger.warning(f"Spotify controller play exception: {e}")
 
-        # Fallback to direct phone Spotify intent via LiveKit data channel
+        # Always fallback to direct phone Spotify intent via LiveKit data channel
         if hasattr(self, 'room') and self.room:
             try:
                 payload = json.dumps({"action": "ACTION_PLAY_MUSIC", "query": query}).encode("utf-8")
                 await self.room.local_participant.publish_data(payload, reliable=True)
                 logger.info(f"Dispatched ACTION_PLAY_MUSIC to phone: {query}")
-                song_text = f"'{query}'" if query else "your music"
-                return f"Playing {song_text} on Spotify now, Shijin!"
             except Exception as e:
                 logger.error(f"Failed to publish play command to room: {e}")
 
-        song_text = f"'{query}'" if query else "your music"
         return f"Playing {song_text} on Spotify now, Shijin!"
 
     @llm.ai_callable(desc="Pauses currently playing music on Spotify.")
     async def pause_music(self) -> str:
         logger.info("Agent commanding Spotify pause")
-        web_res = spotify_controller.pause()
-        if "Couldn't pause" not in web_res and "not authorized" not in web_res:
-            return web_res
+        try:
+            web_res = spotify_controller.pause()
+            if isinstance(web_res, str) and "paused" in web_res.lower() and "couldn't" not in web_res.lower() and "error" not in web_res.lower():
+                return web_res
+        except Exception:
+            pass
         if hasattr(self, 'room') and self.room:
             try:
                 payload = json.dumps({"action": "ACTION_PAUSE_MUSIC"}).encode("utf-8")
@@ -368,9 +373,12 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Resumes music playback on Spotify.")
     async def resume_music(self) -> str:
         logger.info("Agent commanding Spotify resume")
-        web_res = spotify_controller.resume()
-        if "Couldn't resume" not in web_res and "not authorized" not in web_res:
-            return web_res
+        try:
+            web_res = spotify_controller.resume()
+            if isinstance(web_res, str) and "resumed" in web_res.lower() and "couldn't" not in web_res.lower() and "error" not in web_res.lower():
+                return web_res
+        except Exception:
+            pass
         if hasattr(self, 'room') and self.room:
             try:
                 payload = json.dumps({"action": "ACTION_RESUME_MUSIC"}).encode("utf-8")
@@ -383,9 +391,12 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Skips to the next track on Spotify.")
     async def next_song(self) -> str:
         logger.info("Agent commanding Spotify skip next")
-        web_res = spotify_controller.next_track()
-        if "Couldn't skip" not in web_res and "not authorized" not in web_res:
-            return web_res
+        try:
+            web_res = spotify_controller.next_track()
+            if isinstance(web_res, str) and "skipped" in web_res.lower() and "couldn't" not in web_res.lower() and "error" not in web_res.lower():
+                return web_res
+        except Exception:
+            pass
         if hasattr(self, 'room') and self.room:
             try:
                 payload = json.dumps({"action": "ACTION_NEXT_TRACK"}).encode("utf-8")
@@ -398,9 +409,12 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Goes back to the previous track on Spotify.")
     async def previous_song(self) -> str:
         logger.info("Agent commanding Spotify skip previous")
-        web_res = spotify_controller.previous_track()
-        if "Couldn't skip" not in web_res and "not authorized" not in web_res:
-            return web_res
+        try:
+            web_res = spotify_controller.previous_track()
+            if isinstance(web_res, str) and "previous" in web_res.lower() and "couldn't" not in web_res.lower() and "error" not in web_res.lower():
+                return web_res
+        except Exception:
+            pass
         if hasattr(self, 'room') and self.room:
             try:
                 payload = json.dumps({"action": "ACTION_PREVIOUS_TRACK"}).encode("utf-8")
@@ -553,25 +567,27 @@ class AssistantFnc(llm.FunctionContext):
             logger.error(f"Evolution API Error: {e}")
             return f"I couldn't send the WhatsApp message: {e}"
 
-_cached_groq_adapter = None
+_cached_groq_adapters = None
 
-def resolve_groq_llm(groq_key: str):
+def resolve_groq_llm_adapters(groq_key: str):
     """
-    Dynamically queries Groq API to select an active, accessible model.
+    Dynamically queries Groq API to select active, accessible tool-calling models.
     Cached after first resolution to keep voice turn loop fast.
+    Returns a list of LLM adapter instances (flat list).
     """
-    global _cached_groq_adapter
-    if _cached_groq_adapter is not None:
-        return _cached_groq_adapter
+    global _cached_groq_adapters
+    if _cached_groq_adapters is not None:
+        return _cached_groq_adapters
 
     priority = [
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
         "llama-3.3-70b-versatile",
         "llama-3.1-70b-versatile",
         "llama-3.1-8b-instant",
         "qwen/qwen3.8-27b",
         "allam-2-7b"
     ]
-    chosen = "llama-3.3-70b-versatile"
     available_models = []
     try:
         r = requests.get(
@@ -589,25 +605,21 @@ def resolve_groq_llm(groq_key: str):
             for p in priority:
                 if p in active_chat_ids:
                     available_models.append(p)
-            if available_models:
-                chosen = available_models[0]
         else:
             logger.warning(f"Groq models query HTTP {r.status_code}: {r.text[:100]}")
     except Exception as e:
         logger.warning(f"Groq models query failed: {e}")
     
     if not available_models:
-        available_models = [chosen, "llama-3.1-8b-instant"]
+        available_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
     
     logger.info(f"Resolved Groq LLMs with fallback: {available_models}")
     adapters = [groq.LLM(model=m) for m in available_models if groq is not None]
     if not adapters and groq is not None:
-        adapters = [groq.LLM(model="llama-3.1-8b-instant")]
+        adapters = [groq.LLM(model="openai/gpt-oss-120b")]
     
-    if adapters:
-        _cached_groq_adapter = llm.FallbackAdapter(adapters) if len(adapters) > 1 else adapters[0]
-        return _cached_groq_adapter
-    return None
+    _cached_groq_adapters = adapters
+    return _cached_groq_adapters
 
 def create_system_prompt(history_str: str, tools_str: str) -> str:
     rag_context = rag_engine.get_context_block()
@@ -731,41 +743,46 @@ async def entrypoint(ctx: JobContext):
         # STT Selection: Groq Whisper Large v3 Turbo (Primary)
         primary_stt = groq.STT(model="whisper-large-v3-turbo", language="en") if HAS_GROQ_PLUGIN and groq_api_key else None
         
-        # LLM Selection: Dynamic Groq LLM (Primary) + Gemini 2.0 Flash (Redundancy / Fallback)
+        # LLM Selection: Flat Fallback List (Groq Tool-Calling LLMs -> Gemini 2.5 Flash -> Gemini 1.5 Flash)
         llm_list = []
         if HAS_GROQ_PLUGIN and groq is not None and groq_api_key:
             try:
-                resolved = await asyncio.to_thread(resolve_groq_llm, groq_api_key)
-                if resolved:
-                    llm_list.append(resolved)
+                groq_adapters = await asyncio.to_thread(resolve_groq_llm_adapters, groq_api_key)
+                if groq_adapters:
+                    llm_list.extend(groq_adapters)
             except Exception as e:
                 logger.error(f"Error initializing Groq LLM: {e}")
                 try:
-                    llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
+                    llm_list.append(groq.LLM(model="openai/gpt-oss-120b"))
                 except Exception:
                     pass
 
         if HAS_GOOGLE_PLUGIN and google is not None and gemini_api_key:
             try:
-                llm_list.append(google.LLM(model="gemini-2.0-flash"))
+                llm_list.append(google.LLM(model="gemini-2.5-flash"))
             except Exception as e:
                 logger.warning(f"Google LLM init error: {e}")
 
         # If google plugin is not available, use Gemini via OpenAI compatibility interface
-        if gemini_api_key and (not HAS_GOOGLE_PLUGIN or google is None):
+        if gemini_api_key:
             try:
                 from livekit.plugins import openai
                 llm_list.append(openai.LLM(
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                     api_key=gemini_api_key,
-                    model="gemini-2.0-flash"
+                    model="gemini-2.5-flash"
                 ))
-                logger.info("Using Gemini 2.0 Flash via OpenAI compatibility endpoint.")
+                llm_list.append(openai.LLM(
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    api_key=gemini_api_key,
+                    model="gemini-1.5-flash"
+                ))
+                logger.info("Added Gemini 2.5 Flash & 1.5 Flash via OpenAI compatibility endpoint to LLM list.")
             except Exception as e:
                 logger.warning(f"Gemini OpenAI fallback init error: {e}")
 
         if not llm_list and HAS_GROQ_PLUGIN and groq is not None:
-            llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
+            llm_list.append(groq.LLM(model="openai/gpt-oss-120b"))
 
         selected_llm = llm.FallbackAdapter(llm_list) if len(llm_list) > 1 else (llm_list[0] if llm_list else None)
 

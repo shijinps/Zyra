@@ -615,15 +615,21 @@ def spotify_callback(code: Optional[str] = None, error: Optional[str] = None):
 
     res = spotify_controller.exchange_code(code)
     if res.get("status") == "success":
-        html = """
+        rf = spotify_controller.refresh_token or ""
+        html = f"""
         <html>
             <head><title>Spotify Connected | Zyra</title></head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; margin: 0;">
-                <div style="background: #1e1e1e; padding: 40px; border-radius: 16px; text-align: center; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #121212; color: white; margin: 0; padding: 20px; box-sizing: border-box;">
+                <div style="background: #1e1e1e; padding: 40px; border-radius: 16px; text-align: center; max-width: 520px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);">
                     <div style="font-size: 64px; margin-bottom: 16px;">🎵</div>
                     <h2 style="color: #1DB954; margin: 0 0 12px 0;">Spotify Connected to Zyra!</h2>
                     <p style="color: #b3b3b3; line-height: 1.5; font-size: 15px;">Zyra now has full voice control over your music playback across your phone, laptop, and speakers.</p>
-                    <p style="margin-top: 24px; font-size: 14px; color: #1DB954; background: rgba(29, 185, 84, 0.12); padding: 12px 18px; border-radius: 8px;">Try saying: <b>"Hey Zyra, play Starboy by The Weeknd"</b></p>
+                    <p style="margin-top: 20px; font-size: 14px; color: #1DB954; background: rgba(29, 185, 84, 0.12); padding: 12px 18px; border-radius: 8px;">Try saying: <b>"Hey Zyra, play Believer by Imagine Dragons"</b></p>
+                    <div style="margin-top: 24px; text-align: left; background: #282828; padding: 14px; border-radius: 8px; font-size: 12px; color: #aaa;">
+                        <div style="font-weight: 600; color: #fff; margin-bottom: 6px;">Persistent Token (Optional for Coolify):</div>
+                        <input type="text" readonly value="{rf}" style="width: 100%; background: #181818; border: 1px solid #444; color: #1DB954; padding: 6px 8px; border-radius: 4px; font-size: 11px; box-sizing: border-box;" onclick="this.select(); document.execCommand('copy'); alert('Copied Spotify Refresh Token!');" />
+                        <div style="margin-top: 6px; font-size: 11px; color: #888;">Click to copy. You can paste this as <code>SPOTIFY_REFRESH_TOKEN</code> in Coolify env vars for permanent persistence.</div>
+                    </div>
                 </div>
             </body>
         </html>
@@ -638,7 +644,8 @@ def spotify_status():
     current = spotify_controller.get_currently_playing() if authorized else "Not connected"
     return {
         "authorized": authorized,
-        "status": current
+        "status": current,
+        "has_refresh_token": bool(spotify_controller.refresh_token)
     }
 
 @app.get("/livekit/token")
