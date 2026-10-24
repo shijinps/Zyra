@@ -874,10 +874,20 @@ async def entrypoint(ctx: JobContext):
             target = active_agent
             messages = []
             if target:
-                if hasattr(target, "chat_ctx") and target.chat_ctx:
-                    messages = getattr(target.chat_ctx, "messages", [])
+                ctx_obj = getattr(target, "chat_ctx", None)
+                if ctx_obj is not None:
+                    if hasattr(ctx_obj, "messages") and isinstance(ctx_obj.messages, (list, tuple)):
+                        messages = ctx_obj.messages
+                    elif isinstance(ctx_obj, (list, tuple)):
+                        messages = ctx_obj
+                    else:
+                        try:
+                            messages = list(ctx_obj)
+                        except Exception:
+                            messages = []
                 elif hasattr(target, "history"):
-                    messages = getattr(target, "history", [])
+                    hist = getattr(target, "history", [])
+                    messages = hist if isinstance(hist, (list, tuple)) else []
 
             new_turns = []
             for msg in messages:
