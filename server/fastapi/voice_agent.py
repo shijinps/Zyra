@@ -481,31 +481,34 @@ class AssistantFnc(llm.FunctionContext):
             logger.error(f"Evolution API Error: {e}")
             return f"I couldn't send the WhatsApp message: {e}"
 
+_cached_groq_adapter = None
+
 def resolve_groq_llm(groq_key: str):
     """
     Dynamically queries Groq API to select an active, accessible model.
-    Groq currently features: openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.8-27b.
+    Cached after first resolution to keep voice turn loop fast.
     """
+    global _cached_groq_adapter
+    if _cached_groq_adapter is not None:
+        return _cached_groq_adapter
+
     priority = [
-        "openai/gpt-oss-120b",
-        "openai/gpt-oss-20b",
-        "qwen/qwen3.8-27b",
         "llama-3.3-70b-versatile",
         "llama-3.1-70b-versatile",
         "llama-3.1-8b-instant",
+        "qwen/qwen3.8-27b",
         "allam-2-7b"
     ]
-    chosen = "openai/gpt-oss-20b"
+    chosen = "llama-3.3-70b-versatile"
     available_models = []
     try:
         r = requests.get(
             "https://api.groq.com/openai/v1/models",
             headers={"Authorization": f"Bearer {groq_key}", "User-Agent": "Mozilla/5.0"},
-            timeout=5.0
+            timeout=3.0
         )
         if r.status_code == 200:
             data = r.json().get("data", [])
-            # Filter text-to-text models only
             active_chat_ids = {
                 m["id"] for m in data 
                 if "text" in m.get("input_modalities", ["text"]) and "text" in m.get("output_modalities", ["text"])
@@ -522,11 +525,17 @@ def resolve_groq_llm(groq_key: str):
         logger.warning(f"Groq models query failed: {e}")
     
     if not available_models:
-        available_models = [chosen, "openai/gpt-oss-120b"]
+        available_models = [chosen, "llama-3.1-8b-instant"]
     
     logger.info(f"Resolved Groq LLMs with fallback: {available_models}")
-    adapters = [groq.LLM(model=m) for m in available_models]
-    return llm.FallbackAdapter(adapters) if len(adapters) > 1 else adapters[0]
+    adapters = [groq.LLM(model=m) for m in available_models if groq is not None]
+    if not adapters and groq is not None:
+        adapters = [groq.LLM(model="llama-3.1-8b-instant")]
+    
+    if adapters:
+        _cached_groq_adapter = llm.FallbackAdapter(adapters) if len(adapters) > 1 else adapters[0]
+        return _cached_groq_adapter
+    return None
 
 def create_system_prompt(history_str: str, tools_str: str) -> str:
     rag_context = rag_engine.get_context_block()
@@ -652,14 +661,39 @@ async def entrypoint(ctx: JobContext):
         
         # LLM Selection: Dynamic Groq LLM (Primary) + Gemini 2.0 Flash (Redundancy / Fallback)
         llm_list = []
-        if HAS_GROQ_PLUGIN and groq_api_key:
+        if HAS_GROQ_PLUGIN and groq is not None and groq_api_key:
             try:
-                llm_list.append(resolve_groq_llm(groq_api_key))
+                resolved = resolve_groq_llm(groq_api_key)
+                if resolved:
+                    llm_list.append(resolved)
             except Exception as e:
                 logger.error(f"Error initializing Groq LLM: {e}")
-                llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
-        if gemini_api_key:
-            llm_list.append(google.LLM(model="gemini-2.0-flash"))
+                try:
+                    llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
+                except Exception:
+                    pass
+
+        if HAS_GOOGLE_PLUGIN and google is not None and gemini_api_key:
+            try:
+                llm_list.append(google.LLM(model="gemini-2.0-flash"))
+            except Exception as e:
+                logger.warning(f"Google LLM init error: {e}")
+
+        # If google plugin is not available, use Gemini via OpenAI compatibility interface
+        if gemini_api_key and (not HAS_GOOGLE_PLUGIN or google is None):
+            try:
+                from livekit.plugins import openai
+                llm_list.append(openai.LLM(
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    api_key=gemini_api_key,
+                    model="gemini-2.0-flash"
+                ))
+                logger.info("Using Gemini 2.0 Flash via OpenAI compatibility endpoint.")
+            except Exception as e:
+                logger.warning(f"Gemini OpenAI fallback init error: {e}")
+
+        if not llm_list and HAS_GROQ_PLUGIN and groq is not None:
+            llm_list.append(groq.LLM(model="llama-3.1-8b-instant"))
 
         selected_llm = llm.FallbackAdapter(llm_list) if len(llm_list) > 1 else (llm_list[0] if llm_list else None)
 
