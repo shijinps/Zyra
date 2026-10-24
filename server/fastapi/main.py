@@ -58,6 +58,11 @@ def verify_token(x_zyra_token: str = Header(...)):
     if x_zyra_token != EXPECTED_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid Trust Token")
 
+@app.get("/")
+def root():
+    """Root endpoint for Coolify healthcheck."""
+    return {"status": "ok", "service": "Zyra Technical Brain"}
+
 @app.get("/health")
 def health_check():
     """

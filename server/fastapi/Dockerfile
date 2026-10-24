@@ -5,6 +5,8 @@ ENV PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr
 
 # Install system tools
 RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
     build-essential \
     python3-dev \
     pkg-config \
