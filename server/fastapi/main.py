@@ -112,94 +112,90 @@ def get_telegram_log(token: str = Security(verify_token)):
     return {"exists": False, "message": "Log file not found"}
 
 @app.on_event("startup")
-def startup_db_client():
+async def startup_db_client():
     """
-    Automates Database Setup on Container Start.
-    Connects to Postgres and runs init_memory.sql.
+    Automates Database Setup on Container Start in background.
+    Non-blocking: FastAPI starts immediately in under 0.1s.
     """
-    try:
-        # Get DB Credentials from Environment (set in Coolify)
-        db_user = os.getenv("POSTGRES_USER", "postgres")
-        db_password = os.getenv("POSTGRES_PASSWORD", "password")
-        db_name = os.getenv("POSTGRES_DB", "postgres")
-        db_host = os.getenv("POSTGRES_HOST", "postgres")
-        db_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        
-        # SANITIZATION: Remove protocol if user accidentally pasted a URL
-        if db_host.startswith("http"):
-            db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
+    import asyncio
 
-        conn = psycopg2.connect(
-            dbname=db_name,
-            user=db_user,
-            password=db_password,
-            host=db_host,
-            port=db_port
-        )
-        conn.autocommit = True
-        
-        with conn.cursor() as cursor:
-            # 1. Base tables that do not require extensions
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS n8n_chat_histories (
-                    id SERIAL PRIMARY KEY,
-                    session_id TEXT NOT NULL,
-                    message JSONB NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-                
-                CREATE TABLE IF NOT EXISTS zyra_contacts (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    phone TEXT NOT NULL,
-                    alias TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(name, phone)
-                );
-                """
+    def _init_db():
+        try:
+            db_user = os.getenv("POSTGRES_USER", "postgres")
+            db_password = os.getenv("POSTGRES_PASSWORD", "password")
+            db_name = os.getenv("POSTGRES_DB", "postgres")
+            db_host = os.getenv("POSTGRES_HOST", "postgres")
+            db_port = int(os.getenv("POSTGRES_PORT", "5432"))
+            
+            if db_host.startswith("http"):
+                db_host = db_host.replace("https://", "").replace("http://", "").split("/")[0]
+
+            conn = psycopg2.connect(
+                dbname=db_name,
+                user=db_user,
+                password=db_password,
+                host=db_host,
+                port=db_port,
+                connect_timeout=2
             )
+            conn.autocommit = True
             
-            # 2. Extensions (safe fail if standard postgres:16-alpine is used)
-            for ext in ["vector", "postgis"]:
-                try:
-                    cursor.execute(f"CREATE EXTENSION IF NOT EXISTS {ext};")
-                except Exception as ext_err:
-                    print(f"ZYRA BRAIN INFO: Extension '{ext}' not available in postgres image: {ext_err}")
-            
-            # 3. Spatial tables (only if postgis is loaded)
-            try:
+            with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    CREATE TABLE IF NOT EXISTS kochi_incidents (
+                    CREATE TABLE IF NOT EXISTS n8n_chat_histories (
                         id SERIAL PRIMARY KEY,
-                        description TEXT NOT NULL,
-                        severity VARCHAR(50),
-                        geom GEOMETRY(Point, 4326),
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        session_id TEXT NOT NULL,
+                        message JSONB NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
-                    CREATE INDEX IF NOT EXISTS incidents_geom_idx ON kochi_incidents USING GIST (geom);
+                    
+                    CREATE TABLE IF NOT EXISTS zyra_contacts (
+                        id SERIAL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        phone TEXT NOT NULL,
+                        alias TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(name, phone)
+                    );
                     """
                 )
-            except Exception:
-                pass
-            
-            print("ZYRA BRAIN: Database Memory Initialized Successfully.")
-            
-        conn.close()
-    except Exception as e:
-        print(f"ZYRA BRAIN WARNING: Database init failed (check env vars): {e}")
+                for ext in ["vector", "postgis"]:
+                    try:
+                        cursor.execute(f"CREATE EXTENSION IF NOT EXISTS {ext};")
+                    except Exception as ext_err:
+                        print(f"ZYRA BRAIN INFO: Extension '{ext}' not available: {ext_err}")
+                
+                try:
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS kochi_incidents (
+                            id SERIAL PRIMARY KEY,
+                            description TEXT NOT NULL,
+                            severity VARCHAR(50),
+                            geom GEOMETRY(Point, 4326),
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                        CREATE INDEX IF NOT EXISTS incidents_geom_idx ON kochi_incidents USING GIST (geom);
+                        """
+                    )
+                except Exception:
+                    pass
+                
+                print("ZYRA BRAIN: Database Memory Initialized Successfully.")
+            conn.close()
+        except Exception as e:
+            print(f"ZYRA BRAIN DB INIT WARNING (operating in local fallback): {e}")
+
+    # Launch in background thread so FastAPI startup completes instantly
+    asyncio.create_task(asyncio.to_thread(_init_db))
 
 # ... (Rest of file)
 
 
 class Target(BaseModel):
     host: str
-
-@app.get("/")
-def read_root():
-    return {"status": "Zyra Brain Online"}
 
 @app.post("/tools/ping")
 def run_ping(target: Target, token: str = Security(verify_token)):
