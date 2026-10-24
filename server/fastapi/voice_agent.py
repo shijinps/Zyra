@@ -743,28 +743,15 @@ async def entrypoint(ctx: JobContext):
         # STT Selection: Groq Whisper Large v3 Turbo (Primary)
         primary_stt = groq.STT(model="whisper-large-v3-turbo", language="en") if HAS_GROQ_PLUGIN and groq_api_key else None
         
-        # LLM Selection: Flat Fallback List (Groq Tool-Calling LLMs -> Gemini 2.5 Flash -> Gemini 1.5 Flash)
+        # LLM Selection: Gemini 2.5 Flash / 1.5 Flash (Primary, high TPM, zero-rate-limit) -> Groq (Fallback)
         llm_list = []
-        if HAS_GROQ_PLUGIN and groq is not None and groq_api_key:
-            try:
-                groq_adapters = await asyncio.to_thread(resolve_groq_llm_adapters, groq_api_key)
-                if groq_adapters:
-                    llm_list.extend(groq_adapters)
-            except Exception as e:
-                logger.error(f"Error initializing Groq LLM: {e}")
-                try:
-                    llm_list.append(groq.LLM(model="openai/gpt-oss-120b"))
-                except Exception:
-                    pass
 
-        if HAS_GOOGLE_PLUGIN and google is not None and gemini_api_key:
-            try:
-                llm_list.append(google.LLM(model="gemini-2.5-flash"))
-            except Exception as e:
-                logger.warning(f"Google LLM init error: {e}")
-
-        # If google plugin is not available, use Gemini via OpenAI compatibility interface
         if gemini_api_key:
+            if HAS_GOOGLE_PLUGIN and google is not None:
+                try:
+                    llm_list.append(google.LLM(model="gemini-2.5-flash"))
+                except Exception as e:
+                    logger.warning(f"Google LLM init error: {e}")
             try:
                 from livekit.plugins import openai
                 llm_list.append(openai.LLM(
@@ -777,9 +764,21 @@ async def entrypoint(ctx: JobContext):
                     api_key=gemini_api_key,
                     model="gemini-1.5-flash"
                 ))
-                logger.info("Added Gemini 2.5 Flash & 1.5 Flash via OpenAI compatibility endpoint to LLM list.")
+                logger.info("Configured Gemini 2.5 Flash as PRIMARY LLM.")
             except Exception as e:
                 logger.warning(f"Gemini OpenAI fallback init error: {e}")
+
+        if HAS_GROQ_PLUGIN and groq is not None and groq_api_key:
+            try:
+                groq_adapters = await asyncio.to_thread(resolve_groq_llm_adapters, groq_api_key)
+                if groq_adapters:
+                    llm_list.extend(groq_adapters)
+            except Exception as e:
+                logger.error(f"Error initializing Groq LLM: {e}")
+                try:
+                    llm_list.append(groq.LLM(model="openai/gpt-oss-120b"))
+                except Exception:
+                    pass
 
         if not llm_list and HAS_GROQ_PLUGIN and groq is not None:
             llm_list.append(groq.LLM(model="openai/gpt-oss-120b"))

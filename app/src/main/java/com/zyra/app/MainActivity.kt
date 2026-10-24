@@ -98,6 +98,18 @@ class MainActivity : ComponentActivity() {
         // Initialize Intelligence System with all 12 modules
         com.zyra.app.logic.IntelligenceSystem.initialize(this, contactRepository)
 
+        // Automatically start Voice Assistant Service on app open
+        try {
+            val serviceIntent = Intent(this, VoiceAssistantService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ZyraMain", "Auto-start VoiceAssistantService failed: ${e.message}")
+        }
+
         setContent {
             ZyraTheme {
                 Surface {

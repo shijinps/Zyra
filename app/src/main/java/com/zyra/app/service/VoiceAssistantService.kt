@@ -2637,7 +2637,9 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
              return
         }
 
-        speak("Playing $query")
+        if (!isLiveKitSessionActive) {
+            speak("Playing $query")
+        }
         
         // ... (Search Logic) ...
         if (targetApp.contains("spotify")) {
