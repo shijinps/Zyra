@@ -351,6 +351,16 @@ class AssistantFnc(llm.FunctionContext):
         logger.info(f"Agent browsing website: {url}")
         return browser_engine.get_page_content(url)
 
+    @llm.ai_callable(desc="Checks if any monitored websites, price drops, or ticket availability updates have been detected by Changedetection.")
+    async def check_monitored_web_changes(self, query: str = "") -> str:
+        logger.info(f"Agent checking web changes for: {query}")
+        q = f"{query} web change" if query else "web change tracker"
+        matches = rag_engine.search_memories(q, top_k=3, threshold=0.08)
+        if matches:
+            bullets = [f"- {m['content']}" for m in matches]
+            return "Here are the latest website changes I've analyzed, Shijin:\n" + "\n".join(bullets)
+        return "I haven't detected any new changes or price drops on your monitored websites recently, Shijin."
+
     @llm.ai_callable(desc="Dispatches an urgent notification to Shijin across Discord and Telegram.")
     async def dispatch_notification(self, title: str, message: str) -> str:
         logger.info(f"Agent dispatching alert via Apprise: {title}")

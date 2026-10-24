@@ -510,6 +510,35 @@ def handle_incoming_alert(alert: SystemAlertRequest, token: str = Security(verif
 
     return {"status": "recorded", "alert": alert_summary, "rag_result": res}
 
+class WebChangeNotification(BaseModel):
+    url: Optional[str] = ""
+    title: Optional[str] = "Webpage Change"
+    diff: Optional[str] = ""
+    current_snapshot: Optional[str] = ""
+
+@app.post("/rag/webhook-change")
+def handle_web_change(data: WebChangeNotification):
+    """
+    Direct webhook endpoint for Changedetection.io.
+    Stores and analyzes webpage changes directly into Zyra's RAG memory without external notification spam.
+    """
+    clean_title = data.title or "Monitored Page"
+    clean_url = data.url or ""
+    diff_text = data.diff or data.current_snapshot or "A change was detected on the page."
+    
+    if len(diff_text) > 1200:
+        diff_text = diff_text[:1200] + "..."
+
+    summary = f"[WEB CHANGE TRACKER]: '{clean_title}' ({clean_url}) has updated. Changes detected: {diff_text}"
+    
+    res = rag_engine.store_memory(
+        content=summary,
+        category="web_change_tracker",
+        source="changedetection",
+        role="system"
+    )
+    return {"status": "stored_in_rag_for_analysis", "rag_result": res}
+
 class BrowseRequest(BaseModel):
     url: str
     wait_for_selector: Optional[str] = None
