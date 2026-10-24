@@ -743,13 +743,13 @@ async def entrypoint(ctx: JobContext):
         # STT Selection: Groq Whisper Large v3 Turbo (Primary)
         primary_stt = groq.STT(model="whisper-large-v3-turbo", language="en") if HAS_GROQ_PLUGIN and groq_api_key else None
         
-        # LLM Selection: Gemini 2.5 Flash / 1.5 Flash (Primary, high TPM, zero-rate-limit) -> Groq (Fallback)
+        # LLM Selection: Gemini 3.8 Flash (Primary, high TPM, zero-rate-limit) -> Groq (Fallback)
         llm_list = []
 
         if gemini_api_key:
             if HAS_GOOGLE_PLUGIN and google is not None:
                 try:
-                    llm_list.append(google.LLM(model="gemini-2.5-flash"))
+                    llm_list.append(google.LLM(model="gemini-3.8-flash"))
                 except Exception as e:
                     logger.warning(f"Google LLM init error: {e}")
             try:
@@ -757,14 +757,9 @@ async def entrypoint(ctx: JobContext):
                 llm_list.append(openai.LLM(
                     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                     api_key=gemini_api_key,
-                    model="gemini-2.5-flash"
+                    model="gemini-3.8-flash"
                 ))
-                llm_list.append(openai.LLM(
-                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                    api_key=gemini_api_key,
-                    model="gemini-1.5-flash"
-                ))
-                logger.info("Configured Gemini 2.5 Flash as PRIMARY LLM.")
+                logger.info("Configured Gemini 3.8 Flash as PRIMARY LLM.")
             except Exception as e:
                 logger.warning(f"Gemini OpenAI fallback init error: {e}")
 
