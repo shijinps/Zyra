@@ -63,8 +63,35 @@ def get_page_content(url: str, wait_for_selector: Optional[str] = None) -> str:
                 text = text[:1200] + "..."
             return f"Summary from {clean_url}: {text}"
     except Exception as e:
-        logger.error(f"Browserless error visiting {clean_url}: {e}")
-        return f"Couldn't browse {clean_url} via Browserless: {e}"
+        logger.warning(f"Browserless error visiting {clean_url}: {e}. Falling back to direct HTTP fetch...")
+        try:
+            direct_req = urllib.request.Request(
+                clean_url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+            )
+            with urllib.request.urlopen(direct_req, timeout=12) as direct_resp:
+                html = direct_resp.read().decode("utf-8", errors="ignore")
+                from html.parser import HTMLParser
+                class HTMLTextExtractor(HTMLParser):
+                    def __init__(self):
+                        super().__init__()
+                        self.text = []
+                    def handle_data(self, data):
+                        d = data.strip()
+                        if d:
+                            self.text.append(d)
+                    def get_text(self):
+                        return " ".join(self.text)
+
+                parser = HTMLTextExtractor()
+                parser.feed(html)
+                text = parser.get_text()
+                if len(text) > 1200:
+                    text = text[:1200] + "..."
+                return f"Summary from {clean_url}: {text}"
+        except Exception as direct_err:
+            logger.error(f"Direct fetch also failed for {clean_url}: {direct_err}")
+            return f"Couldn't browse {clean_url}: {direct_err}"
 
 def take_screenshot(url: str, output_path: str = "/tmp/screenshot.png") -> str:
     """Captures a screenshot of a live web page using Browserless."""

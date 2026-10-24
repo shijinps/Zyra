@@ -301,6 +301,41 @@ class VoiceAssistantService : Service(), RecognitionListener, TextToSpeech.OnIni
                 }
             }
 
+            override fun onPlayMusicCommandReceived(query: String) {
+                Log.d("ZyraService", "Received Play Music Command from Zyra Agent: $query")
+                android.os.Handler(mainLooper).post {
+                    handlePlayMusic(if (query.isNotEmpty()) "spotify|$query" else "spotify")
+                }
+            }
+
+            override fun onPauseMusicCommandReceived() {
+                Log.d("ZyraService", "Received Pause Music Command from Zyra Agent")
+                android.os.Handler(mainLooper).post {
+                    handleMediaCommand("pause")
+                }
+            }
+
+            override fun onResumeMusicCommandReceived() {
+                Log.d("ZyraService", "Received Resume Music Command from Zyra Agent")
+                android.os.Handler(mainLooper).post {
+                    handlePlayMusic("spotify|resume")
+                }
+            }
+
+            override fun onNextTrackCommandReceived() {
+                Log.d("ZyraService", "Received Next Track Command from Zyra Agent")
+                android.os.Handler(mainLooper).post {
+                    handleMediaCommand("next")
+                }
+            }
+
+            override fun onPreviousTrackCommandReceived() {
+                Log.d("ZyraService", "Received Previous Track Command from Zyra Agent")
+                android.os.Handler(mainLooper).post {
+                    handleMediaCommand("previous")
+                }
+            }
+
             override fun onConnected() {
                 connectionHandler.removeCallbacks(connectionTimeoutRunnable) // Cancel watchdog
                 Log.d("ZyraService", "LiveKit Conversation Started. Pausing local listener.")

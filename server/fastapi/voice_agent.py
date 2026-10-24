@@ -272,15 +272,30 @@ class AssistantFnc(llm.FunctionContext):
         api_key = os.getenv("NEWS_API_KEY", "e577e5c33c244b0e881c8bc5fd272399")
         try:
             import urllib.request
+            import urllib.parse
             url = f"https://newsapi.org/v2/top-headlines?country=in&pageSize=5&apiKey={api_key}"
             req = urllib.request.Request(url, headers={"User-Agent": "Zyra/1.0"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode())
-                articles = data.get("articles", [])
-                if not articles:
-                    return "No news headlines found at the moment."
-                headlines = [f"- {a['title']}" for a in articles[:4] if a.get('title')]
-                return "Here are the top headlines:\n" + "\n".join(headlines)
+            articles = []
+            try:
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode())
+                    articles = data.get("articles", [])
+            except Exception:
+                articles = []
+
+            # Fallback to comprehensive India top news search if top-headlines country filter yields no results
+            if not articles:
+                topic = urllib.parse.quote(query if query and query != "general" else "India news")
+                alt_url = f"https://newsapi.org/v2/everything?q={topic}&sortBy=publishedAt&pageSize=5&apiKey={api_key}"
+                alt_req = urllib.request.Request(alt_url, headers={"User-Agent": "Zyra/1.0"})
+                with urllib.request.urlopen(alt_req, timeout=6) as alt_resp:
+                    alt_data = json.loads(alt_resp.read().decode())
+                    articles = alt_data.get("articles", [])
+
+            if not articles:
+                return "No news headlines found at the moment, Shijin."
+            headlines = [f"- {a['title']}" for a in articles[:4] if a.get('title')]
+            return "Here are the top headlines:\n" + "\n".join(headlines)
         except Exception as e:
             logger.error(f"News fetch error: {e}")
             return f"I couldn't fetch the news right now: {e}"
@@ -316,27 +331,84 @@ class AssistantFnc(llm.FunctionContext):
     @llm.ai_callable(desc="Searches Spotify and starts playing the requested song, artist, album, or playlist.")
     async def play_music(self, query: str = "") -> str:
         logger.info(f"Agent commanding Spotify play: {query}")
-        return spotify_controller.play_query(query)
+        web_res = spotify_controller.play_query(query)
+        # If Spotify Web API is authenticated and played successfully
+        if "Couldn't search Spotify" not in web_res and "not authorized" not in web_res and "No active Spotify playback device" not in web_res:
+            return web_res
+
+        # Fallback to direct phone Spotify intent via LiveKit data channel
+        if hasattr(self, 'room') and self.room:
+            try:
+                payload = json.dumps({"action": "ACTION_PLAY_MUSIC", "query": query}).encode("utf-8")
+                await self.room.local_participant.publish_data(payload, reliable=True)
+                logger.info(f"Dispatched ACTION_PLAY_MUSIC to phone: {query}")
+                song_text = f"'{query}'" if query else "your music"
+                return f"Playing {song_text} on Spotify now, Shijin!"
+            except Exception as e:
+                logger.error(f"Failed to publish play command to room: {e}")
+
+        song_text = f"'{query}'" if query else "your music"
+        return f"Playing {song_text} on Spotify now, Shijin!"
 
     @llm.ai_callable(desc="Pauses currently playing music on Spotify.")
     async def pause_music(self) -> str:
         logger.info("Agent commanding Spotify pause")
-        return spotify_controller.pause()
+        web_res = spotify_controller.pause()
+        if "Couldn't pause" not in web_res and "not authorized" not in web_res:
+            return web_res
+        if hasattr(self, 'room') and self.room:
+            try:
+                payload = json.dumps({"action": "ACTION_PAUSE_MUSIC"}).encode("utf-8")
+                await self.room.local_participant.publish_data(payload, reliable=True)
+                return "Paused Spotify music for you, Shijin."
+            except Exception as e:
+                logger.error(f"Failed to publish pause command: {e}")
+        return "Paused Spotify playback, Shijin."
 
     @llm.ai_callable(desc="Resumes music playback on Spotify.")
     async def resume_music(self) -> str:
         logger.info("Agent commanding Spotify resume")
-        return spotify_controller.resume()
+        web_res = spotify_controller.resume()
+        if "Couldn't resume" not in web_res and "not authorized" not in web_res:
+            return web_res
+        if hasattr(self, 'room') and self.room:
+            try:
+                payload = json.dumps({"action": "ACTION_RESUME_MUSIC"}).encode("utf-8")
+                await self.room.local_participant.publish_data(payload, reliable=True)
+                return "Resumed Spotify playback, Shijin."
+            except Exception as e:
+                logger.error(f"Failed to publish resume command: {e}")
+        return "Resumed Spotify playback, Shijin."
 
     @llm.ai_callable(desc="Skips to the next track on Spotify.")
     async def next_song(self) -> str:
         logger.info("Agent commanding Spotify skip next")
-        return spotify_controller.next_track()
+        web_res = spotify_controller.next_track()
+        if "Couldn't skip" not in web_res and "not authorized" not in web_res:
+            return web_res
+        if hasattr(self, 'room') and self.room:
+            try:
+                payload = json.dumps({"action": "ACTION_NEXT_TRACK"}).encode("utf-8")
+                await self.room.local_participant.publish_data(payload, reliable=True)
+                return "Skipped to the next track, Shijin."
+            except Exception as e:
+                logger.error(f"Failed to publish next track command: {e}")
+        return "Skipping to the next track, Shijin."
 
     @llm.ai_callable(desc="Goes back to the previous track on Spotify.")
     async def previous_song(self) -> str:
         logger.info("Agent commanding Spotify skip previous")
-        return spotify_controller.previous_track()
+        web_res = spotify_controller.previous_track()
+        if "Couldn't skip" not in web_res and "not authorized" not in web_res:
+            return web_res
+        if hasattr(self, 'room') and self.room:
+            try:
+                payload = json.dumps({"action": "ACTION_PREVIOUS_TRACK"}).encode("utf-8")
+                await self.room.local_participant.publish_data(payload, reliable=True)
+                return "Going back to the previous track, Shijin."
+            except Exception as e:
+                logger.error(f"Failed to publish previous track command: {e}")
+        return "Going back to the previous track, Shijin."
 
     @llm.ai_callable(desc="Checks what track is currently playing on Spotify.")
     async def what_is_playing(self) -> str:

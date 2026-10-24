@@ -84,6 +84,11 @@ object LiveKitManager {
         fun onAgentUnavailable()
         fun onCallCommandReceived(phone: String, name: String)
         fun onEndCallCommandReceived()
+        fun onPlayMusicCommandReceived(query: String) {}
+        fun onPauseMusicCommandReceived() {}
+        fun onResumeMusicCommandReceived() {}
+        fun onNextTrackCommandReceived() {}
+        fun onPreviousTrackCommandReceived() {}
     }
     
     private var listener: LiveKitListener? = null
@@ -255,12 +260,24 @@ object LiveKitManager {
                                 try {
                                     val jsonStr = String(event.data)
                                     val json = JSONObject(jsonStr)
-                                    if (json.optString("action") == "ACTION_CALL") {
+                                    val action = json.optString("action")
+                                    if (action == "ACTION_CALL") {
                                         val phone = json.optString("phone")
                                         val name = json.optString("name")
                                         listener?.onCallCommandReceived(phone, name)
-                                    } else if (json.optString("action") == "ACTION_HANGUP") {
+                                    } else if (action == "ACTION_HANGUP") {
                                         listener?.onEndCallCommandReceived()
+                                    } else if (action == "ACTION_PLAY_MUSIC") {
+                                        val query = json.optString("query")
+                                        listener?.onPlayMusicCommandReceived(query)
+                                    } else if (action == "ACTION_PAUSE_MUSIC") {
+                                        listener?.onPauseMusicCommandReceived()
+                                    } else if (action == "ACTION_RESUME_MUSIC") {
+                                        listener?.onResumeMusicCommandReceived()
+                                    } else if (action == "ACTION_NEXT_TRACK") {
+                                        listener?.onNextTrackCommandReceived()
+                                    } else if (action == "ACTION_PREVIOUS_TRACK") {
+                                        listener?.onPreviousTrackCommandReceived()
                                     }
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Error parsing data channel message", e)
