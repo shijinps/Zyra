@@ -32,7 +32,7 @@ try:
 except Exception:
     pass
 
-from livekit.agents import JobContext, WorkerOptions, cli, llm
+from livekit.agents import JobContext, WorkerOptions, cli, llm, tts
 try:
     from rag_engine import rag_engine
 except ImportError:
@@ -769,29 +769,30 @@ async def entrypoint(ctx: JobContext):
 
         selected_llm = llm.FallbackAdapter(llm_list) if len(llm_list) > 1 else (llm_list[0] if llm_list else None)
 
-        # TTS Selection: Google TTS -> ElevenLabs TTS -> LiveKit Cloud Inference
-        selected_tts = None
-        if HAS_GOOGLE_PLUGIN and google is not None and gemini_api_key:
+        # TTS Selection: LiveKit Cloud Inference Cartesia (Ultra-fast, zero-key, edge audio)
+        tts_list = []
+        if HAS_INFERENCE and inference is not None:
             try:
-                selected_tts = google.TTS(gender="male")
+                tts_list.append(inference.TTS(model="cartesia/sonic-3"))
+                logger.info("Using LiveKit Cloud Cartesia inference TTS (sonic-3).")
             except Exception as e:
-                logger.warning(f"Google TTS init error: {e}")
-
-        if selected_tts is None and HAS_ELEVENLABS_PLUGIN and elevenlabs is not None:
-            el_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY") or "sk_836b76037c9c1699dba27e70dfb33eb8d63014ec7c99b478"
-            if el_key:
+                logger.warning(f"LiveKit Cloud inference TTS (sonic-3) init notice: {e}")
                 try:
-                    selected_tts = elevenlabs.TTS(api_key=el_key, voice_id="CwhRBWXzGAHq8TQ4Fs17", model="eleven_turbo_v2_5")
-                    logger.info("Using ElevenLabs TTS.")
-                except Exception as e:
-                    logger.warning(f"ElevenLabs TTS init error: {e}")
+                    tts_list.append(inference.TTS(model="cartesia/sonic"))
+                    logger.info("Using LiveKit Cloud Cartesia inference TTS (sonic).")
+                except Exception as e2:
+                    logger.warning(f"LiveKit Cloud inference TTS (sonic) init notice: {e2}")
 
-        if selected_tts is None and HAS_INFERENCE and inference is not None:
+        # Optional ElevenLabs fallback ONLY if an explicit environment key is provided
+        el_key = os.getenv("ELEVENLABS_API_KEY") or os.getenv("ELEVEN_API_KEY")
+        if el_key and HAS_ELEVENLABS_PLUGIN and elevenlabs is not None:
             try:
-                selected_tts = inference.TTS(model="cartesia/sonic-3")
-                logger.info("Using LiveKit Cloud Cartesia inference TTS.")
+                tts_list.append(elevenlabs.TTS(api_key=el_key, voice_id="CwhRBWXzGAHq8TQ4Fs17", model="eleven_turbo_v2_5"))
+                logger.info("Added ElevenLabs TTS as fallback.")
             except Exception as e:
-                logger.warning(f"LiveKit Cloud inference TTS init error: {e}")
+                logger.warning(f"ElevenLabs TTS init error: {e}")
+
+        selected_tts = tts.FallbackAdapter(tts_list) if len(tts_list) > 1 else (tts_list[0] if tts_list else None)
 
         selected_vad = silero.VAD.load() if (HAS_SILERO_PLUGIN and silero is not None) else None
 
@@ -828,8 +829,11 @@ async def entrypoint(ctx: JobContext):
                     logger.warning(f"Real-time agent speech ingest notice: {e}")
 
             agent.start(ctx.room)
-            await asyncio.sleep(1.2)
-            await agent.say("Hey Shijin! What's up?")
+            await asyncio.sleep(1.0)
+            try:
+                await agent.say("Hey Shijin! What's up?")
+            except Exception as say_err:
+                logger.warning(f"Initial greeting say notice: {say_err}")
         elif AgentSession is not None:
             session = AgentSession(
                 vad=selected_vad,
@@ -909,11 +913,16 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant):
         try:
-            humans = [p for p in ctx.room.remote_participants.values() if not (p.identity and p.identity.startswith("agent-"))]
-            if not humans:
-                logger.info("All human participants left room. Persisting memory and shutting down agent job.")
-                persist_active_memory()
-                ctx.shutdown()
+            async def _check_and_shutdown():
+                await asyncio.sleep(6.0)
+                humans = [p for p in ctx.room.remote_participants.values() if not (p.identity and p.identity.startswith("agent-"))]
+                if not humans:
+                    logger.info("All human participants left room after 6s grace. Persisting memory and shutting down.")
+                    persist_active_memory()
+                    ctx.shutdown()
+                else:
+                    logger.info("Human participant active in room. Keeping agent job alive.")
+            asyncio.create_task(_check_and_shutdown())
         except Exception as e:
             logger.warning(f"Error in participant_disconnected hook: {e}")
 
