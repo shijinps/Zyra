@@ -29,11 +29,18 @@ except ImportError:
 try:
     import browser_engine
 except ImportError:
-    from server.fastapi import browser_engine
+    try:
+        from server.fastapi import browser_engine
+    except ImportError:
+        browser_engine = None
+
 try:
     import live_stream_worker
 except ImportError:
-    from server.fastapi import live_stream_worker
+    try:
+        from server.fastapi import live_stream_worker
+    except ImportError:
+        live_stream_worker = None
 from google import genai
 import time
 import uuid
@@ -511,16 +518,22 @@ def browse_page(request: BrowseRequest, token: str = Security(verify_token)):
     """
     Renders dynamic web pages using Browserless and returns extracted text.
     """
+    if not browser_engine:
+        return {"result": "Browser engine not available"}
     return {"result": browser_engine.get_page_content(request.url, request.wait_for_selector)}
 
 @app.get("/live-news/channels")
 def get_live_channels():
     """Returns curated list of monitored YouTube live news streams."""
+    if not live_stream_worker:
+        return {"channels": []}
     return {"channels": live_stream_worker.LIVE_CHANNELS}
 
 @app.post("/live-news/refresh")
 def refresh_live_news():
     """Polls monitored live news channels and ingests breaking updates into RAG."""
+    if not live_stream_worker:
+        return {"status": "error", "message": "Live stream worker not available"}
     updates = live_stream_worker.poll_all_live_streams()
     return {"status": "success", "updates_count": len(updates), "updates": updates}
 

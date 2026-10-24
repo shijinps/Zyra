@@ -28,15 +28,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy logic
-COPY main.py .
-COPY voice_agent.py .
-COPY rag_engine.py .
-COPY spotify_controller.py* .
-COPY spotify_token.json* .
-COPY browser_engine.py* .
-COPY apprise_client.py* .
-COPY telegram_knowledge_bot.py* .
-COPY rag_store.json* .
+COPY *.py .
+COPY *.json* .
 COPY start.sh .
 COPY my_contacts.vcf* .
 RUN chmod +x start.sh
